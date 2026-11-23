@@ -24,9 +24,9 @@ title: "flat_map Design Guide (II): step-by-step implementation"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/hands_on/02-flat-map-implementation.md
   source_hash: e768f89509917ac74b64c331811468914da54f9670b4f1ac3bbdd5d892aa42a3
-  translated_at: '2026-09-26T03:43:13+00:00'
-  engine: anthropic
-  token_count: 6400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10732
 ---
 # flat_map Design Guide (II): step-by-step implementation
 
@@ -64,12 +64,12 @@ public:
 
 protected:
     Container body_;
-    [[no_unique_address]] KeyCompare comp_;   // EBO: a stateless comparator costs zero bytes
+    [[no_unique_address]] KeyCompare comp_;   // EBO:无状态比较器零字节
 
     flat_tree() = default;
     explicit flat_tree(const KeyCompare& c) : comp_(c) {}
 
-    // Turn a key comparison into a value comparison (extract on both sides)
+    // 把 key 比较转成 value 比较(双边提取)
     template <typename A, typename B>
     bool less(const A& a, const B& b) const {
         GetKeyFromValue ext;
@@ -92,13 +92,13 @@ protected:
 With the skeleton up, the next thing to solve is "a pile of unordered stuff comes in — how does it become a sorted, deduplicated table". That is `sort_and_unique`.
 
 ```cpp
-// Plain range constructor: append + sort and dedupe
+// 普通 range 构造:append + 排序去重
 template <class InputIt>
 flat_tree(InputIt first, InputIt last, const KeyCompare& c = KeyCompare())
     : body_(first, last), comp_(c) {
     sort_and_unique();
 }
-// Container move constructor: bulk construction (the recommended posture)
+// 容器 move 构造:批量构造(推荐姿势)
 flat_tree(Container&& body, const KeyCompare& c = KeyCompare())
     : body_(std::move(body)), comp_(c) {
     sort_and_unique();
@@ -128,12 +128,12 @@ inline constexpr sorted_unique_t sorted_unique{};
 template <class InputIt>
 flat_tree(sorted_unique_t, InputIt first, InputIt last, const KeyCompare& c = KeyCompare())
     : body_(first, last), comp_(c) {
-    assert(is_sorted_unique());   // debug-only verification, no sorting
+    assert(is_sorted_unique());   // debug 校验,不排序
 }
 
 bool is_sorted_unique() const {
     for (size_type i = 1; i < body_.size(); ++i)
-        if (!less(body_[i - 1], body_[i])) return false;   // must be strictly ascending
+        if (!less(body_[i - 1], body_[i])) return false;   // 必须严格升序
     return true;
 }
 ```
@@ -167,8 +167,8 @@ Insert is the powder keg at the center of the flat_map performance debate. The d
 std::pair<iterator, bool> insert(value_type v) {
     auto it = std::lower_bound(body_.begin(), body_.end(), v,
         [this](const value_type& a, const value_type& b) { return less(a, b); });
-    if (it != body_.end() && !less(v, *it)) return {it, false};   // already present, don't insert
-    return {body_.emplace(it, std::move(v)), true};               // O(n) shift, insert succeeds
+    if (it != body_.end() && !less(v, *it)) return {it, false};   // 已存在,不插
+    return {body_.emplace(it, std::move(v)), true};               // O(n) shift,插入成功
 }
 ```
 
@@ -180,11 +180,11 @@ Insert is single-element fine work, but sometimes you want to pour a whole batch
 
 ```cpp
 container_type extract() && {
-    return std::exchange(body_, container_type{});   // hand the whole thing over
+    return std::exchange(body_, container_type{});   // 整体交出
 }
 void replace(container_type&& body) {
     body_ = std::move(body);
-    assert(is_sorted_unique());   // the sorted_unique-style honest contract
+    assert(is_sorted_unique());   // sorted_unique 式诚实契约
 }
 iterator erase(const_iterator pos) { return body_.erase(pos); }   // O(n)
 ```
@@ -209,7 +209,7 @@ class flat_map : public internal::flat_tree<Key, GetFirst, Compare, Container> {
     using base = internal::flat_tree<Key, GetFirst, Compare, Container>;
 public:
     using mapped_type = Mapped;
-    using base::base;   // inherit flat_tree's constructors/lookup/insert
+    using base::base;   // 继承 flat_tree 的构造/查找/插入
 
     mapped_type& operator[](const Key& key) {
         auto it = std::lower_bound(this->body_.begin(), this->body_.end(), key,
@@ -217,13 +217,13 @@ public:
         if (it == this->body_.end() || this->less(key, *it))
             it = this->body_.emplace(it, std::piecewise_construct,
                                      std::forward_as_tuple(key),
-                                     std::forward_as_tuple());   // default-construct the mapped
+                                     std::forward_as_tuple());   // 默认构造 mapped
         return it->second;
     }
 
     mapped_type& at(const Key& key) {
         auto it = this->find(key);
-        assert(it != this->body_.end());   // teaching build uses assert; Chromium uses CHECK
+        assert(it != this->body_.end());   // 教学版用 assert;Chromium 用 CHECK
         return it->second;
     }
 
@@ -232,7 +232,7 @@ public:
         auto it = std::lower_bound(this->body_.begin(), this->body_.end(), key,
             [this](const value_type& v, const Key& k) { return this->less(v, k); });
         if (it != this->body_.end() && !this->less(key, *it)) {
-            it->second = std::forward<M>(obj);   // overwrite .second (mapped only, key untouched)
+            it->second = std::forward<M>(obj);   // 覆写 .second(只改 mapped,不改 key)
             return {it, false};
         }
         return {this->body_.emplace(it, key, std::forward<M>(obj)), true};
@@ -255,12 +255,12 @@ Writing it without running it leaves us uneasy. Here's a minimal slice — const
 #include <iostream>
 int main() {
     using namespace tamcpp::chrome;
-    flat_map<int, std::string> m{{3,"c"},{1,"a"},{2,"b"}};   // construction sorts
+    flat_map<int, std::string> m{{3,"c"},{1,"a"},{2,"b"}};   // 构造即排序
     std::cout << m.size() << "," << m[1] << "\n";            // 3,a
-    m.insert_or_assign(2, "B");                              // overwrite 2
+    m.insert_or_assign(2, "B");                              // 覆写 2
     std::cout << m[2] << "\n";                               // B
 
-    flat_set<int> s{{3,1,2,1}};                              // sort and dedupe
+    flat_set<int> s{{3,1,2,1}};                              // 排序去重
     std::cout << s.size() << "\n";                           // 3
     return 0;
 }

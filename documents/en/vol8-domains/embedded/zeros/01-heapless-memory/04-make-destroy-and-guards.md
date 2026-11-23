@@ -20,10 +20,10 @@ related:
   - "Fixed-Size Block Pool: An Allocator with One Bit per Block"
 translation:
   source: documents/vol8-domains/embedded/zeros/01-heapless-memory/04-make-destroy-and-guards.md
-  source_hash: 3bde6fe598e12193a3569402bf5b95e9153994e48af1d84c39fa6e01455e2a8d
-  translated_at: '2026-09-27T06:05:45+00:00'
-  engine: anthropic
-  token_count: 6000
+  source_hash: fbb13ca46dc8c7bab57438aa0e0f2a4c944d646d01a7d8387a52f75b6d6f59ff
+  translated_at: '2026-11-22T16:45:27+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18492
 ---
 
 # Make/Destroy: Typed Birth and Death, and the Compile-Time Line of Defense
@@ -502,6 +502,38 @@ All tests passed (102 assertions in 11 test cases)
 Twenty-four cases, 40555 assertions, most of them out of that fuzz: twenty thousand operations, every allocation verifying its stamp, every free verifying ownership — that is how the number piles up. All tests passing means the first four articles of this station are cleared, and `git add -A` commits it. The numbers you get should match these character for character: the seed is fixed, and it makes no difference how many machines you swap in.
 
 An intuition about size, handed to you in advance as well: compiled into the firmware, this memory stack's added cost trends toward zero — the bitmaps' all-zero default state lands in `.bss`, and the pool's constructor is `constexpr`. You will verify these numbers with your own eyes in the next article, once we are on the board.
+
+## An experiment with one pair of braces: why constinit wouldn't compile
+
+Let's reproduce a phenomenon. In the previous article's memory stack, the storage array `buffer_` of `BitmapPool` never carried an initializer; when we tried hanging `constinit` on a global pool object on host, GCC 16.2.1 handed us red text:
+
+```cpp
+#include "ZerOS/kernel/mem/bitmap_allocate.hpp"
+
+constinit ZerOS::memory::BitmapPool<64, 8, true> pool;   // GCC 在这一行报错
+
+int main() { return 0; }
+```
+
+We run it once, and the error reads:
+
+```text
+error: variable does not have a constant initializer
+note: '... BitmapPool() ' is not a constant expression because it refers
+      to an incompletely initialized variable
+```
+
+The last line of the error spells out the cause and effect: `constinit` demands that the variable take constant initialization, and our default constructor — explicitly marked `constexpr` — cannot produce a constant expression when it meets an uninitialized `buffer_`, because constant evaluation has no room for a byte of indeterminate value. The fix is really just one pair of braces: we change the array declaration in `bitmap_allocate.hpp` to the following, and apart from clang-format that is a single character touched:
+
+```diff
+     // Buffer Locations here, as it request all baasic
+-    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE];
++    ALL_ALIGNED std::byte buffer_[BUFFER_SIZE]{};
+```
+
+Once we add `{}`, the array gains an all-zero default member initializer, constant evaluation goes through, and `constinit` waves it right through — we verified this for real. One more thing, told straight: clang accepts the pre-change form; it is GCC that stops it, so this phenomenon only shows up on GCC-family toolchains — and the arm-none-eabi-g++ our board uses happens to be exactly that family.
+
+The experiment can wrap up here. Zero-initialized content lands directly in `.bss`, taking no flash space — the root of that line item in the size intuition just above lies right here. From now on, every kernel global object is born the `constinit` way, system_time and the scheduler queue included. This experiment gets fully unpacked again at the later port-to-board stop, because on a `-nostdlib` board it has another face — we will do that accounting when we get there.
 
 ## The Next Stop
 

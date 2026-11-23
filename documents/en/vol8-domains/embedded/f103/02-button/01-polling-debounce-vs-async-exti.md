@@ -20,10 +20,10 @@ related:
   - 'Putting the logger to work: two calling styles and two viewing surfaces'
 translation:
   source: documents/vol8-domains/embedded/f103/02-button/01-polling-debounce-vs-async-exti.md
-  source_hash: 0a8fc08b3e39077430fa04b6b999a495d12461d0c996863ff5be00f341e46b31
-  translated_at: '2026-11-01T03:18:31+00:00'
-  engine: anthropic
-  token_count: 4000
+  source_hash: 05dfe800e9ce57922c8ae54088e62e8905932e3a226be89dcdb0a8f70aaccca1
+  translated_at: '2026-11-22T16:43:13+00:00'
+  engine: glm-5.3-refresh
+  token_count: 15588
 ---
 
 # One burst of bounce, two chains: polling debounce vs. the EXTI edge chain
@@ -180,9 +180,9 @@ Why 20 and 3 for the parameters? The input module is capacitive-touch, carries n
 Flipping the stable state is `ButtonFsm<700>`'s job. Here are the three outward-facing messages, with the comments the library author gave them:
 
 ```cpp
-struct Press {};     // kids, I'm pressed down
-struct Release {};   // kids, I've let go
-struct LongPress {}; // kids, I'm being held
+struct Press {};     // 孩子们我按下了
+struct Release {};   // 孩子们我松手了
+struct LongPress {}; // 孩子们我在长按
 using ButtonEvent = std::variant<Press, Release, LongPress>;
 ```
 
@@ -288,17 +288,16 @@ The confidence behind going lock-free with no atomics is in the comments too: a 
 All the injection work lives in `renode.resc`. The platform description file is `sim/stm32f1/bluepill.repl`; logs go through a PTY (pseudo-terminal) on USART1 with the default path `/tmp/libestdx-button`; the question-marked `$bin?=` / `$uart_pty?=` style is the same one as the logger series and means an overridable default. The model knows nothing about the pin's pull configuration, so the reset macro pulls PA0 low ahead of time, imitating the module's idle-low level. The three injection macros, lifted from its header comment:
 
 ```text
-runMacro $press    # a clean touch (hold for 0.3s, then release)
-runMacro $long     # hold for 1s (triggers long press), then release
-runMacro $bounce   # touch with bounce (3 rising edges) → hold 0.9s → release
+runMacro $press    # 干净摸一下(摸 0.3s 松)
+runMacro $long     # 摸住 1s(触发长按)再松开
+runMacro $bounce   # 带抖动摸住(3 次上升沿)→ 0.9s → 松开
 ```
 
 On timing discipline, the resc header comment puts it this way:
 
 ```text
-monitor sleep waits on host time and is out of proportion with virtual time —
-injection macros always advance precisely via pause → OnGPIO → emulation
-RunFor "<virtual seconds>".
+monitor 的 sleep 等 host 时间,虚拟时间不成比例 —— 注入宏
+一律 pause → OnGPIO → emulation RunFor "<虚拟秒>" 精确推进。
 ```
 
 Read the three macros' logs against the timeline:

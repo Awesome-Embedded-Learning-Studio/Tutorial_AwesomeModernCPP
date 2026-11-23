@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Range-based for Loops
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #179)"
+      en: "Contributed exercise solutions and article revisions (PR #179)"
 translation:
   source: documents/vol1-fundamentals/ch02/03-range-for.md
-  source_hash: c2f964febfb905c68c3be84bcbdc96cd99c1ea66445f6dcf49ae0f84071cd035
-  translated_at: '2026-09-25T10:10:40+00:00'
-  engine: anthropic
-  token_count: 1800
+  source_hash: b184311cd6c1ce0a112dd94ccd457cb75d56142a5446e677c8ad3fc2938b7147
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8212
 ---
 # Range-based for: No More Fat-Fingered Index Bugs
 
@@ -38,8 +49,8 @@ The **range-based for loop** from C++11 exists precisely for this: we don't mana
 The range-for syntax looks like this:
 
 ```cpp
-for (type variable_name : collection) {
-    // use the variable
+for (类型 变量名 : 集合) {
+    // 使用变量
 }
 ```
 
@@ -52,13 +63,13 @@ int main()
 {
     int scores[] = {90, 85, 78, 92, 88};
 
-    // Traditional for loop
+    // 传统 for 循环
     for (int i = 0; i < 5; ++i) {
         std::cout << scores[i] << " ";
     }
     std::cout << std::endl;
 
-    // Range-based for loop
+    // range-for 循环
     for (int score : scores) {
         std::cout << score << " ";
     }
@@ -84,9 +95,9 @@ With those gone, the opportunities for finger-trouble go with them — the compi
 range-for natively supports C-style arrays, but there's one limitation we should know ahead of time: when an array is passed as a function parameter it decays into a pointer, and at that point range-for stops working.
 
 ```cpp
-void print_array(int arr[])  // arr is actually a pointer here
+void print_array(int arr[])  // arr 在这里其实是指针
 {
-    // Compile error! The compiler doesn't know how many elements arr points to
+    // 编译错误！编译器不知道 arr 指向多少个元素
     // for (int x : arr) { ... }
 }
 ```
@@ -117,18 +128,18 @@ Let's feel out the differences between the three with a short example!
 ```cpp
 int nums[] = {1, 2, 3};
 
-// By value: modifies the copy, the original array stays unchanged
+// 按值：改副本，原数组不变
 for (auto x : nums) { x *= 2; }
-// nums is still {1, 2, 3}
+// nums 仍是 {1, 2, 3}
 
-// By reference: modifies the original array directly
+// 按引用：直接改原数组
 for (auto& x : nums) { x *= 2; }
-// nums becomes {2, 4, 6}
+// nums 变成 {2, 4, 6}
 
-// const reference: read-only traversal, the compiler blocks modification
+// const 引用：只读遍历，编译器会阻止修改
 for (const auto& x : nums) {
     std::cout << x << " ";  // 2 4 6
-    // x *= 2; // <- Not allowed! clangd will paint that line red for you!
+    // x *= 2; // <- 不可以！clangd就会给你漂红线啦！
 }
 ```
 
@@ -149,7 +160,7 @@ for (char c : text) {
     }
 }
 std::cout << "元音字母个数: " << vowel_count << std::endl;
-// Output: 元音字母个数: 3
+// 输出: 元音字母个数: 3
 ```
 
 The reference version also lets us modify a string in place — uppercasing it, for instance:
@@ -168,7 +179,7 @@ The `static_cast<unsigned char>` here is not busywork. `std::toupper` takes an `
 Structured bindings, introduced in C++17, pair beautifully with range-for. The full treatment waits until the containers chapter — for now let's just get familiar with the sight of it:
 
 ```cpp
-// C++17: unpack key and value directly while iterating a key-value container
+// C++17：遍历键值对容器时直接拆开 key 和 value
 for (const auto& [key, value] : my_map) {
     std::cout << key << " -> " << value << std::endl;
 }
@@ -181,12 +192,12 @@ The `[key, value]` in brackets "destructures" an object with multiple fields int
 Why does range-for work on arrays and equally well on completely different types like `std::vector` and `std::string`? The answer is blunt: the compiler translates range-for into an equivalent traditional loop. Let's look at that translation.
 
 ```cpp
-// for (auto x : coll) is roughly equivalent to:
+// for (auto x : coll) 大致等价于：
 {
     auto&& __range = coll;
     for (auto __it = __range.begin(); __it != __range.end(); ++__it) {
         auto x = *__it;
-        // loop body
+        // 循环体
     }
 }
 ```
@@ -209,7 +220,7 @@ Let's roll the previous usages into one complete program, demonstrating summatio
 
 int main()
 {
-    // Sum
+    // 求和
     std::array<int, 6> data = {3, 7, 1, 9, 4, 6};
     int sum = 0;
     for (const auto& x : data) {
@@ -217,7 +228,7 @@ int main()
     }
     std::cout << "总和: " << sum << std::endl;
 
-    // Count
+    // 计数
     int target = 6;
     int count = 0;
     for (const auto& x : data) {
@@ -226,7 +237,7 @@ int main()
     std::cout << "值 " << target << " 出现了 " << count
               << " 次" << std::endl;
 
-    // In-place modification: double every element
+    // 原地修改：每个元素翻倍
     std::array<int, 6> doubled = data;
     for (auto& x : doubled) { x *= 2; }
     std::cout << "翻倍后: ";
@@ -235,7 +246,7 @@ int main()
     }
     std::cout << std::endl;
 
-    // Uppercase the string
+    // 字符串转大写
     std::string message = "range-for is elegant";
     for (auto& c : message) {
         c = static_cast<char>(

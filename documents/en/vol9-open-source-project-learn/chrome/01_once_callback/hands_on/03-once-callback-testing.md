@@ -21,10 +21,10 @@ tags:
 title: 'once_callback Design Guide (III): test strategy and performance comparison'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/03-once-callback-testing.md
-  source_hash: 17746ba8a2df341e5afb9987a24055629d311f1e18c6b0c18d744ab485cc0a25
-  translated_at: '2026-09-26T01:11:48+00:00'
-  engine: anthropic
-  token_count: 3500
+  source_hash: c37c2ca0fd8116b6df4abb1f37714e8fb56204a9c3992e537c100c7023f91765
+  translated_at: '2026-11-22T16:41:57.428855+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10182
 ---
 # once_callback Design Guide (III): test strategy and performance comparison
 
@@ -211,14 +211,14 @@ int main() {
               << sizeof(std::function<void()>) << " bytes\n";
     std::cout << "sizeof(std::move_only_function<void()>): "
               << sizeof(std::move_only_function<void()>) << " bytes\n";
-    // Chromium OnceCallback<void()> ≈ 8 bytes (one pointer)
+    // Chromium OnceCallback<void()> ≈ 8 bytes（一个指针）
 
     using namespace tamcpp::chrome;
     std::cout << "sizeof(OnceCallback<void()>): "
               << sizeof(OnceCallback<void()>) << " bytes\n";
-    // Our OnceCallback is roughly:
+    // 我们的 OnceCallback 大约是：
     // move_only_function (32) + status (1) + token ptr (16) + padding
-    // estimated 56-64 bytes
+    // 预估 56-64 bytes
 }
 ```
 
@@ -254,9 +254,9 @@ With this, the design, implementation, and testing of the `OnceCallback` group a
 
 ```text
 documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/
-├── 01-once-callback-design.md           # Design: motivation and API
-├── 02-once-callback-implementation.md   # Implementation: step by step
-└── 03-once-callback-testing.md          # Verification: testing and performance
+├── 01-once-callback-design.md           # 设计篇：动机与接口
+├── 02-once-callback-implementation.md   # 实现篇：逐步实现
+└── 03-once-callback-testing.md          # 验证篇：测试与性能
 ```
 
 The corresponding compilable code (headers + tests) sits in the project code directory:
@@ -266,14 +266,14 @@ code/volumn_codes/vol9/chrome_design/
 ├── CMakeLists.txt
 ├── cmake/CPM.cmake
 ├── cancel_token/
-│   └── cancel_token.hpp                 # cancellation token
+│   └── cancel_token.hpp                 # 取消令牌
 ├── once_callback/
 │   ├── CMakeLists.txt
-│   ├── once_callback.hpp                # main interface (template declarations)
-│   └── once_callback_impl.hpp           # implementation (template definitions)
+│   ├── once_callback.hpp                # 主接口（模板声明）
+│   └── once_callback_impl.hpp           # 实现（模板定义）
 └── test/
-    ├── CMakeLists.txt                   # Catch2 test configuration
-    └── test_once_callback.cpp           # complete test cases
+    ├── CMakeLists.txt                   # Catch2 测试配置
+    └── test_once_callback.cpp           # 完整测试用例
 ```
 
 ---

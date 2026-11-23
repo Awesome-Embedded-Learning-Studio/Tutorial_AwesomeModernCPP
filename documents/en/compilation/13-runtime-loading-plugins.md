@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/13-runtime-loading-plugins.md
   source_hash: 1385be99db0864a5cc91c73a9b33132ef0afa8d360df1b610bb9150fc0144b8b
-  translated_at: '2026-10-13T04:26:14+00:00'
-  engine: anthropic
-  token_count: 6200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15161
 ---
 
 # Runtime Loading and Plugins: The Program Finds Libraries, Fetches Symbols, and Unloads
@@ -30,13 +30,13 @@ At the end of part 11's stretch on exported names, we left a promise behind: onc
 ## Minimal Usage: Open the Library, Fetch the Symbol, Unload at the End
 
 ```cpp
-// four.cpp excerpt — minimal use of the dlopen four, error branches omitted
-void* handle = dlopen("./libcalc.so", RTLD_NOW);    // open the library, get a handle back; RTLD_NOW is one setting of flags, more on it later
-dlerror();                                          // clear the old error state
+// four.cpp 节选 —— dlopen 四件的最小用法,错误分支从略
+void* handle = dlopen("./libcalc.so", RTLD_NOW);    // 开库,换回句柄;RTLD_NOW 是 flags 的一档,后面细讲
+dlerror();                                          // 清掉旧的错误状态
 int (*total_tax)(void) = (int (*)(void)) dlsym(handle, "total_tax");
-const char* err = dlerror();                        // fetch the pointer, then check once more
-std::printf("base=100 total=%d\n", total_tax());    // use it like an ordinary function
-dlclose(handle);                                    // return the handle
+const char* err = dlerror();                        // 取指针,再查一次
+std::printf("base=100 total=%d\n", total_tax());    // 当普通函数用
+dlclose(handle);                                    // 还句柄
 ```
 
 ```text
@@ -121,47 +121,47 @@ What the two axes do, the four cells of output lay out plainly. GLOBAL versus LO
 Calling dlsym function pointer by function pointer is tolerable at two interfaces; at a dozen-plus it is asking for punishment: names ride on strings, types ride on hand-written casts, and a single mistake waits until runtime to show itself. The standard engineering move is to put the previous part's ABI-header method to work. Host and plugin share one header with the full four-piece set; we turn libcalc's backend into a plugin, and the header looks like this:
 
 ```cpp
-// calc_plugin.h excerpt — the one ABI header shared by host and plugin
-#define CALC_ABI_VERSION 1                       // macro constant: the interface's generation number
+// calc_plugin.h 节选 —— 宿主与插件共享的唯一一份 ABI 头
+#define CALC_ABI_VERSION 1                       // 宏常数:接口代次号
 
-struct CalcBackend;                              // type definition: opaque pointer, declaration only
+struct CalcBackend;                              // 类型定义:不透明指针,只有声明
 
-struct CalcPluginApi {                           // function table: the host recognizes only this table
+struct CalcPluginApi {                           // 函数表:宿主只认这张表
     int abi_version;
     CalcBackend* (*create)(void);
     void         (*destroy)(CalcBackend*);
-    int (*base_tax)(const CalcBackend*), (*tax_rate)(const CalcBackend*);   // the fetching pair, same shape
+    int (*base_tax)(const CalcBackend*), (*tax_rate)(const CalcBackend*);   // 取值的一对,同形
     int          (*total_tax)(const CalcBackend*);
 };
-const CalcPluginApi* calc_plugin_entry(void);    // function declaration: the entry, wrapped in extern "C"
+const CalcPluginApi* calc_plugin_entry(void);    // 函数声明:入口,extern "C" 包住
 ```
 
 Reading from the top down. CALC_ABI_VERSION's identity is a macro constant: host and plugin each get the same number at their own compile time, and any mismatch refuses cooperation. CalcBackend has a declaration but no definition; a pointer like this is what the jargon calls an opaque pointer: the host knows the thing exists yet cannot touch its insides — it cannot even write sizeof, and all it can do is pass the pointer back exactly as it arrived. In the middle, CalcPluginApi is a function table whose fields are all function pointers: create builds the backend, destroy takes the backend down, and the remaining three are the numbers we have computed all volume long. Only one function is truly exported, calc_plugin_entry, its declaration wrapped with `extern "C"` and `#ifdef __cplusplus` in the previous part's manner, so both the C and C++ ends can include it. That part told us decorated names belong to the compiler; when a module fetches a function by name across the boundary, the name must be bare. Types do not take decoration, though — only the pointer's value crosses the border — so the function table may happily hold C++ functions.
 
 ```cpp
-// plugin_standard.cpp excerpt — the standard backend; CalcBackend's definition lives only on this side
-struct CalcBackend { int base; int rate; };      // completes the opaque declaration from the header
+// plugin_standard.cpp 节选 —— 标准后端,CalcBackend 的定义只住在这一侧
+struct CalcBackend { int base; int rate; };      // 补全头文件里那个不透明声明
 static CalcBackend* create_impl() { return new CalcBackend{100, 17}; }
-static int total_tax_impl(const CalcBackend* self) {   // destroy/base_tax same shape, omitted
-    int amount = self->base + self->rate; if (amount > 500) amount = 500;   // clamp_cap, same algorithm as part 11
+static int total_tax_impl(const CalcBackend* self) {   // destroy/base_tax 同形,从略
+    int amount = self->base + self->rate; if (amount > 500) amount = 500;   // clamp_cap,照符号可见性那篇的算法
     return (amount + 9) / 10 * 10;               // near_ceil
 }
-static const CalcPluginApi kApi = { CALC_ABI_VERSION, create_impl, /* the rest same shape */ };
+static const CalcPluginApi kApi = { CALC_ABI_VERSION, create_impl, /* 其余同形 */ };
 extern "C" const CalcPluginApi* calc_plugin_entry(void) { return &kApi; }
 ```
 
 The plugin side completes CalcBackend's definition, its members carrying just the base tax and the rate, the cap-and-round algorithm moved into total_tax_impl, the numbers identical to the originals to the last digit. One wreck I have genuinely driven into deserves recording: do not put the struct in an anonymous namespace. That creates a new type visible only inside the anonymous space, which fails to match the global CalcBackend in the header, the function pointers' types instantly stop mating up, and the compiler reports invalid conversion on the spot — marking the functions static is enough. The host side we keep clean: the entire source includes only the one header calc_plugin.h, and not one plugin appears among the link inputs. Fetching the entry still follows the three steps — clear the old error, fetch the symbol, recheck at the end — and the table we get back also gets its generation checked once:
 
 ```cpp
-// host.cpp excerpt — the host: includes the ABI header only, links no plugin
-const CalcPluginApi* api = entry();              // entry comes from dlsym; error checking same as four.cpp
-if (api->abi_version != CALC_ABI_VERSION) {      // generation mismatch, refuse on the spot
+// host.cpp 节选 —— 宿主:只包含 ABI 头,不链接任何插件
+const CalcPluginApi* api = entry();              // entry 来自 dlsym,查错同 four.cpp
+if (api->abi_version != CALC_ABI_VERSION) {      // 代次对不上,当场拒绝
     std::fprintf(stderr, "ABI 版本不符: 要 %d, 来 %d\n", CALC_ABI_VERSION, api->abi_version);
     return 1;
 }
 CalcBackend* backend = api->create();
 std::printf("base=%d total=%d\n", api->base_tax(backend), api->total_tax(backend));
-api->destroy(backend); dlclose(handle);          // wrap-up: return the object, return the handle
+api->destroy(backend); dlclose(handle);          // 收尾:还对象,还句柄
 ```
 
 ```text
@@ -219,16 +219,16 @@ We ran it five times straight and got 139 all five times — its provenance is 1
 In part 09 we used LD_PRELOAD to knock base_tax out entirely, and even then we left a note: a good number of the memory-profiling kind of tools got their start by preloading their own malloc and free. Knocking out is actually easy; what a wrapping tool wants is more than knocking out — it wants a layer wrapped around: after tallying, the work still has to be handed to the real malloc. Handed to whom? That is the job of RTLD_NEXT, the special pseudo-handle: it has dlsym keep searching from the modules sitting after the current library in the search order, taking the next same-named definition. On part 11's list, the preloaded mwrap sits ahead of libc; counting forward from mwrap's position, the next house is exactly the real malloc, and the forwarding connects. Here are the key lines:
 
 ```c
-// mwrap.c excerpt — the preloaded layer: tallies malloc/free, forwards everything else to the next house
+// mwrap.c 节选 —— 预载层:统计 malloc/free,其余转发给下一家
 static void* (*real_malloc)(size_t);
-static char   boot_pool[1 << 16];          /* a crutch during resolution: static memory */
+static char   boot_pool[1 << 16];          /* 解析期间的垫背:静态内存 */
 static int    resolving = 0;
 static void resolve(void) {
     resolving = 1; real_malloc = (void* (*)(size_t)) dlsym(RTLD_NEXT, "malloc"); resolving = 0;
 }
 void* malloc(size_t n) {
-    if (real_malloc == 0) { if (resolving) return boot_alloc(n); resolve(); }   /* re-entry defense, explained in the text */
-    return real_malloc(n);                 /* count, then forward untouched */
+    if (real_malloc == 0) { if (resolving) return boot_alloc(n); resolve(); }   /* 回环防御,正文细说 */
+    return real_malloc(n);                 /* 计数后原样转发 */
 }
 ```
 
@@ -278,9 +278,9 @@ On Windows the whole set has a neat row of counterparts: LoadLibraryA and LoadLi
 Hand-typing -fPIC -shared for plugin builds — day to day, that work goes to CMake. Plugins have a dedicated library type in CMake, MODULE: the artifact is equally a .so, but the semantics are for dlopen's use, not for linking. Here is the project:
 
 ```cmake
-# CMakeLists.txt excerpt
+# CMakeLists.txt 节选
 add_library(standard MODULE plugin_standard.cpp)
-set_target_properties(standard PROPERTIES PREFIX "")   # discount same shape
+set_target_properties(standard PROPERTIES PREFIX "")   # discount 同形
 add_executable(host host.cpp)
 ```
 

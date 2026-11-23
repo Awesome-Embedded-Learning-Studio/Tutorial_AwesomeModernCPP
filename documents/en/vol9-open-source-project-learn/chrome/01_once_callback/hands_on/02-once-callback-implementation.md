@@ -21,10 +21,10 @@ tags:
 title: "once_callback Design Guide (II): step-by-step implementation"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/02-once-callback-implementation.md
-  source_hash: 24b9eba26b70b96e5dc938fa587c544cd74d868002ab505cfd4bd9c5093612ad
-  translated_at: '2026-09-26T01:13:02+00:00'
-  engine: anthropic
-  token_count: 4900
+  source_hash: a88e05d0cc08a67712d2c5792af44b8068736986ec1f0d5108068d4dd9a7050e
+  translated_at: '2026-11-22T16:41:57.405929+00:00'
+  engine: glm-5.3-refresh
+  token_count: 16379
 ---
 # once_callback Design Guide (II): step-by-step implementation
 
@@ -44,7 +44,7 @@ The trick doing the work underneath is template partial specialization. We start
 
 ```cpp
 template<typename FuncSignature>
-class OnceCallback;  // primary template: no implementation provided
+class OnceCallback;  // 主模板：不提供实现
 ```
 
 Then we open a separate partial specialization that catches exactly the case where the signature is a function type:
@@ -52,7 +52,7 @@ Then we open a separate partial specialization that catches exactly the case whe
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
 class OnceCallback<ReturnType(FuncArgs...)> {
-    // all the real code lives in this partial specialization
+    // 所有真正的代码都在这个偏特化里
 };
 ```
 
@@ -67,46 +67,46 @@ In the previous post we settled on a three-state architecture. Now we stand the 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
 class OnceCallback<ReturnType(FuncArgs...)> {
-    // Core storage: holds the actual callable object
-    // A lambda, a function pointer, or a functor — it holds them all
+    // 核心存储：持有实际的可调用对象
+    // 不管你传入 lambda、函数指针还是仿函数，它都能装下
     std::move_only_function<FuncSig> func_;
 
-    // Three-state flag: kEmpty → kValid → kConsumed
+    // 三态标记：kEmpty → kValid → kConsumed
     Status status_ = Status::kEmpty;
 
-    // Cancellation token (optional)
+    // 取消令牌（可选）
     std::shared_ptr<CancelableToken> token_;
 
 public:
-    // Construction: accepts any callable (with a requires constraint, explained later)
+    // 构造：接受任意可调用对象（带 requires 约束，后面解释）
     template<typename Functor>
         requires not_the_same_t<Functor, OnceCallback>
     explicit OnceCallback(Functor&& f);
 
-    // Move-only: copies deleted
+    // Move-only：删除拷贝
     OnceCallback(const OnceCallback&) = delete;
     OnceCallback& operator=(const OnceCallback&) = delete;
     OnceCallback(OnceCallback&& other) noexcept;
     OnceCallback& operator=(OnceCallback&& other) noexcept;
 
-    // The core: runs the callback and consumes *this (via deducing this, explained later)
+    // 核心：执行回调并消费 *this（用 deducing this 实现，后面解释）
     template<typename Self>
     auto run(this Self&& self, FuncArgs&&... args) -> ReturnType;
 
-    // Query interface
+    // 查询接口
     [[nodiscard]] bool is_cancelled() const noexcept;
     [[nodiscard]] bool maybe_valid() const noexcept;
     [[nodiscard]] bool is_null() const noexcept;
     explicit operator bool() const noexcept;
 
-    // Set the cancellation token
+    // 设置取消令牌
     void set_token(std::shared_ptr<CancelableToken> token);
 
-    // Chaining
+    // 链式组合
     template<typename Next> auto then(Next&& next) &&;
 
 private:
-    ReturnType impl_run(FuncArgs... args);  // the actual execution logic
+    ReturnType impl_run(FuncArgs... args);  // 真正的执行逻辑
 };
 ```
 
@@ -126,12 +126,12 @@ auto run(this Self&& self, Args... args) -> R;
 That `this Self&& self` stopped me for a beat the first time I saw it; only later did I work out that this is C++23 deducing this, officially the "explicit object parameter". In a traditional member function `this` is implicit — the compiler quietly slips in the address of the current object, where you can neither see nor touch it. What deducing this does is write `this` explicitly as the function's first parameter, and then use template argument deduction on its type and value category.
 
 ```cpp
-// Traditional style: this is implicit
-void run(FuncArgs... args);          // what the compiler sees is run(OnceCallback* this, FuncArgs... args)
+// 传统写法：this 是隐式的
+void run(FuncArgs... args);          // 编译器看到的是 run(OnceCallback* this, FuncArgs... args)
 
-// Deducing this style: this is explicit
+// deducing this 写法：this 是显式的
 template<typename Self>
-auto run(this Self&& self, FuncArgs&&... args) -> ReturnType;  // self is this
+auto run(this Self&& self, FuncArgs&&... args) -> ReturnType;  // self 就是 this
 ```
 
 The trick lives in `Self&&`: it looks like an rvalue reference, but because `Self` is a template parameter it degrades into a forwarding reference. The beauty of a forwarding reference is that it changes face according to the value category of the argument: for an lvalue call like `cb.run(args)`, `Self` is deduced as `OnceCallback&`; written as `std::move(cb).run(args)`, `Self` becomes the prvalue `OnceCallback`; and the const lvalue `std::as_const(cb).run(args)` gives `const OnceCallback&`. Three value categories, and one template catches them all.
@@ -280,9 +280,9 @@ Our simplified token has three core actions: create (issue a valid one), invalid
 ```cpp
 class CancelableToken {
     struct Flag {
-        std::atomic<bool> valid{true};  // atomic variable, thread-safe
+        std::atomic<bool> valid{true};  // 原子变量，多线程安全
     };
-    // All token copies share the same Flag
+    // 所有 token 副本共享同一个 Flag
     std::shared_ptr<Flag> flag_;
 
 public:
@@ -320,26 +320,26 @@ The new chained callback must clutch the ownership of both the original callback
 
 ```mermaid
 graph LR
-    A["new callback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original callback + continuation"]
+    A["新回调"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
 The implementation skeleton looks roughly like this:
 
 ```cpp
 template<typename Next>
-auto then(Next&& next) &&       // the trailing && makes this an rvalue-qualified member function
-    -> OnceCallback</* return type and signature to be deduced */>
+auto then(Next&& next) &&       // 末尾的 && 使其成为右值限定成员函数
+    -> OnceCallback</* 返回类型和签名待推导 */>
 {
     return OnceCallback</* ... */>(
-        [self = std::move(*this),             // move the whole original callback into the lambda
-         cont = std::forward<Next>(next)]     // move the continuation in as well
+        [self = std::move(*this),             // 把整个原回调移进 lambda
+         cont = std::forward<Next>(next)]     // 把后续回调也移进来
         (FuncArgs... args) mutable -> decltype(auto) {
             if constexpr (std::is_void_v<ReturnType>) {
                 std::move(self).run(std::forward<FuncArgs>(args)...);
-                return std::invoke(std::move(cont));     // void → nothing passed on
+                return std::invoke(std::move(cont));     // void → 无参数传递
             } else {
                 auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
-                return std::invoke(std::move(cont), std::move(mid));  // pass the intermediate result on
+                return std::invoke(std::move(cont), std::move(mid));  // 传递中间结果
             }
         }
     );

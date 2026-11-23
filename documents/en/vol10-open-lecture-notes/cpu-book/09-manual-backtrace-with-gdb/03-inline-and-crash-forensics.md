@@ -10,9 +10,10 @@ description: "Inlining costs bt one frame when no debug info is present, then th
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/09-manual-backtrace-with-gdb/03-inline-and-crash-forensics.md
-  source_hash: 599e9fc29b195f3f770bd65db7b9179c4e904a9d617d5b1d60dd6ec4c4d5e44b
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: c7869e94c258065807d1b1f1941ae2389a1afd9d107880324f6de8f67bc4ddfc
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8809
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -95,7 +96,7 @@ The build without debug info is blunter. Stop once more at the same PC and bt ha
 ```text
 Reading symbols from ./inline_O2...
 (No debugging symbols found in ./inline_O2)
---- break by address ---
+--- 按地址下断点 ---
 (gdb) Breakpoint 1 at 0x555555555020
 --- run ---
 (gdb) Breakpoint 1, 0x0000555555555020 in main ()

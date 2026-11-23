@@ -18,10 +18,10 @@ tags:
 title: 'Data Type Basics: Integers and Memory'
 translation:
   source: documents/vol1-fundamentals/c_tutorials/02A-data-types-basics.md
-  source_hash: 5ae73b81d7e5368bee002b7e38f80bc5f38b4ca23450d40830baed5a50fa738f
-  translated_at: '2026-09-25T12:38:24+00:00'
-  engine: anthropic
-  token_count: 3900
+  source_hash: 167e950e8712a8b8d90fbda28c5cbba1f3527cfe45d176ba7e471460bac694bc
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9672
 ---
 # Data Type Basics: Integers and Memory
 
@@ -103,8 +103,8 @@ Every member of the integer family (except `char`, which is a special case) come
 An analogy: take the same 8 light bulbs in a row. If we agree that "the first bulb lit means negative", the remaining 7 bulbs can represent numbers from -128 to 127; if we don't need a negative sign, all 8 bulbs are used for the number itself, and the range becomes 0 to 255.
 
 ```c
-int signed_num = -42;           // signed: can store negative numbers
-unsigned int unsigned_num = 42; // unsigned: can only store non-negative values
+int signed_num = -42;           // 有符号，可以存负数
+unsigned int unsigned_num = 42; // 无符号，只能存非负数
 ```
 
 ### The Signedness of `char`
@@ -112,8 +112,8 @@ unsigned int unsigned_num = 42; // unsigned: can only store non-negative values
 `char` is a bit special—the standard does not pin down whether it is signed or unsigned; that depends on the compiler. On ARM platforms `char` is usually unsigned; on x86 it is usually signed. The difference looks unremarkable, but if you use `char` as a "small integer", you may step in it when crossing platforms:
 
 ```c
-char c = 200;           // if char is signed, what is actually stored is -56
-unsigned char uc = 200; // the value is 200 regardless of platform
+char c = 200;           // 如果 char 是有符号的，实际存储的是 -56
+unsigned char uc = 200; // 无论平台如何，值都是 200
 ```
 
 When you need a "small integer" (in the 0\~255 range), use `unsigned char`, not `char`. The signedness of `char` depends on the compiler and the platform; use it as an integer and sooner or later it will bite you.
@@ -137,14 +137,14 @@ The solution given by the C99 standard is the `<stdint.h>` header. It provides a
 ```c
 #include <stdint.h>
 
-int8_t   i8  = -128;          // exactly 8 bits, signed
-uint8_t  u8  = 255;           // exactly 8 bits, unsigned
-int16_t  i16 = -32768;        // exactly 16 bits, signed
-uint16_t u16 = 65535;         // exactly 16 bits, unsigned
-int32_t  i32 = -2147483648;   // exactly 32 bits, signed
-uint32_t u32 = 4294967295U;   // exactly 32 bits, unsigned
-int64_t  i64 = 9223372036854775807LL;  // exactly 64 bits, signed
-uint64_t u64 = 18446744073709551615ULL; // exactly 64 bits, unsigned
+int8_t   i8  = -128;          // 精确 8 位有符号
+uint8_t  u8  = 255;           // 精确 8 位无符号
+int16_t  i16 = -32768;        // 精确 16 位有符号
+uint16_t u16 = 65535;         // 精确 16 位无符号
+int32_t  i32 = -2147483648;   // 精确 32 位有符号
+uint32_t u32 = 4294967295U;   // 精确 32 位无符号
+int64_t  i64 = 9223372036854775807LL;  // 精确 64 位有符号
+uint64_t u64 = 18446744073709551615ULL; // 精确 64 位无符号
 ```
 
 The beauty of these types is what-you-see-is-what-you-get—`int32_t` is exactly 32 bits on any platform that supports it, and `uint8_t` is always 8-bit unsigned. They are practically a must in embedded development and cross-platform code.
@@ -158,7 +158,7 @@ Before going further, we need to meet a type that shows up all over the standard
 ```c
 #include <stddef.h>
 
-size_t len = 100;       // large enough to represent the size of any object
+size_t len = 100;       // 足以表示任何对象的大小
 ```
 
 We will be working with `size_t` a lot from here on. For now, remember just one thing: **when you need to express a "count" or a "size", `size_t` is the right choice**.
@@ -209,8 +209,8 @@ Great—the byte count of every type matches what we expected.
 
 ```c
 int x = 42;
-printf("%zu\n", sizeof(x));     // a variable: prints 4 (on platforms where int is 4 bytes)
-printf("%zu\n", sizeof(int));   // a type name: also prints 4
+printf("%zu\n", sizeof(x));     // 变量：输出 4（在 int 是 4 字节的平台上）
+printf("%zu\n", sizeof(int));   // 类型名：同样输出 4
 ```
 
 `sizeof` has one classic use on arrays—counting the number of elements:
@@ -228,8 +228,8 @@ This "use sizeof to count elements" trick **works only within the scope where th
 ```c
 void bad_sizeof(int arr[])
 {
-    // arr is already a pointer here!
-    printf("%zu\n", sizeof(arr));  // prints 4 or 8 (the pointer size), not the array size
+    // arr 在这里已经是指针了！
+    printf("%zu\n", sizeof(arr));  // 输出 4 或 8（指针大小），不是数组大小
 }
 ```
 
@@ -242,9 +242,9 @@ C++ fully inherits all of C's integer types, and it does a few important things 
 First, C++11 introduced the `<cstdint>` header (note, no `.h` suffix); it matches C's `<stdint.h>` in functionality, but the types are placed inside the `std` namespace. Second, `{}` initialization in C++ forbids "narrowing conversions"—you cannot initialize a variable with a value that falls outside the target type's range:
 
 ```cpp
-int x = 3.14;      // allowed in both C and C++; implicitly truncated to 3 (the compiler may warn)
-int y{3.14};        // C++ compile error! Narrowing conversions are forbidden
-uint8_t z{1000};    // C++ compile error! 1000 is out of range for uint8_t
+int x = 3.14;      // C/C++ 都允许，隐式截断为 3（编译器可能警告）
+int y{3.14};        // C++ 编译错误！窄化转换被禁止
+uint8_t z{1000};    // C++ 编译错误！1000 超出 uint8_t 范围
 ```
 
 This feature is remarkably effective at wiping out an entire class of implicit-conversion bugs. If you write C++ code down the road, we strongly recommend getting into the habit of initializing with `{}`.
@@ -258,7 +258,7 @@ This feature is remarkably effective at wiping out an entire class of implicit-c
 Write a program that prints the `sizeof` value of all the types below, then check them against the standard to see whether they meet the minimum guarantees:
 
 ```c
-// Fill in the code: print sizeof for all of the types below
+// 请补全代码，对以下所有类型打印 sizeof
 // char, short, int, long, long long
 // int8_t, uint8_t, int32_t, uint32_t, int64_t
 // size_t
@@ -274,21 +274,21 @@ Hint: you can use a macro to cut down the repetition.
 //#include <stddef.h>
 
 int main() {
-    // Basic types
+    // 基本类型
     printf("sizeof(char)      = %zu bytes\n", sizeof(char));
     printf("sizeof(short)     = %zu bytes\n", sizeof(short));
     printf("sizeof(int)       = %zu bytes\n", sizeof(int));
     printf("sizeof(long)      = %zu bytes\n", sizeof(long));
     printf("sizeof(long long) = %zu bytes\n", sizeof(long long));
 
-    // Fixed-width integer types (requires <stdint.h>)
+    // 定长整数类型 (需包含 <stdint.h>)
     printf("sizeof(int8_t)    = %zu bytes\n", sizeof(int8_t));
     printf("sizeof(uint8_t)   = %zu bytes\n", sizeof(uint8_t));
     printf("sizeof(int32_t)   = %zu bytes\n", sizeof(int32_t));
     printf("sizeof(uint32_t)  = %zu bytes\n", sizeof(uint32_t));
     printf("sizeof(int64_t)   = %zu bytes\n", sizeof(int64_t));
 
-    // size_t (requires <stdio.h>, <stddef.h>, or <stdlib.h>)
+    // size_t 类型 (需包含<stdio.h>、 <stddef.h> 或 <stdlib.h>)
     printf("sizeof(size_t)    = %zu bytes\n", sizeof(size_t));
 
     return 0;

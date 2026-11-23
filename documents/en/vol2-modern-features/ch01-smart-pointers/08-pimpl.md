@@ -27,9 +27,9 @@ title: 'The PIMPL Idiom: unique_ptr, shared_ptr, and Incomplete Types'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/08-pimpl.md
   source_hash: a921998a3bbbfdd72755d3f29f5fae6cef108be06deb04b38b123b6638dfcbbe
-  translated_at: '2026-09-27T05:01:24+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15693
 ---
 # The PIMPL Idiom: unique_ptr, shared_ptr, and Incomplete Types
 
@@ -55,11 +55,11 @@ That is all there is to it! Readers who want the full details can follow the com
 class Widget {
 public:
     Widget();
-    ~Widget();                    // declared only; the definition lives in widget.cpp
+    ~Widget();                    // 只声明，定义放在 widget.cpp
     int  value() const;
     void bump();
 private:
-    struct Impl;                  // forward declaration: all member details live in widget.cpp
+    struct Impl;                  // 前向声明：成员细节全在 widget.cpp
     std::unique_ptr<Impl> impl_;
 };
 ```
@@ -91,14 +91,14 @@ Let's pull the counterexample out and compile it on its own, with the destructor
 class Widget {
 public:
     Widget();
-    ~Widget() = default;   // in-class defaulted destructor: Impl is only forward-declared at this point
+    ~Widget() = default;   // 类内默认析构：此刻 Impl 只被前向声明
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };
 
 int main() {
-    Widget w;   // an object must actually be constructed so the destructor is used and the compiler generates it
+    Widget w;   // 必须真的构造对象，析构被用到，编译器才会生成它
 }
 ```
 
@@ -109,7 +109,7 @@ GCC 16 (x86_64 Linux) turns us down; the error below is excerpted to the first f
 /usr/include/c++/16/bits/unique_ptr.h:408:17:   required from 'std::unique_ptr<_Tp, _Dp>::~unique_ptr() [with _Tp = Widget::Impl; _Dp = std::default_delete<Widget::Impl>]'
 a_unique_err.cpp:6:5:   required from here
 /usr/include/c++/16/bits/unique_ptr.h:90:23: error: invalid application of 'sizeof' to incomplete type 'Widget::Impl'
-   90 |         static_assert(sizeof(_Tp)>0,  <- look right here!!!
+   90 |         static_assert(sizeof(_Tp)>0,  <- 就看这里！！！
 ```
 
 The error's last line lands inside libstdc++'s `default_delete`; that `static_assert(sizeof(_Tp)>0)` is the check it installed. Digging further: `delete p` has two jobs—call `Impl`'s destructor, then hand the memory back according to the object's size. Both jobs need the type's complete definition—the destructor's definition and the value of `sizeof`—and a forward declaration provides neither.
@@ -132,8 +132,8 @@ This time we arrange the project the way it looks in real code: the destructor d
 class Widget {
 public:
     Widget();
-    ~Widget();                              // the destructor moved out
-    Widget& operator=(Widget&&) = default;  // move assignment still in-class
+    ~Widget();                              // 析构挪出去了
+    Widget& operator=(Widget&&) = default;  // 移动赋值还留在类内
 private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
@@ -157,7 +157,7 @@ Widget::~Widget() = default;
 
 int main() {
     Widget a, b;
-    a = std::move(b);   // the in-class = default move assignment is instantiated here
+    a = std::move(b);   // 类内 = default 的移动赋值，在这里被实例化
 }
 ```
 
@@ -186,7 +186,7 @@ Now for the fun part. We swap `std::unique_ptr<Impl>` for `std::shared_ptr<Impl>
 class Widget {
 public:
     Widget();
-    ~Widget() = default;   // the destructor stays in the header: Impl is never complete in this translation unit
+    ~Widget() = default;   // 析构留头文件：本编译单元里 Impl 从未完整
     int  value() const;
     void bump();
 private:
@@ -196,7 +196,7 @@ private:
 ```
 
 ```cpp
-// sh.cpp — Impl becomes complete only here
+// sh.cpp —— Impl 在这里才完整
 #include "sh.h"
 
 struct Widget::Impl { int count = 0; };
@@ -212,7 +212,7 @@ void Widget::bump()        { ++impl_->count; }
 #include <cstdio>
 
 int main() {
-    Widget w;   // w's destructor is used in this translation unit, where Impl is incomplete
+    Widget w;   // w 的析构在本编译单元被用到，此处 Impl 不完整
     w.bump();
     w.bump();
     std::printf("count = %d\n", w.value());
@@ -255,8 +255,8 @@ Try to save effort by writing the constructor in the header too, and shared_ptr 
 
 class Widget {
 public:
-    Widget() = default;   // in-class default constructor: only creates an empty shared_ptr, never touches Impl
-    ~Widget() = default;  // destructor also in-class; the previous section verified this one passes
+    Widget() = default;   // 类内默认构造：只造一个空的 shared_ptr，不碰 Impl
+    ~Widget() = default;  // 析构也类内，上一节验证过，这条过得去
     void show() const;
 private:
     struct Impl;
@@ -265,7 +265,7 @@ private:
 
 class BadWidget {
 public:
-    BadWidget() : impl_(std::make_shared<Impl>()) {}  // make_shared where Impl is incomplete
+    BadWidget() : impl_(std::make_shared<Impl>()) {}  // Impl 不完整处 make_shared
     ~BadWidget() = default;
 private:
     struct Impl;
@@ -274,7 +274,7 @@ private:
 
 int main() {
     Widget w;
-    BadWidget b;   // forces BadWidget's constructor to be instantiated
+    BadWidget b;   // 迫使 BadWidget 的构造函数被实例化
 }
 ```
 
@@ -314,7 +314,7 @@ int main() {
 This time, no Makefile and no CMake—we drive g++ command by command. Who needs recompiling and who gets to skip is entirely our call. The first build is naturally a full one: the two .cpp files each compile to an object file, then link into app:
 
 ```text
-=== First build: compile everything ===
+=== 第一次构建：全部编译 ===
 g++ -std=c++17 -O2 -c main.cpp -o main.o
 g++ -std=c++17 -O2 -c widget.cpp -o widget.o
 g++ -std=c++17 -O2 main.o widget.o -o app
@@ -323,7 +323,7 @@ g++ -std=c++17 -O2 main.o widget.o -o app
 Then we modify `Impl`'s internals, adding an `int new_field = 0;`. This step touches only widget.cpp: widget.h has not changed by a single byte, and all main.cpp can see is widget.h, so we have no reason whatsoever to rerun that main.cpp compile command—recompiling widget.o and relinking is enough:
 
 ```text
-=== After adding a new member to Impl: only widget.o needs recompiling ===
+=== 给 Impl 添了新成员后：只有 widget.o 需要重编 ===
 g++ -std=c++17 -O2 -c widget.cpp -o widget.o
 g++ -std=c++17 -O2 main.o widget.o -o app
 ```
@@ -333,8 +333,8 @@ Look at the second run's commands: widget.cpp was recompiled, and the compile co
 And the version with members laid out directly, no PIMPL? widget.h now contains `int count` and `std::vector<std::string> cache_`. We add a single `int` under `private:` and run the same flow again:
 
 ```text
-=== After adding just one private member to widget.h ===
-g++ -std=c++17 -O2 -c main.cpp -o main.o   <- main.o must be recompiled too
+=== 只在 widget.h 加了一个私有成员后 ===
+g++ -std=c++17 -O2 -c main.cpp -o main.o   ← main.o 也得重编
 g++ -std=c++17 -O2 -c widget.cpp -o widget.o
 g++ -std=c++17 -O2 main.o widget.o -o app
 ```
@@ -359,7 +359,7 @@ class Counter {
 public:
     Counter() : impl_(std::make_unique<Impl>()) {}
 
-    // inc is declared const yet mutates state; compiles and runs
+    // inc 声明成 const 成员函数，内部却在改状态，能编译能运行
     void inc() const { ++impl_->count; }
 
     int get() const { return impl_->count; }
@@ -370,8 +370,8 @@ private:
 };
 
 int main() {
-    const Counter c;   // a const object
-    c.inc();           // and it really does mutate
+    const Counter c;   // const 对象
+    c.inc();           // 居然真的改得动
     c.inc();
     std::printf("const 对象 get() = %d\n", c.get());
 }
@@ -410,7 +410,7 @@ We pay one heap allocation for `Impl`, plus one extra pointer dereference on eve
 ```text
 sizeof(unique_ptr pImpl Widget) = 8
 sizeof(shared_ptr pImpl Widget) = 16
-sizeof(NaiveWidget with members directly in the header) = 192
+sizeof(NaiveWidget 成员直出头文件) = 192
 ```
 
 Put the direct-members version and the pImpl version side by side: this direct version carries two heavyweight members of 96 bytes each—four `double`s plus a 64-byte buffer apiece—and pImpl swaps all of that for one pointer. It is not the same class as the naive control in the firewall section: that one laid out `int count` plus `std::vector<std::string> cache_` directly, far lighter; here we deliberately picked a heavier direct-members version to measure, so the 192-versus-8 gap would be striking enough. A small class used inside a single .cpp has a header nobody includes, so there is no firewall to speak of—just one wasted heap allocation. We also advise against pImpl for small hot-path types accessed inline: one dereference and one cross-unit call are real, honest losses. On the flip side, interface classes included widely across the project, facade classes hiding `<unordered_map>` or heavyweight third-party dependencies, and classes shipped in dynamic libraries whose binary interface must stay stable across versions—these are cases where the costs earn their keep. When in doubt, measure compile times before and after touching the header, then decide.

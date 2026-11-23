@@ -23,9 +23,9 @@ title: 'WeakPtr Anti-Pattern: The Fatal Trap of T* + raw Flag*'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/02-unsafe-weakptr-ub.md
   source_hash: 666572b9146e0fcf96af3326e402a0c8777c03a1c0a0e596636f5ce914be090b
-  translated_at: '2026-09-27T02:45:09+00:00'
-  engine: anthropic
-  token_count: 1800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7482
 ---
 # WeakPtr Anti-Pattern: The Fatal Trap of `T* + raw Flag*`
 
@@ -49,7 +49,7 @@ Let's implement it first and see why it "appears to work".
 
 ```cpp
 // unsafe_weak_ptr.h
-// ⚠️ Anti-pattern implementation for teaching purposes; do not use this in production code
+// ⚠️ 教学用反模式实现，不要在生产代码中使用
 
 #pragma once
 
@@ -64,13 +64,13 @@ class UnsafeWeakPtr {
 public:
     UnsafeWeakPtr(T* ptr, Flag* flag) : ptr_(ptr), flag_(flag) {}
 
-    // Check whether the object is still alive
+    // 检查对象是否还活着
     bool is_valid() const
     {
         return flag_ && flag_->alive;
     }
 
-    // Get the object pointer; returns nullptr if it has expired
+    // 获取对象指针，如果已失效则返回 nullptr
     T* get() const
     {
         if (is_valid()) {
@@ -109,7 +109,7 @@ public:
 
 private:
     T* owner_;
-    Flag flag_;  // the Flag lives as a member variable of the Factory
+    Flag flag_;  // Flag 作为 Factory 的成员变量存在
 };
 ```
 
@@ -140,8 +140,8 @@ graph LR
         ptr["ptr_"]
         fp["flag_"]
     end
-    fp -.->|"valid reference"| Flag
-    ptr -->|"valid reference"| T["Object T"]
+    fp -.->|"有效引用"| Flag
+    ptr -->|"有效引用"| T["对象 T"]
     style Flag fill:#4CAF50,color:#fff
     style T fill:#2196F3,color:#fff
 ```
@@ -150,16 +150,16 @@ graph LR
 
 ```mermaid
 graph LR
-    subgraph Dead["Destroyed"]
+    subgraph Dead["已销毁"]
         FactoryX["Factory ✗"]
-        FlagX["Flag ✗\nfreed"]
+        FlagX["Flag ✗\n已释放"]
     end
-    subgraph WP["WeakPtr (still alive)"]
+    subgraph WP["WeakPtr（仍存活）"]
         ptr["ptr_"]
         fp["flag_"]
     end
-    fp -.->|"💀 dangling pointer"| FlagX
-    ptr -.->|"💀 dangling pointer"| DeadT["???"]
+    fp -.->|"💀 悬垂指针"| FlagX
+    ptr -.->|"💀 悬垂指针"| DeadT["???"]
     style FlagX fill:#f44336,color:#fff
     style DeadT fill:#f44336,color:#fff
     style Dead fill:#ffebee
@@ -173,9 +173,9 @@ Next we will write a minimal example that actually triggers the problem. Note: t
 
 ```cpp
 // unsafe_weak_ptr_ub_demo.cpp
-// Compile: g++ -std=c++17 -O0 -g unsafe_weak_ptr_ub_demo.cpp
-// Note: how the UB manifests varies with the compiler, optimization level, and runtime environment
-// -O0 is used here to make the UB easier to observe
+// 编译：g++ -std=c++17 -O0 -g unsafe_weak_ptr_ub_demo.cpp
+// 注意：UB 的表现因编译器、优化级别、运行环境而异
+// 这里用 -O0 是为了让 UB 更容易被观察到
 
 #include <iostream>
 #include <memory>
@@ -226,19 +226,19 @@ int main()
     UnsafeWeakPtr<Widget> weak = [] {
         auto w = std::make_unique<Widget>();
         return w->get_weak_ptr();
-        // w is destroyed here
-        // Widget destroyed → factory destroyed → Flag destroyed
+        // w 在这里析构
+        // Widget 析构 → factory 析构 → Flag 析构
     }();
 
-    // At this point weak.flag_ points to the destroyed Flag
-    // and weak.ptr_ points to the destroyed Widget
+    // 此时 weak.flag_ 指向已销毁的 Flag
+    // weak.ptr_ 指向已销毁的 Widget
 
-    // ⚠️ UB: dereferencing the freed Flag
+    // ⚠️ UB：解引用已释放的 Flag
     std::cout << "is_valid() = " << std::boolalpha << weak.is_valid() << '\n';
 
-    // ⚠️ UB: if is_valid() happens to return true, get() returns a dangling pointer
+    // ⚠️ UB：如果 is_valid() 恰好返回 true，get() 返回悬垂指针
     if (auto* p = weak.get()) {
-        std::cout << "value = " << p->value << '\n';  // UB: reading freed memory
+        std::cout << "value = " << p->value << '\n';  // UB：读取已释放的内存
     } else {
         std::cout << "Widget 已失效（但这个结果本身就是 UB 的产物）\n";
     }
@@ -261,7 +261,7 @@ Swap in a different allocator, a different optimization level, or insert more me
 Someone might say: "just guarantee that the WeakPtr does not outlive the Owner." In synchronous code this constraint can still be barely maintained through manual review, but in async callback scenarios it is almost impossible to guarantee.
 
 ```cpp
-// Timer callback scenario
+// 定时器回调场景
 class Session {
 public:
     UnsafeWeakPtr<Session> get_weak()
@@ -272,10 +272,10 @@ public:
     void start_heartbeat()
     {
         auto weak = get_weak();
-        // The callback executes 1 second later
+        // 1 秒后执行回调
         timer_.schedule(1000ms, [weak]() {
-            // The Session may already have been destroyed before the callback runs
-            // weak.is_valid() accesses the destroyed Flag → UB
+            // Session 可能已经在回调执行前被销毁了
+            // weak.is_valid() 访问已销毁的 Flag → UB
             if (weak.is_valid()) {
                 // ...
             }

@@ -21,9 +21,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/f103/04-time/04-nvic-preempt-priorities.md
   source_hash: 8fae3d5362eab0252516c393d238d8a6ae87a09b8e6a0218ef7165042ad86fda
-  translated_at: '2026-11-01T03:20:13+00:00'
-  engine: anthropic
-  token_count: 3000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13882
 ---
 
 # Who interrupts whom: how NVIC preemption priorities are arranged
@@ -91,9 +91,9 @@ Page 198 of RM0008 (§10.1.2) is the vector table. In the peripheral-interrupt c
 The probe is `examples/11_prio_probe`, newly built for this piece, on a clone tree at the same commit 8026841 as the submodule; we did not fold it into the submodule. It runs the same Renode pipeline piece 01 used. In the code below you will see the handler calling `Log::info` directly. The old boundary followed since piece 01 says don't call it inside an interrupt — the ISR touches only flags, and logging returns to the main loop; that rule stands for production code. This experiment measures millisecond-level timing itself, so the timestamp must be printed at the scene of the event: if we stored a flag and printed back in the main loop, what we would get is the drain moment, not the moment it happened, and the three acts would stop lining up. The logger's send is a bounded wait; in the worst case one line is dropped, and the machine cannot lock up. The log timestamp's zero point is HAL_Init, and we look only at relative spacing. The firmware's shape: Tim3 has a 100ms period and preemption level 3; its handler prints `T3+` on entry, waits 40ms to create an interruptible window, and prints `T3-` on exit. Tim2 has a 25ms period; we change its preemption level across the acts, and its handler prints just one `T2`. Tim3's handler, word for word below. The wait uses `WFI` (Wait For Interrupt, the instruction that lets the core sleep until the next interrupt arrives), relying on the 1ms SysTick beat to wake it up to check the clock:
 
 ```cpp
-// Slow tick: check in first on ISR entry, wait 40ms to create an interruptible window, then exit.
-// The wait uses WFI (waking on the 1ms SysTick beat to check the clock), not busy-spinning —
-// in Renode, busy-spinning grinds along by instruction count, while WFI lets virtual time jump straight to the next interrupt
+// 慢拍: 进 ISR 先报到, 等 40ms 制造可被打断的窗口, 再退场。
+// 等,用的是 WFI(靠 1ms 的 SysTick 节拍醒来看表), 不用空转——
+// Renode 里空转会按指令数慢慢磨, WFI 能让虚拟时间直接跳到下一个中断
 struct OnSlow {
     static void operator()() {
         Log::info(estdx::logger::Tag("ev"), "T3+");
@@ -111,21 +111,20 @@ The key section of main's initialization is the foundation for act A; the three 
 ```cpp
     HAL_Init();
     SystemClock_Config();
-    // The library parks SysTick at TICK_INT_PRIORITY (15, the lowest). This probe needs an ISR busy-wait,
-    // so the beat has to be raised to the highest level (placed after clock reconfiguration, or HAL_InitTick would write it back):
-    // otherwise waiting on HAL_GetTick inside the busy-wait locks itself up — SysTick, pressed down by Tim3, would never advance
+    // 库把 SysTick 排在 TICK_INT_PRIORITY(15, 最低)。本探针要驱动 ISR 忙等,
+    // 得把节拍提到最高级(放在时钟重配之后, 否则会被 HAL_InitTick 盖回去):
+    // 否则忙等里等 HAL_GetTick 会把自己锁死, 被 Tim3 压住的 SysTick 永远走不了
     NVIC_SetPriority(SysTick_IRQn, 0U);
     Serial::init();
-    Slow::init(3);  // low preemption level (larger number)
-    Fast::init(1);  // high preemption level (smaller number)
+    Slow::init(3);  // 低抢占级(数值大)
+    Fast::init(1);  // 高抢占级(数值小)
 ```
 
 Act B's leveling relies on the runtime call `NVIC_SetPriority(TIM2_IRQn, 3)`; we won't paste its call line. The ordering test and act C use this stretch:
 
 ```cpp
-    // Inside the interrupts-disabled window, two update events suspend at once; the instant the gate opens,
-    // two same-level pendings — served first is TIM2 (28), the one with the smaller IRQ number,
-    // and TIM3 (29) with the larger number queues behind
+    // 关中断窗口里同时挂起两个更新事件, 开闸瞬间两个同级 pending,
+    // 先被服务的是 IRQ 编号小的 TIM2(28), 编号大的 TIM3(29) 排后面
     __disable_irq();
     TIM3->SR = TIM_SR_UIF;
     TIM2->SR = TIM_SR_UIF;
@@ -133,7 +132,7 @@ Act B's leveling relies on the runtime call `NVIC_SetPriority(TIM2_IRQn, 3)`; we
     __enable_irq();
     wait_for(500);
 
-    NVIC_SetPriority(TIM2_IRQn, 16);  // out of bounds: everything past the top 4 bits is shifted away
+    NVIC_SetPriority(TIM2_IRQn, 16);  // 出界: 高 4 位以外全被移走
     Log::info(estdx::logger::Tag("ph"), "C");
     Log::info(estdx::logger::Tag("ph"), NVIC_GetPriority(TIM2_IRQn));
 ```
@@ -261,7 +260,7 @@ Configures the SysTick IRQ priority to the lowest value 0x0F.
 And the library side does exactly that; kernel.hpp's line 10, word for word:
 
 ```c
-#define TICK_INT_PRIORITY 0x0FU /* SysTick gets the lowest priority */
+#define TICK_INT_PRIORITY 0x0FU /* SysTick 优先级给最低 */
 ```
 
 0x0F is the last of the sixteen levels; anyone who comes along can press it down. While gathering material, I genuinely wiped out here: the first probe version had `OnSlow` busy-waiting on `HAL_GetTick` inside the handler, and the running log looked like this — after T3+, T2 lines came one after another several dozen strong, all their timestamps landing on the same millisecond, and the beat stopped from then on. The causal chain is not complicated: the moment Tim3 at preemption level 3 entered its handler, SysTick's 15 was pressed down. What `HAL_GetTick` reads is exactly the count SysTick feeds, and with it stopped, the busy-wait loop's condition stayed forever 40ms short and could not get out. Tim2, with the higher preemption level, did keep interrupting that stuck loop as usual, which is why dozens of T2 lines crowded onto one timestamp.

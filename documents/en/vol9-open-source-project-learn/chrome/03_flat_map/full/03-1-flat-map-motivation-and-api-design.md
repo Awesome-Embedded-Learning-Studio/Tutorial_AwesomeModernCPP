@@ -24,9 +24,9 @@ title: "flat_map hands-on (I): motivation and API design"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-1-flat-map-motivation-and-api-design.md
   source_hash: 73f0ebc4e941bfa124f2d689ebec14086808c4db32c8fa189040fa240da44664
-  translated_at: '2026-09-26T02:32:39+00:00'
-  engine: anthropic
-  token_count: 5600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7866
 ---
 # flat_map hands-on (I): motivation and API design
 
@@ -43,10 +43,10 @@ Suppose we're writing a command dispatch table. The program loads a pile of comm
 ```cpp
 std::map<std::string, Handler> commands;
 for (auto& [name, handler] : load_commands()) {
-    commands.emplace(name, handler);   // built once at startup
+    commands.emplace(name, handler);   // 启动期构造一次
 }
 
-// runtime: every command is a lookup only
+// 运行期:每条命令只查找
 auto it = commands.find(cmd_name);
 if (it != commands.end()) it->second(args);
 ```
@@ -97,14 +97,14 @@ Motivation covered. Now we pin down the target API in one pass, then circle back
 #include "flat_map/flat_map.hpp"
 using namespace tamcpp::chrome;
 
-// construct from unordered data (sorted and deduplicated internally)
+// 从无序数据构造(内部排序去重)
 flat_map<int, std::string> m1 = {{1, "a"}, {3, "c"}, {2, "b"}};
 
-// construct by moving in an existing vector (bulk construction, efficient)
+// 从已有 vector move 构造(批量构造,高效)
 std::vector<std::pair<int, std::string>> raw = {{1,"a"}, {2,"b"}, {3,"c"}};
 flat_map<int, std::string> m2(std::move(raw));
 
-// sorted_unique construction (data already sorted, skip the sort)
+// sorted_unique 构造(数据已有序,跳过排序)
 flat_map<int, std::string> m3(sorted_unique, std::vector<std::pair<int,std::string>>{{1,"a"},{2,"b"},{3,"c"}});
 ```
 
@@ -112,21 +112,21 @@ flat_map<int, std::string> m3(sorted_unique, std::vector<std::pair<int,std::stri
 
 ```cpp
 flat_map<int, Config> m;
-m[1] = load(1);              // operator[]: insert if missing
-m.insert_or_assign(2, x);    // insert or overwrite
-m.try_emplace(3, arg1, arg2);// construct mapped only when the key is absent
+m[1] = load(1);              // operator[]:缺失则插入
+m.insert_or_assign(2, x);    // 插入或覆写
+m.try_emplace(3, arg1, arg2);// 仅 key 不存在时构造 mapped
 
-auto it = m.find(1);         // O(log n) binary search
+auto it = m.find(1);         // O(log n) 二分
 if (it != m.end()) use(it->second);
 
-m.at(99);                    // out of range → CHECK crash (not throw, see the decision analysis)
+m.at(99);                    // 越界 → CHECK 崩溃(非 throw,见决策分析)
 ```
 
 ### Heterogeneous lookup (the transparent comparator)
 
 ```cpp
-flat_map<std::string, Config> sm;        // default Compare = std::less<> (transparent)
-sm.find("timeout");                       // look up directly with const char*, no temporary std::string
+flat_map<std::string, Config> sm;        // 默认 Compare = std::less<>(透明)
+sm.find("timeout");                       // 直接用 const char* 查,不构造临时 std::string
 ```
 
 ---
@@ -187,12 +187,12 @@ GCC 11+ or Clang 12+ both work; compile with `-std=c++20`. `[[no_unique_address]
 #include <ranges>
 #include <vector>
 
-static_assert(__cpp_lib_ranges >= 201911L);   // ranges available
+static_assert(__cpp_lib_ranges >= 201911L);   // ranges 可用
 
 constexpr bool check_nua_works() {
     struct Empty {};
     struct H { [[no_unique_address]] Empty e; int i; };
-    return sizeof(H) == sizeof(int);   // EBO folds Empty away
+    return sizeof(H) == sizeof(int);   // EBO 把 Empty 折叠掉
 }
 static_assert(check_nua_works());
 ```

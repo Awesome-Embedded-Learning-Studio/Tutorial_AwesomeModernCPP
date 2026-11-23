@@ -20,10 +20,10 @@ related:
   - 'Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings'
 translation:
   source: documents/vol2-modern-features/ch02-constexpr/02-constexpr-ctor.md
-  source_hash: 800d645be49b93c2ad8937d6871e145c0eeee59d615eefa5608d600673191301
-  translated_at: '2026-09-27T10:20:50+00:00'
-  engine: anthropic
-  token_count: 4200
+  source_hash: d0e0fc9783a9ab39e539f8e3c3dd2ba5d626e08027f6d3f22f24d7c9a49a73b7
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13976
 ---
 
 # constexpr Constructors and Literal Types
@@ -47,13 +47,13 @@ The third condition we leave to the destructor: it must either be trivial, or—
 You don't need to overthink it. What the compiler wants boils down to one thing: the type's objects must be worked out completely during compilation. What the memory layout looks like, what the initial values are—everything gets pinned down. Runtime dynamic allocation, virtual function table lookups, complicated destruction logic: none of that comes into play.
 
 ```cpp
-// This is a literal type
+// 这是一个字面类型
 struct Point {
     float x;
     float y;
 
     constexpr Point(float x_, float y_) : x(x_), y(y_) {}
-    // The implicit destructor is trivial, which satisfies the requirement
+    // 隐式的析构函数是平凡的，满足条件
 };
 
 constexpr Point kOrigin{0.0f, 0.0f};
@@ -65,9 +65,9 @@ Now a counter-example—this one is not a literal type:
 
 ```cpp
 struct NotLiteral {
-    std::string name;  // std::string has a non-trivial destructor (before C++20)
-    // Even in C++20, although std::string's destructor can be constexpr,
-    // its internals involve dynamic memory allocation, which is still restricted during compile-time evaluation
+    std::string name;  // std::string 有非平凡的析构函数（C++20 之前）
+    // 即使在 C++20 中，std::string 的析构虽然可以是 constexpr，
+    // 但它内部涉及动态内存分配，在编译期求值时仍然受限
 };
 ```
 
@@ -118,7 +118,7 @@ struct BcdDecimal {
 
     constexpr explicit BcdDecimal(int decimal) : bcd(0)
     {
-        // Convert a decimal integer to BCD encoding
+        // 将十进制整数转换为 BCD 编码
         int remainder = decimal;
         int shift = 0;
         while (remainder > 0) {
@@ -197,18 +197,18 @@ struct Complex {
     }
 };
 
-// Compile-time complex arithmetic
-constexpr Complex kI{0.0f, 1.0f};           // The imaginary unit i
+// 编译期复数运算
+constexpr Complex kI{0.0f, 1.0f};           // 虚数单位 i
 constexpr Complex kI_Squared = kI * kI;     // i^2 = -1
 static_assert(kI_Squared == Complex{-1.0f, 0.0f}, "i^2 should equal -1");
 
-// Generate a compile-time sequence of complex numbers (e.g., FFT twiddle factors)
+// 编译期生成复数序列（例如 FFT 的旋转因子）
 template <std::size_t N>
 constexpr Complex compute_twiddle_factor(std::size_t k)
 {
     constexpr double kPi = 3.14159265358979323846;
     double angle = -2.0 * kPi * static_cast<double>(k) / static_cast<double>(N);
-    // Approximate cos and sin with Taylor expansions
+    // 用泰勒展开近似 cos 和 sin
     double cos_val = 1.0 - angle * angle / 2.0 + angle*angle*angle*angle / 24.0;
     double sin_val = angle - angle*angle*angle / 6.0 + angle*angle*angle*angle*angle / 120.0;
     return Complex{static_cast<float>(cos_val), static_cast<float>(sin_val)};
@@ -234,8 +234,8 @@ struct Date {
 
     constexpr Date(int y, int m, int d) : year(y), month(m), day(d)
     {
-        // Validate the date at compile time
-        // If the date is invalid, trigger a compile error (by making the expression non-constant)
+        // 编译期验证日期合法性
+        // 如果日期非法，触发编译错误（通过让表达式非恒常）
     }
 
     constexpr bool is_leap_year() const
@@ -273,9 +273,9 @@ static_assert(kY2K.is_leap_year(), "2000 is a leap year (divisible by 400)");
 constexpr Date kLeapDay{2024, 2, 29};
 static_assert(kLeapDay.is_valid(), "2024-02-29 is valid (2024 is a leap year)");
 
-// constexpr Date kInvalid{2023, 2, 29};  // does not fail to compile by itself
-// An explicit static_assert check is required:
-// static_assert(Date{2023, 2, 29}.is_valid());  // compile error!
+// constexpr Date kInvalid{2023, 2, 29};  // 编译时不会直接报错
+// 需要用 static_assert 显式检查：
+// static_assert(Date{2023, 2, 29}.is_valid());  // 编译错误！
 ```
 
 One spot deserves an extra glance from you: a `constexpr` constructor does not error out just because a value is "logically unreasonable". If we want invalid dates stopped at compile time, we have to do it ourselves. Either we actively trigger a compile-time error inside the constructor—`throw` will do, since in a `constexpr` context an exception is a compile error—or we check with `static_assert` combined with `is_valid()`.
@@ -294,7 +294,7 @@ struct ConstString {
     template <std::size_t N>
     constexpr ConstString(const char (&str)[N]) : data(str), length(N - 1)
     {
-        // N - 1 because a string literal ends with '\0'
+        // N - 1 是因为字符串字面量的末尾有 '\0'
     }
 
     constexpr char operator[](std::size_t i) const
@@ -335,16 +335,16 @@ Back in C++11, the body of a `constexpr` constructor had to be empty; all initia
 Wind the clock forward to C++14: the function body may now contain any statement that `constexpr` allows. Many compile-time classes that were simply beyond us before became real from that moment on.
 
 ```cpp
-// C++11 style: the constructor body must be empty
+// C++11 风格：构造函数体必须为空
 struct OldStyle {
     int values[4];
 
-    // Only the initializer list may be used
+    // 只能用初始化列表
     constexpr OldStyle(int a, int b, int c, int d)
         : values{a, b, c, d} {}
 };
 
-// C++14 style: the constructor body may contain logic
+// C++14 风格：构造函数体可以有逻辑
 struct NewStyle {
     int values[4];
     int sum;
@@ -369,21 +369,21 @@ static_assert(kObj.sum == 46);  // 10+11+12+13=46
 Before C++20, literal types required the destructor to be trivial, which amounted to forbidding any cleanup work in the destructor. C++20 removed this restriction: you can now write `constexpr` destructors.
 
 ```cpp
-// Only supported starting from C++20
+// C++20 才支持
 struct Resource {
     int* data;
     std::size_t size;
 
     constexpr Resource(std::size_t n) : data{}, size(n)
     {
-        // C++20 allows new in constexpr contexts
-        // but the allocated memory must be released before constant evaluation ends
+        // C++20 允许在 constexpr 上下文中使用 new
+        // 但分配的内存必须在常量求值结束前释放
     }
 
-    // C++20: constexpr destructor
+    // C++20: constexpr 析构函数
     constexpr ~Resource()
     {
-        // Cleanup logic
+        // 清理逻辑
     }
 };
 ```
@@ -419,12 +419,12 @@ struct UartConfig {
 
     constexpr std::uint32_t compute_brr(std::uint32_t clock_freq) const
     {
-        // Simplified baud-rate register value computation (STM32 style)
+        // 简化的波特率寄存器值计算（STM32 风格）
         return clock_freq / baud_rate;
     }
 };
 
-// Compile-time constants for common configurations
+// 常用配置的编译期常量
 constexpr UartConfig kDebugUart{115200, 8, StopBits::kOne, Parity::kNone};
 constexpr UartConfig kGpsUart{9600, 8, StopBits::kOne, Parity::kNone};
 

@@ -18,12 +18,23 @@ tags:
 - intermediate
 - 进阶
 title: Stream and Subscript Operators
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #262)"
+      en: "Contributed exercise solutions and article revisions (PR #262)"
 translation:
   source: documents/vol1-fundamentals/ch07/02-io-subscript.md
-  source_hash: bf04a66081af6ee6c1f4a07c2396c08d5a42919d0c3d00bd7c6faf967bb76609
-  translated_at: '2026-09-25T11:13:16+00:00'
-  engine: anthropic
-  token_count: 5300
+  source_hash: 37a682b342a25a83b4737b923f70c1063fd92d442037a0c4f4a484f86ac8cc68
+  translated_at: '2026-11-22T16:40:34+00:00'
+  engine: glm-5.3-refresh
+  token_count: 14865
 ---
 # Stream and Subscript Operators: Making cout Recognize Your Types
 
@@ -49,7 +60,7 @@ Let's demonstrate with the `Fraction` class, looking only at the `operator<<` pa
 friend std::ostream& operator<<(std::ostream& os, const Fraction& f)
 {
     if (f.denominator == 1) {
-        os << f.numerator;       // Integer form: 5/1 prints as just 5
+        os << f.numerator;       // 整数形式：5/1 只输出 5
     }
     else {
         os << f.numerator << "/" << f.denominator;
@@ -80,14 +91,14 @@ friend std::istream& operator>>(std::istream& is, Fraction& f)
 
     is >> num >> slash >> denom;
 
-    // Check the stream state and denominator validity
+    // 检查流状态和分母合法性
     if (is && slash == '/' && denom != 0) {
         f.numerator = num;
         f.denominator = denom;
         f.reduce();
     }
     else {
-        // On failed input, put the stream into a failed state
+        // 输入失败时设置流为失败状态
         is.setstate(std::ios::failbit);
     }
 
@@ -121,17 +132,17 @@ public:
 
     ~IntArray() { delete[] data; }
 
-    // Copying disabled (simplified example; move semantics comes in a later chapter)
+    // 禁止拷贝（简化示例，后面章节会讲移动语义）
     IntArray(const IntArray&) = delete;
     IntArray& operator=(const IntArray&) = delete;
 
-    // Non-const version: read-write
+    // 非 const 版本：允许读写
     int& operator[](std::size_t index)
     {
         return data[index];
     }
 
-    // Const version: read-only
+    // const 版本：只读
     const int& operator[](std::size_t index) const
     {
         return data[index];
@@ -157,7 +168,7 @@ Let's pull everything above into one complete example program:
 
 ```cpp
 // io_overload.cpp
-// Stream and subscript operators: a combined walkthrough
+// 流运算符和下标运算符综合演练
 
 #include <iostream>
 #include <cmath>
@@ -190,7 +201,7 @@ public:
         : numerator(num), denominator(denom)
     {
         if (denominator == 0) {
-            denominator = 1;   // Same simplification as the previous article
+            denominator = 1;   // 沿用上一篇的简化处理
         }
         reduce();
     }
@@ -200,7 +211,7 @@ public:
         return static_cast<double>(numerator) / denominator;
     }
 
-    // Addition
+    // 加法
     Fraction operator+(const Fraction& other) const
     {
         return Fraction(
@@ -209,7 +220,7 @@ public:
         );
     }
 
-    // Output stream
+    // 输出流
     friend std::ostream& operator<<(std::ostream& os, const Fraction& f)
     {
         if (f.denominator == 1) {
@@ -221,7 +232,7 @@ public:
         return os;
     }
 
-    // Input stream
+    // 输入流
     friend std::istream& operator>>(std::istream& is, Fraction& f)
     {
         int num = 0;
@@ -271,7 +282,7 @@ public:
 
     std::size_t size() const { return count; }
 
-    /// @brief Print all elements
+    /// @brief 打印所有元素
     void print(std::ostream& os = std::cout) const
     {
         os << "[";
@@ -287,10 +298,10 @@ public:
 
 int main()
 {
-    // --- Fraction output demo ---
+    // --- Fraction 输出演示 ---
     Fraction a(3, 4);
-    Fraction b(2, 6);   // Automatically reduced to 1/3
-    Fraction c(6, 1);   // Integer form
+    Fraction b(2, 6);   // 自动约分为 1/3
+    Fraction c(6, 1);   // 整数形式
 
     std::cout << "a = " << a << std::endl;    // 3/4
     std::cout << "b = " << b << std::endl;    // 1/3
@@ -299,10 +310,10 @@ int main()
     std::cout << "a (double) = " << a.to_double() << std::endl;  // 0.75
     std::cout << std::endl;
 
-    // --- IntArray subscript demo ---
+    // --- IntArray 下标访问演示 ---
     IntArray arr(5);
     for (std::size_t i = 0; i < arr.size(); ++i) {
-        arr[i] = static_cast<int>(i * 10);  // Write via []
+        arr[i] = static_cast<int>(i * 10);  // 通过 [] 写入
     }
 
     std::cout << "arr = ";
@@ -350,13 +361,13 @@ If you implemented your own `Fraction` class in the previous chapter's exercise,
 
 class Fraction {
  private:
-  int numerator_;    // Numerator
-  int denominator_;  // Denominator
+  int numerator_;    // 分子
+  int denominator_;  // 分母
   void reduce() {
     int a = std::abs(numerator_);
     int b = std::abs(denominator_);
 
-    // Euclidean algorithm for the greatest common divisor
+    // 欧几里得算法求最大公约数
     while (b != 0) {
       int temp = b;
       b = a % b;
@@ -365,7 +376,7 @@ class Fraction {
 
     int gcd = (a != 0) ? a : 1;
 
-    // Reduce the fraction
+    // 分式化简
     numerator_ /= gcd;
     denominator_ /= gcd;
 
@@ -382,9 +393,9 @@ class Fraction {
     }
     reduce();
   }
-  // Unary operator
+  // 一元运算符
   Fraction operator-() const { return Fraction(-numerator_, denominator_); }
-  // Compound assignment operators
+  // 复合赋值运算符
   Fraction& operator+=(const Fraction& rhs) {
     this->numerator_ = this->numerator_ * rhs.denominator_ +
                        this->denominator_ * rhs.numerator_;
@@ -441,7 +452,7 @@ class Fraction {
     return is;
   }
 };
-// Comparison operators
+// 比较运算符
 bool operator>(const Fraction& lhs, const Fraction& rhs) { return rhs < lhs; }
 bool operator<=(const Fraction& lhs, const Fraction& rhs) {
   return !(lhs > rhs);
@@ -455,7 +466,7 @@ bool operator==(const Fraction& lhs, const Fraction& rhs) {
 bool operator!=(const Fraction& lhs, const Fraction& rhs) {
   return !(lhs == rhs);
 }
-// Binary operators
+// 二元运算符
 Fraction operator+(Fraction lhs, const Fraction& rhs) { return lhs += rhs; }
 Fraction operator-(Fraction lhs, const Fraction& rhs) { return lhs -= rhs; }
 Fraction operator*(Fraction lhs, const Fraction& rhs) { return lhs *= rhs; }
@@ -463,23 +474,23 @@ Fraction operator/(Fraction lhs, const Fraction& rhs) { return lhs /= rhs; }
 
 
 int main() {
-    // Create two fraction objects
+    // 创建两个分数对象
     const Fraction a(1, 2);
     const Fraction b(1, 3);
 
-    // Test fraction addition
+    // 测试分数加法
     std::cout << "========== 分数运算测试 ==========" << std::endl;
     std::cout << "分数 a = " << a << std::endl;
     std::cout << "分数 b = " << b << std::endl;
     std::cout << "加法运算：" << a << " + " << b
               << " = " << (a + b) << std::endl;
 
-    // Test the default constructor
+    // 测试默认构造函数
     std::cout << "\n========== 默认构造测试 ==========" << std::endl;
     Fraction c{};
     std::cout << "分数 c 的初始值为：" << c << std::endl;
 
-    // Test the input operator
+    // 测试输入运算符
     std::cout << "\n========== 分数输入测试 ==========" << std::endl;
     std::cout << "请输入一个分数（格式：分子/分母）：";
 
@@ -560,17 +571,17 @@ class Matrix {
   const Row operator[](int i) const { return Row(data_ + i * cols_); }
 };
 int main() {
-  // Create a 2-row, 3-column matrix
+  // 创建一个 2 行 3 列的矩阵
   Matrix matrix(2, 3);
 
-  // Assign values to the matrix
+  // 给矩阵赋值
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 3; j++) {
       matrix[i][j] = i * 3 + j;
     }
   }
 
-  // Print the matrix
+  // 输出矩阵
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 3; j++) {
       std::cout << matrix[i][j] << " ";
@@ -591,7 +602,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 Output:
 
 ```text
-0 1 2 
+0 1 2
 3 4 5
 ```
 

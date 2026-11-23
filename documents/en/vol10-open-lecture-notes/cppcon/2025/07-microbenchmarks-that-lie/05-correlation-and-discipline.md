@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/05-correlation-and-discipline.md
   source_hash: f8726d4e79e645a2fb08f593c489c3022d475e878c5c586c6dda5afeca2f3bde
-  translated_at: '2026-09-26T16:39:52+00:00'
-  engine: anthropic
-  token_count: 6200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5543
 ---
 
 # A Faster Microbenchmark Is Not a Faster Program
@@ -123,12 +123,12 @@ An optimization you measured as effective today can silently disappear tomorrow 
 The most practical flavor is the **disassembly contract test**. If you expect the compiler to perform a particular optimization on particular code, write that expectation down as a test. For example, if you want `n % 15` strength-reduced into multiplication with no division instruction appearing, check whether the function's machine code contains `idiv`:
 
 ```cpp
-// Dump the function's machine code and check for division instructions (x86 idiv is the 0xF7 family)
+// 把函数的机器码 dump 出来, 检查有没有除法指令 (x86 的 idiv 是 0xF7 系列)
 bool has_division_instruction(const void* func, std::size_t bytes) {
     const auto* p = static_cast<const std::uint8_t*>(func);
     for (std::size_t i = 0; i < bytes; ++i) {
-        // Simplified: an exact check would need to account for prefixes and ModRM; this only sketches the idea
-        if (p[i] == 0xF7) return true;   // rough hit
+        // 简化: 精确判断要考虑前缀和 ModRM, 这里只示意思路
+        if (p[i] == 0xF7) return true;   // 粗略命中
     }
     return false;
 }
@@ -143,8 +143,8 @@ for (auto _ : state) {
     std::vector<int> data = base;
     my_sort(data);
     benchmark::DoNotOptimize(data.data());
-    state.PauseTiming();          // verification is not counted toward the timing
-    verify_sorted(data);          // assert that it is sorted
+    state.PauseTiming();          // 验证不计入耗时
+    verify_sorted(data);          // assert 检查有序
     state.ResumeTiming();
 }
 ```

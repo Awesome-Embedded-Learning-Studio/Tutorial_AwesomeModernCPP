@@ -18,10 +18,10 @@ tags:
 title: Range-Based for Loop
 translation:
   source: documents/cpp-reference/core-language/07-range-for.md
-  source_hash: 7da4ee12b4ec2364d3813b54c9f41abddd7080d87b219bcd9ec56228fa562f92
-  translated_at: '2026-09-27T01:38:09+00:00'
-  engine: anthropic
-  token_count: 300
+  source_hash: e5551b3b90208b83774d3de4c7b98602d711f4e8ed280977bbc0698d5f107133
+  translated_at: '2026-11-22T16:41:57.227345+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1300
 ---
 # Range-Based for Loop (C++11)
 

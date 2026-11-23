@@ -19,10 +19,10 @@ related:
   - "Working environment: the four things you installed — what exactly are they?"
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/05-debugging.md
-  source_hash: 2ad3cd3ae58c4f6c04d61e1756618891fcfa4e0d16bda051e93b37d18758c61b
-  translated_at: '2026-09-27T05:37:44+00:00'
-  engine: anthropic
-  token_count: 4200
+  source_hash: 02a5c92acb68ccf96f43cd93cfb3d7acfd0332fd87657a359c4c8ff39e495f34
+  translated_at: '2026-11-22T16:42:09+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9252
 ---
 # Yo yo yo, we've still got work to do
 
@@ -104,7 +104,7 @@ Install the Cortex-Debug extension for VSCode (by marus25 — this is the most f
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Renode blinky (external GDB server)",
+            "name": "Renode blinky (外接 GDB Server)",
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "external",
@@ -145,9 +145,9 @@ Where does the variables panel get its confidence? Let's dissect the first few r
  80004cc:  b580       push {r7, lr}
  80004ce:  b084       sub  sp, #16
  80004d0:  af00       add  r7, sp, #0
- 80004d2:  6078       str  r0, [r7, #4]             ← the Delay parameter goes into a stack slot
- 80004d4:  f7ff ffb4  bl   8000440 <HAL_GetTick>    ← the breakpoint lands on this one (the first instruction of line 373)
- 80004d8:  60b8       str  r0, [r7, #8]             ← tickstart goes into another slot
+ 80004d2:  6078       str  r0, [r7, #4]             ← 参数 Delay 存进栈格子
+ 80004d4:  f7ff ffb4  bl   8000440 <HAL_GetTick>    ← 断点落在这一条(373 行头一句)
+ 80004d8:  60b8       str  r0, [r7, #8]             ← tickstart 存进另一格
 ```
 
 Take them one by one: `push` puts the frame pointer r7 and the **return address lr** onto the stack together — the debugger's ability to list "who called in here" rests on that return address sitting in the stack; `sub sp, #16` carves out 16 bytes of stack slots for local variables; `str r0, [r7, #4]` places the parameter Delay into its own slot — which is why, the moment the breakpoint stops, the panel can report `Delay=500`: that's not a guess, it's read from that stack slot. The breakpoint itself lands on line 373's first instruction, the `bl`: the stack frame is already built, the parameters are already in place, and the instant you stop you're looking at a complete scene. This also explains, from another angle, why the Debug build's 7536 is two thousand bytes larger than Release's 5500: every variable gets its own slot, and every read and write is a real memory-access instruction — no optimization means exactly this kind of footprint.

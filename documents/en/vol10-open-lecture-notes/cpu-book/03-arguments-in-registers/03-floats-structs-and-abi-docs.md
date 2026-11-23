@@ -10,9 +10,10 @@ description: "double arguments draw from a separate register pool starting at xm
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/03-arguments-in-registers/03-floats-structs-and-abi-docs.md
-  source_hash: 7eb559a46ca224d346fa0b4d301f26051798ce2e6b1905b9fc5e8d298e94fffc
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 0e109053fc190b6355f478f0a2c28e4a70ebe2fa1a991ff2b36078541f049014
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 10442
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.

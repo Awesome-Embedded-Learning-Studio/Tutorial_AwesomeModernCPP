@@ -20,9 +20,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/20-interpreter.md
   source_hash: 09eec0ea013589ea48491a6d0f95eb76279952dc43020f6b682783eedc45fae4
-  translated_at: '2026-09-26T05:59:38+00:00'
-  engine: anthropic
-  token_count: 11000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16122
 ---
 
 # Interpreter Pattern: Stuffing a Little Language into Your Program
@@ -293,12 +293,12 @@ Talk is cheap, so let's feed these typical inputs to the parser and see what tre
 
 int main() {
     std::vector<std::string> tests = {
-        "1+2*3",            // expect 7: * binds tighter than +
-        "(1+2)*3",          // expect 9: parentheses
-        "10 - 4 / 2",       // expect 8: / binds tighter than -
-        "(2+3)*(4-1)",      // expect 15
-        "100",              // expect 100: a bare number
-        "2 * (3 + 4) * 5"   // expect 70: multiple levels
+        "1+2*3",            // 期望 7：验证 * 优先于 +
+        "(1+2)*3",          // 期望 9：验证括号
+        "10 - 4 / 2",       // 期望 8：验证 / 优先于 -
+        "(2+3)*(4-1)",      // 期望 15
+        "100",              // 期望 100：纯数字
+        "2 * (3 + 4) * 5"   // 期望 70：多层
     };
     for (const auto& t : tests) {
         try {
@@ -328,7 +328,7 @@ $ ./interpreter_verify
 Precedence and parentheses both follow mathematical convention: `1+2*3` computes `2*3` first, yielding `7`, rather than evaluating sequentially into `9`; the multi-level `2*(3+4)*5` yields `70`. Let's run the error paths too:
 
 ```sh
-$ # append these two cases to the program
+$ # 在程序里追加这两个用例
 [divzero] 1/0 -> ERROR: division by zero
 [syntax] (1+2 -> ERROR: missing )
 ```
@@ -352,7 +352,7 @@ struct NumberTerm {
 
 struct BinaryTerm {
     char op;
-    int left_index;   // an index into the nodes array, not a pointer anymore
+    int left_index;   // 指向 nodes 数组里的下标,不再用指针
     int right_index;
 };
 

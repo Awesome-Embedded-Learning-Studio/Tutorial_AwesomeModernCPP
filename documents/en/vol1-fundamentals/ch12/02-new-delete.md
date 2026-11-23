@@ -21,9 +21,9 @@ title: Dynamic Memory Management
 translation:
   source: documents/vol1-fundamentals/ch12/02-new-delete.md
   source_hash: ef5aa736b3a67837e296660a056e058c8a5697a61216f748f9162f762bbc4b15
-  translated_at: '2026-09-27T04:12:46+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8188
 ---
 # Dynamic Memory Management: What Goes On Behind new and delete
 
@@ -52,9 +52,9 @@ public:
     void read() { std::cout << "读取数据\n"; }
 };
 
-Sensor* s = new Sensor();  // Output: Sensor 初始化
-s->read();                  // Output: 读取数据
-delete s;                   // Output: Sensor 关闭
+Sensor* s = new Sensor();  // 输出: Sensor 初始化
+s->read();                  // 输出: 读取数据
+delete s;                   // 输出: Sensor 关闭
 ```
 
 When we allocate an array we must use `new[]`, and to free it we must use the matching `delete[]`:
@@ -64,7 +64,7 @@ int* arr = new int[10];
 for (int i = 0; i < 10; ++i) {
     arr[i] = i * i;
 }
-delete[] arr;  // Note: it is delete[], not delete
+delete[] arr;  // 注意：是 delete[]，不是 delete
 ```
 
 Mismatching `delete` and `delete[]` is a classic among classic errors. Using `delete` to free an array allocated with `new[]` is undefined behavior. For fundamental types like `int`, some platforms may "get away with it" by luck; but for an array of class types, `delete` (without `[]`) calls only the first element's destructor—the destructors of all the other elements simply never run, and if those destructors are responsible for releasing nested dynamic memory, the consequence is a resource leak. We should build an unshakable habit: `new` pairs with `delete`, `new[]` pairs with `delete[]`; better to type one extra `[]` than to trust your luck.
@@ -78,7 +78,7 @@ void leak_example()
 {
     int* p = new int(42);
     if (some_condition()) {
-        return;  // Early return: the delete never runs
+        return;  // 提前返回，delete 永远不会执行
     }
     delete p;
 }
@@ -92,14 +92,14 @@ The good news is that modern compilers hand us powerful runtime detection tools.
 
 ```cpp
 // leak_demo.cpp
-// Compile: g++ -std=c++17 -O0 -fsanitize=address -g leak_demo.cpp
+// 编译: g++ -std=c++17 -O0 -fsanitize=address -g leak_demo.cpp
 #include <iostream>
 
 void create_leak()
 {
     int* p = new int(42);
     std::cout << "分配了内存，值为: " << *p << "\n";
-    // Deliberately no delete
+    // 故意不 delete
 }
 
 int main()
@@ -147,7 +147,7 @@ public:
         std::cout << "AutoInt 析构，内存已释放\n";
     }
 
-    // Copying forbidden (why, we explain later)
+    // 禁止拷贝（后面会解释原因）
     AutoInt(const AutoInt&) = delete;
     AutoInt& operator=(const AutoInt&) = delete;
 
@@ -160,8 +160,8 @@ void safe_function()
 {
     AutoInt value(42);
     std::cout << *value << "\n";
-    risky_operation();  // Even if this throws
-    // the destructor is still invoked automatically during stack unwinding
+    risky_operation();  // 即使这里抛出异常
+    // 析构函数也会在栈展开时被自动调用
 }
 ```
 
@@ -172,9 +172,9 @@ void safe_function()
 In real life we don't hand-write an `AutoXxx` wrapper for every type—the standard library long ago stocked `<memory>` with ready-made ones: `std::unique_ptr` for exclusive ownership (no copying, moving only), `std::shared_ptr` for shared ownership (reference counting: copy increments, destruction decrements, release at zero), and `std::weak_ptr` for observing without owning, the specialist at breaking circular references. The most commonly used, `unique_ptr`, looks like this:
 
 ```cpp
-auto p = std::make_unique<int>(42);   // make_unique, from C++14
+auto p = std::make_unique<int>(42);   // C++14 的 make_unique
 std::cout << *p << "\n";              // 42
-// Leaving the scope, p is destroyed and delete runs automatically
+// 离开作用域，p 析构，delete 自动执行
 ```
 
 The `new` and `delete` are both gone—that is the style RAII buys us. Each of these three pointers has plenty of depth to it: where the zero overhead comes from, what the control block looks like, how circular references get broken, what you can do with custom deleters. We won't unpack all that in this volume; Chapter 1 of Volume 2 spends six full articles dissecting them. For now, one rule of conduct is enough: **if `unique_ptr` can be used, don't write a bare `new`; if `make_*` can be used, don't write `new` at all**.
@@ -184,14 +184,14 @@ The `new` and `delete` are both gone—that is the style RAII buys us. Each of t
 Ordinary `new` automatically finds memory on the heap, whereas `placement new` is responsible only for calling the constructor—the address is entirely up to you.
 
 ```cpp
-#include <new>  // placement new requires this header
+#include <new>  // placement new 需要这个头文件
 
 alignas(int) unsigned char buffer[sizeof(int)];
-int* p = new (buffer) int(42);  // Construct an int in buffer
+int* p = new (buffer) int(42);  // 在 buffer 上构造一个 int
 std::cout << *p << "\n";        // 42
 
-// No delete allowed! This memory was not allocated by new
-p->~int();  // Explicit destructor call (a no-op for int)
+// 不能用 delete！因为内存不是 new 分配的
+p->~int();  // 显式调用析构函数（对于 int 是空操作）
 ```
 
 `placement new` doesn't come up much in host-side development, but in embedded systems it is extremely valuable: it lets us construct C++ objects inside preallocated memory pools or shared memory. Three things to watch when using it. The buffer alignment must satisfy the object's requirement—`alignas` takes care of that. The memory did not come from `new`, so `delete` must not be called; only an explicit destructor call will do. And explicitly calling a destructor is something exceedingly rare in C++—it shows up almost exclusively in this scenario.
@@ -202,9 +202,9 @@ Let's fold the preceding material into one complete example: a comparison of raw
 
 ```cpp
 // dynamic.cpp
-// Compile (with leak detection):
+// 编译（泄漏检测）:
 //   g++ -std=c++17 -O0 -fsanitize=address -g dynamic.cpp -o dynamic
-// Compile (normal):
+// 编译（正常）:
 //   g++ -std=c++17 -O0 -g dynamic.cpp -o dynamic
 
 #include <iostream>
@@ -219,7 +219,7 @@ void raw_pointer_demo()
     int* arr = new int[5];
     for (int i = 0; i < 5; ++i) { arr[i] = i * 10; }
 
-    // Simulate an early return (uncomment to observe the leak):
+    // 模拟提前返回（取消注释以观察泄漏）:
     // if (true) return;
 
     delete p;
@@ -234,8 +234,8 @@ void smart_pointer_demo()
     std::cout << "值: " << *p << "\n";
     auto arr = std::make_unique<int[]>(5);
     for (int i = 0; i < 5; ++i) { arr[i] = i * 10; }
-    // No matter how we leave (normal return, early return, exception)
-    // the destructor releases the memory automatically
+    // 不管以何种方式离开（正常返回、提前 return、异常）
+    // 析构函数都会自动释放内存
     std::cout << "离开作用域时自动释放\n";
 }
 
@@ -292,9 +292,9 @@ int main()
 {
     Logger* logger = new Logger("app");
     logger->log("程序启动");
-    Logger* backup = logger;  // An alias, owns nothing
+    Logger* backup = logger;  // 别名，不拥有
     delete logger;
-    // backup is a dangling pointer at this moment!
+    // backup 此刻是悬空指针！
     return 0;
 }
 ```

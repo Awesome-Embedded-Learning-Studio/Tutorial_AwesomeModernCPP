@@ -25,9 +25,9 @@ title: 'source_location: Compile-Time Code Location, a Type-Safe Alternative to 
 translation:
   source: documents/vol3-standard-library/error-utils/68-source-location.md
   source_hash: d74c82cc035e8645969768ee0c43af5d507e2d067815e3302d0b63b76fed5364
-  translated_at: '2026-09-26T01:04:14+00:00'
-  engine: anthropic
-  token_count: 4300
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11524
 ---
 # source_location: Compile-Time Code Location, a Type-Safe Alternative to `__FILE__`
 
@@ -99,7 +99,7 @@ constexpr int line_of(std::source_location loc = std::source_location::current()
     return loc.line();
 }
 
-// static_assert proves: current()'s result is already fixed at compile time
+// static_assert 证明: current() 的结果在编译期就是确定的
 static_assert(line_of() == __LINE__, "line_of must be usable in constant expression");
 
 #define LEGACY_LOG() \
@@ -185,7 +185,7 @@ int divide(int a, int b) {
 int main() {
     log_info("程序启动");
     std::cout << "10 / 2 = " << divide(10, 2) << '\n';
-    divide(10, 0);   // trigger the failing assertion
+    divide(10, 0);   // 触发失败断言
 }
 ```
 
@@ -220,13 +220,13 @@ Write `current()` in different places and the locations you get are completely d
 #include <iostream>
 #include <source_location>
 
-// Mode A: current() as a default argument — captures the [call site] location
+// 模式A: current() 作默认参数 —— 拿到【调用点】位置
 void log_default(std::source_location loc = std::source_location::current()) {
     std::cout << "[A 默认参数] line=" << loc.line()
               << " func=" << loc.function_name() << '\n';
 }
 
-// Mode B: call current() on the first line of the body — captures the [current function] location
+// 模式B: 在函数体首行调 current() —— 拿到【当前函数】位置
 void log_inline() {
     std::source_location loc = std::source_location::current();
     std::cout << "[B 函数体首行] line=" << loc.line()
@@ -234,8 +234,8 @@ void log_inline() {
 }
 
 int main() {
-    log_default();   // expected: the line number points at this line
-    log_inline();    // expected: the line number points inside log_inline
+    log_default();   // 期望: 行号指向这一行
+    log_inline();    // 期望: 行号指向 log_inline 内部
 }
 ```
 
@@ -327,7 +327,7 @@ Written as `std::source_location loc = std::source_location::current()`, the def
 Like `__FILE__` and `__LINE__`, `source_location` is affected by the `#line` directive. Generated code (yacc/lex, template generators) is full of `#line` remapping, and the line numbers and file names `source_location` reports follow along. We verified this in practice:
 
 ```text
-$ #line 100 "fake.cpp" afterwards
+$ #line 100 "fake.cpp" 之后
 source_location line=100 file=fake.cpp
 ```
 

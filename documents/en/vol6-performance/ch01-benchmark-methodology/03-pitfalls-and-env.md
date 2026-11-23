@@ -26,9 +26,9 @@ title: 'Measurement pitfalls and environment readiness: a 16-item checklist'
 translation:
   source: documents/vol6-performance/ch01-benchmark-methodology/03-pitfalls-and-env.md
   source_hash: 11d9a7e19b5b64e087271cb00f8917a25ca479236662ef634e7c0f20d65e1a25
-  translated_at: '2026-09-26T05:39:07+00:00'
-  engine: anthropic
-  token_count: 1700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5515
 ---
 # Measurement pitfalls and environment readiness: a 16-item checklist
 
@@ -88,7 +88,7 @@ Checking all of these by hand before every measurement session is tedious, so we
 
 ```bash
 #!/usr/bin/env bash
-# perf-env-check.sh — environment health check for credible microbenchmarks (check only, never modify)
+# perf-env-check.sh —— 可信 microbenchmark 环境体检(只查不改)
 set -u
 
 ok()   { printf "  ✓ %s\n" "$1"; }

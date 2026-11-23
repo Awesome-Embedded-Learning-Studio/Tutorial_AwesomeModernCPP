@@ -21,10 +21,10 @@ tags:
 title: Type Conversion
 translation:
   source: documents/vol1-fundamentals/ch01/02-type-conversion.md
-  source_hash: bc52b0f3dd6f6e144d1b194013f655c400f7ef1f5a00f27b628913aca73706de
-  translated_at: '2026-09-25T10:01:32+00:00'
-  engine: anthropic
-  token_count: 3000
+  source_hash: 5d73e2ec5e43394eaff365ddeb84e6fa7e5029a0715d2ed0a23ace241054aa2e
+  translated_at: '2026-11-22T16:42:44+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11369
 ---
 # Type Conversion: The Decisions Your Compiler Quietly Makes Behind Your Back
 
@@ -51,21 +51,21 @@ Let's walk through a combined example that runs past all of these implicit conve
 
 int main()
 {
-    // Assignment conversion: double -> int, the fractional part is simply truncated
+    // 赋值转换：double -> int，小数部分直接截断
     double pi = 3.14159;
     int truncated = pi;
     std::cout << "3.14159 -> int: " << truncated << std::endl;  // 3
 
-    // Arithmetic conversion: int + double -> double
+    // 算术转换：int + double -> double
     int i = 5;
     double d = 2.5;
-    auto result = i + d; // Not sure what the type is? Hover over the word auto and the IDE will tell you
+    auto result = i + d; // 不知道啥类型，鼠标hover到auto这个单词上，IDE会提示你的
     std::cout << "5 + 2.5 = " << result << " (double)" << std::endl;  // 7.5
 
-    // Boolean conversion: zero -> false, non-zero -> true
-    bool b1 = 42;   // true, prints as 1
+    // 布尔转换：零 -> false，非零 -> true
+    bool b1 = 42;   // true，输出为 1
     bool b2 = -3;   // true
-    bool b3 = 0;    // false, prints as 0
+    bool b3 = 0;    // false，输出为 0
     std::cout << "42->" << b1 << ", -3->" << b2 << ", 0->" << b3
               << std::endl;  // 1, 1, 0
     return 0;
@@ -80,7 +80,7 @@ Knowing the rules is one thing; actually getting bitten by them is another. Let'
 
 ```cpp
 int a = -1;
-unsigned int b = a;  // signed to unsigned
+unsigned int b = a;  // 有符号转无符号
 // a = -1, b = 4294967295
 ```
 
@@ -91,8 +91,8 @@ The binary representation of `-1` is all `1`s (two's complement), so once it is 
 ### Overflow — The "Small Number" You Think You See Isn't Necessarily Small
 
 ```cpp
-short s = 32767;   // the maximum value of short (assuming 16 bits)
-s = s + 1;         // overflow! the result is -32768
+short s = 32767;   // short 的最大值（假设 16 位）
+s = s + 1;         // 溢出！输出 -32768
 ```
 
 The largest positive number a `short` can represent is `32767`; add `1` and it overflows. During the computation `s` is promoted to `int` and the intermediate result `32768` sits comfortably within the `int` range, but when the value is assigned back to `short` it gets truncated, and the result wraps around to `-32768`.
@@ -111,9 +111,9 @@ In C, explicit type conversion has two spellings: `(int)d` and `int(d)`. Both ar
 int main()
 {
     int i = 42;
-    double d = static_cast<double>(i);       // int -> double, result 42
+    double d = static_cast<double>(i);       // int -> double，输出 42
     double pi = 3.14159;
-    int truncated = static_cast<int>(pi);    // double -> int, result 3
+    int truncated = static_cast<int>(pi);    // double -> int，输出 3
 
     std::cout << d << " " << truncated << std::endl;
     return 0;
@@ -124,7 +124,7 @@ You might ask: how is this different from plain assignment? The difference is **
 
 ## reinterpret_cast — Reinterpreting the Underlying Bit Pattern
 
-Among the things `static_cast` cannot do, one big category is "treat a stretch of memory as another type." For instance, you receive a `void*` pointer and need to turn it back into an `int*` before you can dereference it; or you want to inspect the underlying bit pattern of a `float` as a `uint32_t`. These operations step outside the type system's safety guarantees, and the compiler has no way to check their validity for you—this is where `reinterpret_cast` comes in.
+Among the things `static_cast` cannot do, one big category is "treat a stretch of memory as another type." For instance, you receive a `void*` pointer and need to turn it back into an `int*` before you can dereference it—that is `reinterpret_cast`'s legitimate job. Or say you want to see what the underlying bit pattern of a `float` looks like—the need is real, and plenty of material on bit manipulation uses `reinterpret_cast` to do exactly this, but that is wrong, and wrong in a highly instructive way. We'll start from these two scenarios below; the second one is a widely-circulated mistake. These operations step outside the type system's safety guarantees, and the compiler cannot check their validity for you, so when you use `reinterpret_cast`, you must know exactly what you are doing.
 
 ```cpp
 #include <iostream>
@@ -132,25 +132,47 @@ Among the things `static_cast` cannot do, one big category is "treat a stretch o
 
 int main()
 {
-    // Scenario 1: converting between void* and a typed pointer
+    // 场景一：void* 和类型指针之间的转换
     int value = 100;
     void* pv = &value;
     int* pi = reinterpret_cast<int*>(pv);
     std::cout << *pi << std::endl;  // 100
 
-    // Scenario 2: inspecting a float's underlying bit pattern
+    // 场景二：查看浮点数的底层位模式——一个流传很广的错误示范
     float f = 1.0f;
-    uint32_t bits = reinterpret_cast<uint32_t&>(f);
-    // the IEEE 754 representation of 1.0f: 0x3f800000
+    uint32_t bits = reinterpret_cast<uint32_t&>(f);  // 未定义行为！
+    // 运气好的时候能打出 1.0f 的 IEEE 754 表示 0x3f800000
     std::cout << std::hex << bits << std::endl;
 
     return 0;
 }
 ```
 
+Hard-casting a `float` reference to `uint32_t&` and reading through it is undefined behavior in C++. `reinterpret_cast` merely swaps the reference's type label; the object in memory is still a `float`, and C++ decrees that an object may only be accessed through a limited set of types—this restriction is called the **strict aliasing rule**. Reading a `float` object through a `uint32_t&` is not on the allowed list; from that line on, whatever the program produces counts as a valid outcome.
+
+This is not me trying to scare you. Compile the snippet above with `g++ -std=c++20 -O2 -Wall -Wstrict-aliasing=2`, and GCC will emit two warnings:
+
+```text
+warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+warning: 'f' is used uninitialized [-Wuninitialized]
+```
+
+The second one deserves particular thought: `f` is clearly initialized to `1.0f`, yet the compiler believes it was never initialized. The reason is that with optimizations on, the compiler understands the program through type-based alias analysis—it decides that the read through `uint32_t&` and the write to the `float` are two unrelated events, and then follows that assumption straight to an absurd conclusion. Warnings are still a gentle reminder; once code like this actually lands in the optimizer's hands, the result is pure luck. So what is the correct way to write it? C++20 built a tool precisely for this:
+
+> **`std::bit_cast`** (C++20, header `<bit>`): written `std::bit_cast<uint32_t>(f)`, it copies the underlying bytes of `f` as-is into a brand-new `uint32_t` object and hands that to you. It never borrows a reference of another type to access the `float` object, so it is fully legal; it also supports `constexpr` and can complete at compile time. The requirements are that the two types have the same size and are both trivially copyable. Get familiar with it here for now; the chapter on bit operations will work with it in earnest later on.
+
+```cpp
+    // 场景二（修正版）：用 std::bit_cast 查看位模式
+    // 记得在文件顶部加上 #include <bit>
+    float f = 1.0f;
+    uint32_t bits = std::bit_cast<uint32_t>(f);
+    // 1.0f 的 IEEE 754 表示：0x3f800000，这次是保证
+    std::cout << std::hex << bits << std::endl;
+```
+
 The name `reinterpret_cast` says it all—"reinterpret." It doesn't change the underlying binary data; it just tells the compiler, "please view this memory as another type." That is precisely why it is also the most dangerous cast operator: use it wrong and you land directly in undefined behavior.
 
-Most uses of `reinterpret_cast` are undefined behavior or implementation-defined behavior: cast an `int*` to a `double*` and dereference it, and with the alignment requirements and sizes failing to line up, the outcome is completely unpredictable. Its genuinely safe use cases are actually few—converting between `void*` and raw pointer types, low-level byte inspection through `unsigned char`, and a handful of serialization and hardware-register-access scenarios. We'll meet it more often in embedded development; host-side application code has essentially no use for it. A simple rule of thumb: **95% of the explicit casts in everyday development are covered by `static_cast`**—if you catch yourself reaching for `reinterpret_cast`, stop first and ask whether something has gone wrong in the design.
+Most uses of `reinterpret_cast` are undefined behavior or implementation-defined behavior: cast an `int*` to a `double*` and dereference it, and with the alignment requirements and sizes failing to line up, the outcome is completely unpredictable. Its genuinely safe use cases are actually few—converting between `void*` and raw pointer types, low-level byte inspection through `unsigned char`, and a handful of serialization and hardware-register-access scenarios. Why is `unsigned char` allowed while `uint32_t` is not? Because the strict aliasing rule carves out an exception specifically for character types, allowing any object to be inspected byte by byte through them—no other type gets that treatment, and scenario two's mistake is precisely a violation of this rule. We'll meet it more often in embedded development; host-side application code has essentially no use for it. A simple rule of thumb: **95% of the explicit casts in everyday development are covered by `static_cast`**—if you catch yourself reaching for `reinterpret_cast`, stop first and ask whether something has gone wrong in the design.
 
 ## const_cast and dynamic_cast (A Quick Introduction)
 
@@ -164,8 +186,8 @@ Another big topic that type conversion drags in is numerical precision. Let's lo
 
 ```cpp
 int a = 5, b = 2;
-double result = a / b;           // integer division! the result is 2, not 2.5
-double correct = static_cast<double>(a) / b;  // correct: 5.0 / 2 = 2.5
+double result = a / b;           // 整数除法！结果是 2，不是 2.5
+double correct = static_cast<double>(a) / b;  // 正确：5.0 / 2 = 2.5
 ```
 
 Both operands of `a / b` are `int`, so integer division is performed and the result is an `int` too. The variable on the left may be a `double`, but that only converts the result `2` into `2.0`. Assignment happens after the operation—to get a floating-point result, you must convert at least one operand to a floating-point type before the division.
@@ -183,10 +205,10 @@ int main()
     double a = 0.1 + 0.2;
     double b = 0.3;
 
-    // Direct comparison: false! because 0.1+0.2 is actually stored as 0.30000000000000004
+    // 直接比较：false！因为 0.1+0.2 实际存储为 0.30000000000000004
     std::cout << std::boolalpha << (a == b) << std::endl;  // false
 
-    // The right approach: check whether the difference is small enough
+    // 正确做法：判断差值是否足够小
     double epsilon = 1e-9;
     bool approx_equal = std::abs(a - b) < epsilon;
     std::cout << approx_equal << std::endl;  // true
@@ -204,10 +226,10 @@ int main()
 #include <climits>
 
 int max_int = INT_MAX;     // 2147483647
-int overflow = max_int + 1;  // undefined behavior! usually -2147483648
+int overflow = max_int + 1;  // 未定义行为！通常是 -2147483648
 
 unsigned char uc = 255;
-uc = uc + 1;               // well-defined wrap-around, becomes 0
+uc = uc + 1;               // 明确定义的回绕，变成 0
 ```
 
 Signed integer overflow is **undefined behavior** in C++—the compiler is allowed to do anything with such code. Most implementations do wrap around to a negative number, but you cannot rely on that behavior. Unsigned integer overflow, by contrast, is well-defined wrap-around behavior; in embedded development it is sometimes used deliberately (ring buffers, for example), but it has to be a conscious choice.
@@ -217,7 +239,7 @@ Signed integer overflow is **undefined behavior** in C++—the compiler is allow
 Now let's fold the preceding topics into one complete program, covering implicit conversion, `static_cast`, integer division, floating-point comparison, and overflow. I suggest you read through the code yourself first and predict each line's output, and only then look at the actual result.
 
 ```cpp
-// conversion.cpp — a combined demonstration of type conversion
+// conversion.cpp —— 类型转换综合演示
 // Platform: host
 // Standard: C++11
 
@@ -227,38 +249,38 @@ Now let's fold the preceding topics into one complete program, covering implicit
 
 int main()
 {
-    // 1. Implicit conversion: double -> int
+    // 1. 隐式转换：double -> int
     double price = 9.99;
     int rounded = price;
     std::cout << "[隐式转换] 9.99 -> int: " << rounded << std::endl;
 
-    // 2. static_cast: explicit conversion
+    // 2. static_cast：显式转换
     int count = 7;
     double avg = static_cast<double>(count) / 2;
     std::cout << "[static_cast] 7 / 2 = " << avg << std::endl;
 
-    // 3. The integer division trap
+    // 3. 整数除法陷阱
     int wrong = count / 2;
     std::cout << "[整数除法] 7 / 2 = " << wrong << std::endl;
 
-    // 4. Signed and unsigned
+    // 4. 有符号与无符号
     int neg = -1;
     unsigned int pos = static_cast<unsigned int>(neg);
     std::cout << "[有符号转无符号] -1 -> " << pos << std::endl;
 
-    // 5. Floating-point precision
+    // 5. 浮点精度
     double x = 0.1 + 0.2;
     double y = 0.3;
     std::cout << "[浮点比较] (0.1+0.2) == 0.3: "
               << (x == y ? "true" : "false") << std::endl;
 
-    // 6. Safe floating-point comparison
+    // 6. 安全的浮点比较
     double epsilon = 1e-9;
     bool safe_eq = std::abs(x - y) < epsilon;
     std::cout << "[安全比较] approx equal: "
               << (safe_eq ? "true" : "false") << std::endl;
 
-    // 7. Overflow
+    // 7. 溢出
     int big = INT_MAX;
     std::cout << "[溢出] INT_MAX = " << big
               << ", +1 = " << big + 1 << std::endl;
@@ -338,7 +360,7 @@ The following code is meant to convert Celsius to Fahrenheit, but the result is 
 int main()
 {
     int celsius = 25;
-    // Formula: F = C * 9 / 5 + 32
+    // 公式：F = C * 9 / 5 + 32
     int fahrenheit = celsius * 9 / 5 + 32;
     std::cout << celsius << " C = " << fahrenheit << " F" << std::endl;
     return 0;

@@ -24,9 +24,9 @@ title: Cache Mechanisms and Memory Hierarchy
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/02-cache-and-memory-hierarchy.md
   source_hash: ad0f5a1e5cc533ff793721011601acc886b004550280ea29645852f43efe333c
-  translated_at: '2026-09-25T13:40:17+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14029
 ---
 # Cache Mechanisms and Memory Hierarchy
 
@@ -39,11 +39,11 @@ Languages like Python and Java abstract memory management away entirely, so prog
 All code examples in this article compile and run on an ordinary x86-64 platform. The timing results of the stride experiment and the matrix traversal depend on the specific CPU model and cache configuration, but the trends are consistent.
 
 ```text
-Platform: x86-64 Linux / macOS / Windows (MSVC/MinGW)
-Compiler: GCC >= 9 or Clang >= 12
-Standard: -std=c11 (C parts) / -std=c++17 (C++ comparison parts)
-Compile flags: -O2 (avoids over-optimization eliminating the loops, while excluding the extra overhead of debug builds)
-Dependencies: none
+平台：x86-64 Linux / macOS / Windows (MSVC/MinGW)
+编译器：GCC >= 9 或 Clang >= 12
+标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
+编译选项：-O2（避免过度优化消除循环，同时排除 debug 模式的额外开销）
+依赖：无
 ```
 
 ## Step 1 — See What Storage Looks Like from the CPU's Perspective
@@ -69,36 +69,36 @@ The motivation behind this design is straightforward—given that we have spatia
 We can write a short piece of C code to feel the cache line's presence directly. This program traverses the same array with different strides and observes how the timing changes:
 
 ```c
-#define _POSIX_C_SOURCE 199309L  // Enable clock_gettime / CLOCK_MONOTONIC
+#define _POSIX_C_SOURCE 199309L  // 启用 clock_gettime / CLOCK_MONOTONIC
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define kArraySize (64 * 1024 * 1024)  // 64M ints
+#define kArraySize (64 * 1024 * 1024)  // 64M 个 int
 
 int main(void)
 {
     int* arr = (int*)malloc(kArraySize * sizeof(int));
-    // Warm up first so the data is in the cache
+    // 先预热，确保数据在 Cache 里
     for (int i = 0; i < kArraySize; i++) {
         arr[i] = i;
     }
 
-    // Traverse with different strides, reads only
-    volatile int sink = 0;  // Prevent sum from being optimized away as dead code
+    // 以不同步长遍历，只做读操作
+    volatile int sink = 0;  // 防止 sum 被"死代码消除"优化掉
     for (int stride = 1; stride <= 4096; stride *= 2) {
         struct timespec t0, t1;
-        clock_gettime(CLOCK_MONOTONIC, &t0);  // Wall-clock start
+        clock_gettime(CLOCK_MONOTONIC, &t0);  // 记录墙上时间起点
         int sum = 0;
         for (int i = 0; i < kArraySize; i += stride) {
             sum += arr[i];
         }
-        clock_gettime(CLOCK_MONOTONIC, &t1);  // Wall-clock end
-        sink = sum;  // Force the compiler to actually compute sum
+        clock_gettime(CLOCK_MONOTONIC, &t1);  // 记录墙上时间终点
+        sink = sum;  // 强制编译器真的去算 sum
 
         double total_ms = (t1.tv_sec - t0.tv_sec) * 1000.0
                         + (t1.tv_nsec - t0.tv_nsec) / 1e6;
-        long accesses = kArraySize / stride;  // Note: stride doubles, access count halves
+        long accesses = kArraySize / stride;  // 注意：步长翻倍，访问次数减半
         double ns_per_access = total_ms * 1e6 / accesses;
         printf("stride=%5d  accesses=%9ld  total=%7.3f ms  per_access=%6.2f ns\n",
                stride, accesses, total_ms, ns_per_access);
@@ -200,25 +200,25 @@ The most classic example is traversing a two-dimensional array. In C, a 2D array
 
 static int matrix[kRows][kCols];
 
-// Cache-friendly: traverse by rows
+// 缓存友好：按行遍历
 void sum_by_rows(int* total)
 {
     int sum = 0;
     for (int i = 0; i < kRows; i++) {
         for (int j = 0; j < kCols; j++) {
-            sum += matrix[i][j];  // Sequential access, high cache hit rate
+            sum += matrix[i][j];  // 连续访问，Cache 命中率高
         }
     }
     *total = sum;
 }
 
-// Cache-unfriendly: traverse by columns
+// 缓存不友好：按列遍历
 void sum_by_cols(int* total)
 {
     int sum = 0;
     for (int j = 0; j < kCols; j++) {
         for (int i = 0; i < kRows; i++) {
-            sum += matrix[i][j];  // Each hop jumps sizeof(int)*kCols bytes
+            sum += matrix[i][j];  // 每次跳跃 sizeof(int)*kCols 字节
         }
     }
     *total = sum;
@@ -242,22 +242,22 @@ Another common optimization point is the arrangement of struct fields. If a stru
 
 ```c
 typedef struct {
-    // Hot-path fields — accessed frequently, keep them together
+    // 热路径字段——频繁访问，放一起
     int x;
     int y;
     int z;
-    // Cold fields — rarely accessed
+    // 冷字段——不常访问
     char name[64];
     int id;
     double metadata[8];
 } Particle;
 
-// Counter-example: hot and cold data interleaved
+// 反面教材：冷热数据混排
 typedef struct {
     int x;
-    char name[64];  // Cold data stuck between hot data
+    char name[64];  // 冷数据插在热数据中间
     int y;
-    int id;          // Cold data
+    int id;          // 冷数据
     int z;
     double metadata[8];
 } ParticleBadLayout;
@@ -320,7 +320,7 @@ struct alignas(std::hardware_destructive_interference_size) PaddedCounter {
     int value;
 };
 
-// The two counters each own a cache line exclusively
+// 两个计数器各自独占一条缓存行
 PaddedCounter counter_a;
 PaddedCounter counter_b;
 ```
@@ -334,10 +334,10 @@ In C, we can only hardcode `__attribute__((aligned(64)))` (GCC/Clang) or `__decl
 C++11 introduced the `alignas` keyword, letting us specify alignment requirements for variables or types. Combined with the cache line size, we can manually guarantee that certain critical data structures don't straddle cache lines:
 
 ```cpp
-// C++-style cache line alignment
+// C++ 风格的缓存行对齐
 struct alignas(64) CacheLineAligned {
-    int hot_data[4];    // 16 bytes
-    // The remaining 48 bytes are padding, filled in automatically by the compiler
+    int hot_data[4];    // 16 字节
+    // 剩余 48 字节是 padding，编译器自动填充
 };
 
 static_assert(sizeof(CacheLineAligned) == 64,

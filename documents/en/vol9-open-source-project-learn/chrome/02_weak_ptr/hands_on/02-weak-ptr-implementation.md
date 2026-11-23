@@ -27,9 +27,9 @@ title: "weak_ptr Design Guide (II): step-by-step implementation"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/hands_on/02-weak-ptr-implementation.md
   source_hash: b1eade797795600c94c34b8b57c5a3ac8f0ac4c8030fc146f781af2ae3b0359f
-  translated_at: '2026-09-26T02:19:39+00:00'
-  engine: anthropic
-  token_count: 5500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12557
 ---
 # weak_ptr Design Guide (II): step-by-step implementation
 
@@ -56,7 +56,7 @@ class RefCountedThreadSafe {
 public:
     void add_ref() const noexcept { ref_count_.fetch_add(1, std::memory_order_relaxed); }
     bool release() const noexcept {
-        return ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1;   // true when the count drops to 0
+        return ref_count_.fetch_sub(1, std::memory_order_acq_rel) == 1;   // 减到 0 返回 true
     }
     bool has_one_ref() const noexcept { return ref_count_.load(std::memory_order_acquire) == 1; }
 protected:
@@ -66,7 +66,7 @@ private:
     mutable std::atomic<int> ref_count_{0};
 };
 
-// Mirrors base::AtomicFlag: one-shot, release-Set / acquire-IsSet
+// 对应 base::AtomicFlag:一次性、release-Set / acquire-IsSet
 class AtomicFlag {
 public:
     void Set() noexcept { flag_.store(1, std::memory_order_release); }
@@ -114,23 +114,23 @@ namespace tamcpp::chrome::internal {
 
 class Flag : public RefCountedThreadSafe {
 public:
-    Flag() { seq_.detach_from_sequence(); }              // unbound at construction (lazy)
+    Flag() { seq_.detach_from_sequence(); }              // 构造时未绑定(lazy)
 
     void Invalidate() noexcept {
-        // Same sequence, or only one ref left (cross-thread destruction allowed)
+        // 同序列,或只剩一个引用(允许跨线程析构)
         assert(seq_.called_on_valid_sequence() || has_one_ref());
         invalidated_.Set();                              // release-store
     }
     bool IsValid() const noexcept {
-        assert(seq_.called_on_valid_sequence());         // first touch → binds
+        assert(seq_.called_on_valid_sequence());         // 首次触碰 → 绑定
         return !invalidated_.IsSet();                    // acquire-load
     }
     bool MaybeValid() const noexcept {
-        return !invalidated_.IsSet();                    // no sequence assert, callable from any sequence
+        return !invalidated_.IsSet();                    // 无序列断言,任意序列可调
     }
 private:
-    template <typename> friend class scoped_refptr;      // allow delete when the refcount hits zero
-    ~Flag() = default;                                   // private: controlled destruction
+    template <typename> friend class scoped_refptr;      // 允许计数归零时 delete
+    ~Flag() = default;                                   // private:受控析构
     mutable SequenceChecker seq_;
     AtomicFlag invalidated_;
 };
@@ -154,7 +154,7 @@ With the Flag standing, something has to look after its reference count for it. 
 namespace tamcpp::chrome::internal {
 
 template <typename T>
-class scoped_refptr {    // simplified, full version in pre-01
+class scoped_refptr {    // 简化版,完整见 pre-01
 public:
     scoped_refptr() noexcept = default;
     explicit scoped_refptr(T* p) noexcept : ptr_(p) { if (ptr_) ptr_->add_ref(); }
@@ -197,13 +197,13 @@ public:
     WeakPtr() = default;
     WeakPtr(std::nullptr_t) noexcept {}
 
-    template <typename U> requires(std::convertible_to<U*, T*>)   // upcast
+    template <typename U> requires(std::convertible_to<U*, T*>)   // 向上转型
     WeakPtr(const WeakPtr<U>& o) noexcept : ref_(o.ref_), ptr_(o.ptr_) {}
     template <typename U> requires(std::convertible_to<U*, T*>)
     WeakPtr(WeakPtr<U>&& o) noexcept : ref_(std::move(o.ref_)), ptr_(o.ptr_) {}
 
     T* get() const noexcept { return ref_.IsValid() ? ptr_ : nullptr; }
-    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }     // Chromium uses CHECK
+    T& operator*() const { assert(ref_.IsValid()); return *ptr_; }     // Chromium 用 CHECK
     T* operator->() const { assert(ref_.IsValid()); return ptr_; }
     explicit operator bool() const noexcept { return get() != nullptr; }
     void reset() noexcept { ref_.Reset(); ptr_ = nullptr; }
@@ -214,7 +214,7 @@ private:
     template <typename U> friend class WeakPtr;
     friend class WeakPtrFactory<T>;
     WeakPtr(internal::WeakReference&& ref, T* ptr) noexcept : ref_(std::move(ref)), ptr_(ptr) {
-        assert(ptr);   // only the factory can call this
+        assert(ptr);   // 只有 factory 能调
     }
     internal::WeakReference ref_;
     T* ptr_ = nullptr;
@@ -234,13 +234,13 @@ The last layer, and the thing users actually instantiate. It contains a `WeakRef
 ```cpp
 namespace tamcpp::chrome {
 
-class WeakReferenceOwner {    // the Flag's issuer
+class WeakReferenceOwner {    // Flag 发行方
 public:
     WeakReferenceOwner() : flag_(new internal::Flag()) {}
-    ~WeakReferenceOwner() { if (flag_) flag_->Invalidate(); }    // destruction invalidates everything
+    ~WeakReferenceOwner() { if (flag_) flag_->Invalidate(); }    // 析构即失效所有
     internal::WeakReference GetRef() const { return internal::WeakReference(flag_); }
-    void Invalidate() { flag_->Invalidate(); flag_ = internal::scoped_refptr<internal::Flag>(new internal::Flag()); }  // invalidate + mint a fresh Flag
-    void InvalidateAndDoom() { flag_->Invalidate(); flag_ = nullptr; }        // invalidate + never mint again
+    void Invalidate() { flag_->Invalidate(); flag_ = internal::scoped_refptr<internal::Flag>(new internal::Flag()); }  // 失效 + 新 Flag
+    void InvalidateAndDoom() { flag_->Invalidate(); flag_ = nullptr; }        // 失效 + 不再铸
     bool HasRefs() const { return !flag_->has_one_ref(); }
 private:
     internal::scoped_refptr<internal::Flag> flag_;
@@ -265,7 +265,7 @@ public:
     bool has_weak_ptrs() const { return ptr_ && owner_.HasRefs(); }
 private:
     WeakReferenceOwner owner_;
-    uintptr_t ptr_;    // non-template-dependent pointer storage (can sink into a base to tame bloat)
+    uintptr_t ptr_;    // 非模板依赖的指针存储(可下沉到基类压膨胀)
 };
 
 }  // namespace tamcpp::chrome
@@ -288,12 +288,12 @@ struct Controller {
     void on_done(int v) { /* ... */ }
     std::vector<int> buf_;
     WeakPtr<Controller> get_weak() { return weak_factory_.get_weak_ptr(); }
-    WeakPtrFactory<Controller> weak_factory_{this};   // last member
+    WeakPtrFactory<Controller> weak_factory_{this};   // 最后成员
 };
 
-// After the object dies the callback no-ops automatically (ties into 01's OnceCallback, see full/02-5)
+// 对象死后回调自动 no-op(接 01 的 OnceCallback,见 full/02-5)
 auto task = bind_weak_once(&Controller::on_done, ctrl.get_weak(), 42);
-std::move(task).run();      // ctrl alive → calls; ctrl dead → silent no-op
+std::move(task).run();      // ctrl 活着 → 调用;ctrl 死后 → 静默 no-op
 ```
 
 That `bind_weak_once` line is where the loose end we left in the previous OnceCallback piece finally gets tied off. Its core idea is a direct translation of the industrial-grade `InvokeHelper<true>::MakeItSo`: before the callback runs, do `if (!receiver) return;`. This receiver is a WeakPtr, so `operator bool` calls `get()`, `get()` checks `IsValid`, and the chain lands all the way down on an accurate same-sequence liveness read. Object alive means a normal call; object dead means a silent no-op. The full callback-integration machinery — how the compile-time `kIsWeakMethod` gets wired, why `MaybeValid` walks a separate channel, where the void-return constraint comes from — lives in [full/02-5](../full/02-5-weak-ptr-bind-integration.md), where we take it apart in full.

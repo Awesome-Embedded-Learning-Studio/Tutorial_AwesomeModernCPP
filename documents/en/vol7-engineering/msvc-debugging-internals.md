@@ -13,9 +13,9 @@ description: ''
 translation:
   source: documents/vol7-engineering/msvc-debugging-internals.md
   source_hash: 3264ad02bfd7edc7a8015cffbc3ba3d43cdd75b464447a715b84095ed1b16075
-  translated_at: '2026-09-27T02:37:33+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5400
 ---
 # Deep Dive: MSVC Debugging Mechanisms and Visual Studio Debugger Internals
 
@@ -86,12 +86,12 @@ To make it easier for readers to picture, you can imagine an architecture diagra
 
 ```mermaid
 flowchart TD
-    A["Developer (User)"] -->|"Interact (F5, F10, inspect variables)"| B["Visual Studio IDE (UI layer)"]
-    B -->|"Send commands"| C["Debug Engine"]
-    C <-->|"Read"| D["PDB symbol file"]
-    C -->|"Cross-process communication (RPC)"| E["msvsmon.exe (Debug Monitor)"]
-    E -->|"Call Win32 Debug API"| F["Windows Kernel (OS kernel)"]
-    F -->|"Control / capture exceptions"| G["Target process (App.exe)"]
+    A["开发者 (User)"] -->|"交互 (F5, F10, 查看变量)"| B["Visual Studio IDE (UI层)"]
+    B -->|"发送指令"| C["调试引擎 (Debug Engine)"]
+    C <-->|"读取"| D["PDB 符号文件"]
+    C -->|"跨进程通讯 (RPC)"| E["msvsmon.exe (调试监视器)"]
+    E -->|"调用 Win32 Debug API"| F["Windows Kernel (操作系统内核)"]
+    F -->|"控制 / 捕获异常"| G["目标进程 (App.exe)"]
 ```
 
 ---

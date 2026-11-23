@@ -22,9 +22,9 @@ title: Function Templates
 translation:
   source: documents/vol1-fundamentals/ch09/01-function-templates.md
   source_hash: 8312bf76500b5793bf72c2a796dea891cf1d6b3e128ee92c110c300982e56e6a
-  translated_at: '2026-09-27T03:54:54+00:00'
-  engine: anthropic
-  token_count: 7500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11244
 ---
 # Function Templates: One Copy of the Logic, Not Three
 
@@ -85,8 +85,8 @@ There is no upper limit on the number of template parameters, but in real projec
 Only when you actually call the template function does the compiler take the types of the call arguments and "expand" the template into a concrete function definition. This process is called template instantiation. (Feels a bit like a macro, doesn't it? If the author's memory serves, that was truly its original role at the very, very beginning!)
 
 ```cpp
-int x = max_value(3, 5);       // T = int, generates int max_value(int, int)
-double y = max_value(1.0, 2.0); // T = double, generates double max_value(double, double)
+int x = max_value(3, 5);       // T = int, 生成 int max_value(int, int)
+double y = max_value(1.0, 2.0); // T = double, 生成 double max_value(double, double)
 ```
 
 The two calls above make the compiler generate two completely independent functions. Each exists on its own in the compiled binary, exactly as if we had hand-written two overloaded functions. **This is also the core cost of templates: code bloat—and friends from the embedded world need to pay special attention to it, because inappropriate or accidental instantiation can easily leave your code unable to fit into Flash.**
@@ -96,7 +96,7 @@ The two calls above make the compiler generate two completely independent functi
 The style above—"the compiler deduces the types from the call arguments and generates code automatically"—is called implicit instantiation, and it is the most common form. But sometimes we need to tell the compiler explicitly which type to use; that is explicit instantiation:
 
 ```cpp
-int result = max_value<double>(3, 5.0);  // Explicitly specify T = double
+int result = max_value<double>(3, 5.0);  // 显式指定 T = double
 ```
 
 Here `3` is an `int` and `5.0` is a `double`; the two types differ, and the compiler cannot deduce `T` as both `int` and `double` at once—we will talk through that deduction conflict in detail in the next section. By appending `<double>` after the function name, we explicitly pin down `T`; the compiler then implicitly converts `3` to `double` and calls the `max_value<double>` version.
@@ -104,8 +104,8 @@ Here `3` is an `int` and `5.0` is a `double`; the two types differ, and the comp
 There is also a rarer form, the explicit instantiation definition, which forces the compiler to generate the code for a particular version right here, even if the current translation unit never uses it at all:
 
 ```cpp
-template int max_value<int>(int, int);           // Explicit instantiation definition
-template double max_value(double, double);       // Same as above, with the template argument list omitted
+template int max_value<int>(int, int);           // 显式实例化定义
+template double max_value(double, double);       // 同上，省略模板参数列表
 ```
 
 This form shows up occasionally in library development: put the template's implementation in a `.cpp` file, then explicitly instantiate the type versions the library needs to export, so that user code never has to see the template implementation. In day-to-day work, though, we almost never need to hand-write explicit instantiation definitions.
@@ -119,7 +119,7 @@ The deduction rules are simple to state—one rule is all we need to remember: e
 ### Typical Deduction Failure Scenarios
 
 ```cpp
-auto r = max_value(3, 5.0);  // Compile error!
+auto r = max_value(3, 5.0);  // 编译错误！
 ```
 
 This code fails outright. The reason: `3` has type `int`, so the compiler deduces `T = int`; `5.0` has type `double`, so the compiler deduces `T = double`. One `T` cannot equal both `int` and `double` at the same time—the deduction contradicts itself.
@@ -152,7 +152,7 @@ The problem is the return type: if `T` is `int` and `U` is `double`, is the retu
 
 ```cpp
 template <typename T, typename U>
-auto max_value_two(T a, U b) -> std::common_type_t<T, U> // Yes, "common" as in shared — a type both can be handled as uniformly
+auto max_value_two(T a, U b) -> std::common_type_t<T, U> // 是的，common就是共有的意思，可以被一致处理的类型
 {
     return (a > b) ? a : b;
 }
@@ -167,18 +167,18 @@ The `max_value` we wrote works fine for most types, but for `const char*` (C-sty
 So this is where we bring out the concept of **template specialization**—why? Because it lets us provide a dedicated implementation for one specific type.
 
 ```cpp
-// Generic template
+// 通用模板
 template <typename T>
 T max_value(T a, T b)
 {
     return (a > b) ? a : b;
 }
 
-// Specialized version for const char*
+// const char* 的特化版本
 template <>
 const char* max_value<const char*>(const char* a, const char* b)
 {
-    return (std::strcmp(a, b) > 0) ? a : b; // When the compiler notices you passed a raw const char*, it goes here
+    return (std::strcmp(a, b) > 0) ? a : b; // 编译器在注意到您传递了原生的const char*的时候，走这里
 }
 ```
 
@@ -203,7 +203,7 @@ T max_value(T a, T b)
     return (a > b) ? a : b;
 }
 
-// Plain overload: the int version
+// 普通重载：int 版本
 int max_value(int a, int b)
 {
     std::cout << "int overload\n";
@@ -212,9 +212,9 @@ int max_value(int a, int b)
 
 int main()
 {
-    max_value(3, 5);       // Calls the plain overload (exact match preferred over the template)
-    max_value(1.0, 2.0);   // Calls the template instantiation (no overload version for double)
-    max_value<>(3, 5);     // Forces the template, skipping the plain overload
+    max_value(3, 5);       // 调用普通重载（精确匹配优先于模板）
+    max_value(1.0, 2.0);   // 调用模板实例化（double 无重载版本）
+    max_value<>(3, 5);     // 强制使用模板，跳过普通重载
 }
 ```
 
@@ -230,13 +230,13 @@ Now let's pull together everything we've learned and write a complete example pr
 
 ```cpp
 // func_template.cpp
-// Compile: g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template
+// 编译: g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template
 
 #include <cstring>
 #include <iostream>
 #include <string>
 // ============================================================
-// max_value: return the larger of two values
+// max_value：返回两个值中较大的一个
 // ============================================================
 template <typename T>
 T max_value(T a, T b)
@@ -244,14 +244,14 @@ T max_value(T a, T b)
     return (a > b) ? a : b;
 }
 
-// const char* specialization: compare string contents lexicographically
+// const char* 特化：按字典序比较字符串内容
 template <>
 const char* max_value<const char*>(const char* a, const char* b)
 {
     return (std::strcmp(a, b) > 0) ? a : b;
 }
 // ============================================================
-// swap_value: swap two values
+// swap_value：交换两个值
 // ============================================================
 template <typename T>
 void swap_value(T& a, T& b)
@@ -261,7 +261,7 @@ void swap_value(T& a, T& b)
     b = temp;
 }
 // ============================================================
-// print_array: print the contents of an array
+// print_array：打印数组内容
 // ============================================================
 template <typename T, std::size_t kSize>
 void print_array(const T (&arr)[kSize])
@@ -288,7 +288,7 @@ int main()
     std::cout << "max_value(\"banana\", \"apple\") = "
               << max_value("banana", "apple") << "\n";
 
-    // Explicit instantiation: mixed types
+    // 显式实例化：混合类型
     std::cout << "max_value<double>(3, 5.7) = "
               << max_value<double>(3, 5.7) << "\n";
 

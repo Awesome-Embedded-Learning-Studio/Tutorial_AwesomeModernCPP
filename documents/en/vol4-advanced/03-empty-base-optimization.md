@@ -21,9 +21,9 @@ title: Empty Base Optimization (EBO)
 translation:
   source: documents/vol4-advanced/03-empty-base-optimization.md
   source_hash: 3489c25ee12064211c70c3b43127eeb31d5a3080a8648c62ff6c3f9258fe0ee1
-  translated_at: '2026-09-26T02:52:13+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3361
 ---
 # Empty Base Optimization (EBO): C++'s Slimming Trick
 
@@ -51,19 +51,19 @@ The standard imposes the "a most-derived object must have non-zero size" require
 ## A Simple Example
 
 ```cpp
-struct Empty {}; // empty class
+struct Empty {}; // 空类
 
 struct A {
-    Empty e;     // a member; typically occupies 1 byte
+    Empty e;     // 成员，通常会占 1 字节
     int x;
 };
 
-struct B : Empty { // inherit Empty — EBO gets a chance to kick in
+struct B : Empty { // 继承 Empty —— EBO 有机会发生
     int x;
 };
 
 static_assert(sizeof(A) >= sizeof(int) + 1);
-static_assert(sizeof(B) == sizeof(int)); // usually holds on compilers that support EBO
+static_assert(sizeof(B) == sizeof(int)); // 在支持 EBO 的编译器上通常成立
 
 ```
 
@@ -84,7 +84,7 @@ Traditional EBO can only be achieved through inheritance (members cannot be comp
 ```cpp
 struct Empty {};
 struct Holder {
-    [[no_unique_address]] Empty e; // can now share its address with other members
+    [[no_unique_address]] Empty e; // 现在可以和其它成员共享地址
     int x;
 };
 

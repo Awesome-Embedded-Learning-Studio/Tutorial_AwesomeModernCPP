@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/08-dynamic-libraries-overview.md
   source_hash: aebf598f0a8f5e044ec303b5dd9f8178a6a34660fd793e47ef92cc8295c46619
-  translated_at: '2026-10-13T04:07:57+00:00'
-  engine: anthropic
-  token_count: 3600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12546
 ---
 
 # Dynamic Libraries: An Overview of the Build-Time and Run-Time Stages
@@ -64,9 +64,9 @@ The name-assembling convention hasn't changed by a single letter — it's still 
 
 ```text
 $ readelf -d dyn_app | head -5
- (I trimmed the blank line at the top of the output)
+ (输出顶上的空行笔者裁了)
 Dynamic section at offset 0x2dd0 contains 27 entries:
- (I trimmed the table's header row)
+ (表头一行笔者裁了)
  0x0000000000000001 (NEEDED)             Shared library: [libmyutil.so]
  0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
 ```
@@ -100,7 +100,7 @@ Writing the libmyutil.a path directly works too — the linker takes it as it co
 ```c
 int shared_seed = 10;
 int helper(void) { return 32; }
-const int big_table[1024] = {1, 2, 3};   // b_fat.c: the 4KB constant table in the same member
+const int big_table[1024] = {1, 2, 3};   // b_fat.c:同一成员里的 4KB 常量表
 ```
 
 ```text
@@ -149,11 +149,11 @@ $ LD_LIBRARY_PATH=/var/tmp/dynlib_share /var/tmp/dynlib_share/hold_app & P2=$!
 $ grep libmyutil.so /proc/$P1/maps
 7343e14bd000-7343e14be000 r--p 00000000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
 7343e14be000-7343e14bf000 r-xp 00001000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
-(I trimmed the two read-only segments in between)
+(中间两段只读的,笔者裁了)
 7343e14c1000-7343e14c2000 rw-p 00003000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
 $ grep libmyutil.so /proc/$P2/maps
 7eef9ec3c000-7eef9ec3d000 r-xp 00001000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
-(the rest of P2's lines mirror P1's line for line; I trimmed them)
+(P2 其余各行与 P1 行行同构,笔者裁了)
 ```
 
 There are two points to watch. The first is about addresses: the two processes mapped the same library at their own respective addresses — virtual addresses are each process's own, since every process's address space keeps to itself to begin with — and what is genuinely shared is the physical-memory layer. The second is about the inode: the two columns 08:30 757322 in each line record the device number and the inode number; an inode is a file's number within the filesystem, and both processes matched the same 757322 — the file being mapped was, all along, the same one. The physical layer is invisible to maps, so we call on its neighbor smaps: for the same mappings, one extra set of counters is recorded under each segment, and the lines starting with Shared count the physical memory in that segment that is shared with other processes. We extract the code segment (r-xp) of each of the two processes:
@@ -169,7 +169,7 @@ $ awk '/r-xp.*libmyutil\.so/{p=1;print;next} p&&/^[0-9a-f]+-/{exit} p{print}' /p
 7eef9ec3c000-7eef9ec3d000 r-xp 00001000 08:30 757322                     /var/tmp/dynlib_share/libmyutil.so
 Rss:                   4 kB
 Shared_Clean:          4 kB
- (the two zero-valued lines match P1's; I trimmed them)
+ (两行零值与 P1 的相同,笔者裁了)
 ```
 
 Both processes book this page of code as 4 kB under Shared_Clean: one page of physical memory, counted on two processes' heads. Clean means the page's contents match the file on disk — the extra sync ahead of time was aimed at exactly that. If you look right after the file has just been written out, or your /tmp is a memory-backed disk, that column will read Dirty; no harm done, just make sure the word is Shared. The control group is the data segment (rw-p); we look at P1's (P2's three numbers match it to the digit):
@@ -185,7 +185,7 @@ Private_Dirty:         4 kB
 The data page is a private copy on both sides: it is meant to be written — the dynamic linker already patched addresses into it at load time (what got patched, we'll see in the next article) — and the program's reads and writes to it never stop afterward, each process changing its own. Nobody writes the code page, so the kernel lets every process that uses it point at the same physical page. The linking article's answer is complete as of here: across every process on the machine, the file mapped as libc is the same one, and its code pages live in physical memory exactly once. Once ten thousand programs use libc, there is still one copy of the pages in memory and one copy of the file on disk. Of the two ills the static library left behind — ten thousand copies in memory, and a full relink of everything on upgrade — the first is solved here, and the fix for the second is right below: swap the .so file alone, without touching a single byte of the executable:
 
 ```text
-$ gcc -shared -fPIC -o libmyutil.so b_v2.c    # same interface, helper now returns 52
+$ gcc -shared -fPIC -o libmyutil.so b_v2.c    # 同一接口,helper 改返回 52
 $ LD_LIBRARY_PATH=. ./dyn_app; echo $?
 62
 ```
@@ -228,7 +228,7 @@ $ readelf -d build/libmyutil.so.1.2.3 | grep SONAME
   0x000000000000000e (SONAME)             Library soname: [libmyutil.so.1]
 $ readelf -d build/app | grep -E "NEEDED|RUNPATH"
  0x0000000000000001 (NEEDED)             Shared library: [libmyutil.so.1]
- (I trimmed the line where app depends on libc)
+ (app 依赖 libc 的那行笔者裁了)
  0x000000000000001d (RUNPATH)            Library runpath: [/tmp/dynlib_demo/build]
 ```
 

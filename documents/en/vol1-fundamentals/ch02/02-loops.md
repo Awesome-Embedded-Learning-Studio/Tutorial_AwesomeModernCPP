@@ -19,12 +19,23 @@ tags:
 - 入门
 - 基础
 title: Loop Statements
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #177)"
+      en: "Contributed exercise solutions and article revisions (PR #177)"
 translation:
   source: documents/vol1-fundamentals/ch02/02-loops.md
-  source_hash: 0e8dc38c9e45a473b872b7d1c978b51f0b3712a93c086d213905aa0ae967afd6
-  translated_at: '2026-09-25T10:08:56+00:00'
-  engine: anthropic
-  token_count: 7600
+  source_hash: 9fa3ac5f39bc2c5031976b83ff3e5fb65c2d29cea61f2bd3e2599af63d24267e
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 11279
 ---
 # Loop Statements: Handing the Repetitive Chores to the Machine
 
@@ -38,7 +49,7 @@ The `while` loop is the most straightforward loop structure: check the condition
 
 ```cpp
 while (condition) {
-    // Loop body
+    // 循环体
 }
 ```
 
@@ -57,8 +68,8 @@ int main()
     std::cout << "请输入数字（输入 0 结束）: ";
     std::cin >> value;
 
-    // Well, what will happen we cannot know, but we do know:
-    // once our value is no longer 0, the loop is headed for retirement.
+    // 嗯，发生啥咱们不知道，但是咱们知道
+    // 要是咱们的 value 不是 0了，循环就要退役了。
     while (value != 0) {
         sum += value;
         std::cout << "当前累加和: " << sum << std::endl;
@@ -92,8 +103,8 @@ There must be an operation inside the loop body that changes the condition (here
 
 ```cpp
 do {
-    // Loop body
-} while (condition);  // Note the semicolon here!
+    // 循环体
+} while (condition);  // 注意这里有个分号！
 ```
 
 Because of this "act first, judge later" nature, `do-while` is a particularly good fit for scenarios like menu systems — the menu has to be displayed at least once, and then you decide whether to continue based on the user's choice:
@@ -121,7 +132,7 @@ When the number of iterations is known, the `for` loop is the clearest choice. I
 
 ```cpp
 for (init; condition; increment) {
-    // Loop body
+    // 循环体
 }
 ```
 
@@ -129,11 +140,11 @@ The execution order is: run `init` once, then check `condition`; if true, execut
 
 ```cpp
 for (int i = 1; i <= 10; ++i) {
-    // Read this output like so: starting from i = 1, keep executing until i no longer satisfies the relation i <= 10, approaching it by incrementing i by 1.
+    // 这个输出这样读：从 i = 1 开始，一直执行到i不再满足 i <= 10 这个关系，逼近的方式是i自增1.
     std::cout << i << " ";
 }
-// Note: once we are out of this for loop, i is no longer usable!
-// Output: 1 2 3 4 5 6 7 8 9 10
+// 注意，出了这个for循环，i 就没办法使用了！
+// 输出: 1 2 3 4 5 6 7 8 9 10
 ```
 
 `for` also supports manipulating several variables at once — here is a classic two-pointer reversal to demonstrate:
@@ -142,13 +153,13 @@ for (int i = 1; i <= 10; ++i) {
 int data[] = {1, 2, 3, 4, 5};
 int n = 5;
 
-// Two pointers walk from both ends toward the middle, swapping elements
+// 双指针从两端向中间走，交换元素
 for (int i = 0, j = n - 1; i < j; ++i, --j) {
     int temp = data[i];
     data[i] = data[j];
     data[j] = temp;
 }
-// data is now {5, 4, 3, 2, 1}
+// data 现在是 {5, 4, 3, 2, 1}
 ```
 
 The initialization section declares two variables, `i` and `j`; the increment section does both `++i` and `--j`, closing in from both ends toward the middle and stopping when they meet.
@@ -171,10 +182,10 @@ int target = 9;
 for (int i = 0; i < 6; ++i) {
     if (data[i] == target) {
         std::cout << "找到 " << target << "，下标为 " << i << std::endl;
-        break;  // Found it, no need to keep searching
+        break;  // 找到了，不用继续搜了
     }
 }
-// Output: 找到 9，下标为 3
+// 输出: 找到 9，下标为 3
 ```
 
 An example with `continue` — printing the odd numbers between 1 and 20:
@@ -182,11 +193,11 @@ An example with `continue` — printing the odd numbers between 1 and 20:
 ```cpp
 for (int i = 1; i <= 20; ++i) {
     if (i % 2 == 0) {
-        continue;  // Skip even numbers
+        continue;  // 偶数跳过
     }
     std::cout << i << " ";
 }
-// Output: 1 3 5 7 9 11 13 15 17 19
+// 输出: 1 3 5 7 9 11 13 15 17 19
 ```
 
 Note that `break` only breaks out of the innermost loop. With two nested levels, a `break` in the inner loop only leaves the inner loop — the outer one keeps turning exactly as before. To break out of multiple levels of loop at once, the usual approaches are a flag variable combined with a condition check in the outer loop, or wrapping the logic in a function and exiting with `return`.
@@ -233,13 +244,13 @@ The execution count of a nested loop is the product of the iteration counts of e
 Let's combine the loops we have learned into one program: the 9x9 multiplication table, a number-guessing mini-game (`while` + `break`), and a pyramid pattern printer (nested `for`).
 
 ```cpp
-// loops.cpp -- a comprehensive loop exercise
-// Compile: g++ -Wall -Wextra -o loops loops.cpp
+// loops.cpp -- 综合循环练习
+// 编译: g++ -Wall -Wextra -o loops loops.cpp
 
 #include <iostream>
 #include <iomanip>
 
-/// @brief Print the 9x9 multiplication table
+/// @brief 打印九九乘法表
 void print_multiplication_table()
 {
     std::cout << "=== 九九乘法表 ===" << std::endl;
@@ -251,7 +262,7 @@ void print_multiplication_table()
     }
 }
 
-/// @brief A number-guessing game, demonstrating while + break working together
+/// @brief 猜数字游戏，演示 while + break 的配合
 void guess_number_game()
 {
     const int kSecret = 42;
@@ -277,18 +288,18 @@ void guess_number_game()
     }
 }
 
-/// @brief Print a pyramid made of asterisks
+/// @brief 打印由星号组成的金字塔
 void print_pyramid()
 {
     const int kHeight = 5;
 
     std::cout << "\n=== 金字塔图案 ===" << std::endl;
     for (int row = 1; row <= kHeight; ++row) {
-        // Print the leading spaces
+        // 打印前导空格
         for (int space = 0; space < kHeight - row; ++space) {
             std::cout << " ";
         }
-        // Print the stars (the row-th row has 2*row - 1 stars)
+        // 打印星号（第 row 行有 2*row - 1 个星号）
         for (int star = 0; star < 2 * row - 1; ++star) {
             std::cout << "*";
         }
@@ -317,7 +328,7 @@ g++ -Wall -Wextra -o loops loops.cpp
 === 九九乘法表 ===
 1x1= 1
 1x2= 2 2x2= 4
-...(middle omitted)
+...（中间省略）
 1x9= 9 2x9=18 ... 9x9=81
 
 === 猜数字游戏 ===

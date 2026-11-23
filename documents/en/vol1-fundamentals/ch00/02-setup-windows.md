@@ -20,10 +20,10 @@ tags:
 title: Windows Environment Setup
 translation:
   source: documents/vol1-fundamentals/ch00/02-setup-windows.md
-  source_hash: c423c4bf518b24acb374c4b41c8384f5f8ab532ad75506bc8157be87d76d1cf8
-  translated_at: '2026-09-25T09:44:48+00:00'
-  engine: anthropic
-  token_count: 2660
+  source_hash: 169a1a608341aaa537db3806601d3d56fa4633934aea9c7b1c3172258f5e83be
+  translated_at: '2026-11-22T16:40:56+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7088
 ---
 # Windows Environment Setup
 
@@ -172,13 +172,13 @@ cmake --build build
 
 When using the MinGW Makefiles generator, other programs on your PATH that ship a `make.exe` (say, the one bundled with Qt, or some older MinGW) can break the build. If you hit that problem, you can explicitly point CMake at the make executable when configuring: `cmake -B build -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe`.
 
-On either route, a successful build produces a `hello.exe` under the `build` directory (or `Release/hello.exe`). Run it:
+On either route, a successful build produces a `hello.exe` under the `build` directory (or `Release/hello.exe`). Run it from the terminal you just used (don't try double-clicking it in the folder, or all you'll see is a window that flashes and vanishes—perhaps think about why that happens, and how you could keep the window from flashing by):
 
 ```powershell
-# MSVC route
+# MSVC 路线
 .\build\Release\hello.exe
 
-# MinGW route
+# MinGW 路线
 .\build\hello.exe
 ```
 
@@ -210,29 +210,29 @@ On the debugging side, CMake Tools integrates very well. Hover the mouse over th
 
 ```json
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug hello",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/hello.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
+      "setupCommands": [
         {
-            "name": "Debug hello",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/hello.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
         }
-    ]
+      ]
+    }
+  ]
 }
 ```
 

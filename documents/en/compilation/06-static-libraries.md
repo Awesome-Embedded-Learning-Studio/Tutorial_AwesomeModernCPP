@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/06-static-libraries.md
   source_hash: 28e8d4f4f5510ec98f314af562ae68a4e8d4dd163b9c809c02f0e9c922473bb6
-  translated_at: '2026-10-13T03:57:14+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8076
 ---
 
 # Static Libraries: Packaging with ar and Linking with -l/-L
@@ -26,13 +26,13 @@ translation:
 At the end of the previous article we set ourselves one task: a batch of definition-carrying .o files like b.o can be compiled ahead of time, tucked neatly into a single file, and handed to the linker as one package whenever needed, sparing us the work of starting over from source every time. Today we get that done. You already know the raw materials: a.o and b.o are the same pair from the previous article, where they were matched up — one carrying a pending-definition U, the other holding the definitions. I have prepared two new ingredients:
 
 ```c
-// extra.c — new material: two functions living in one file
+// extra.c —— 新料:一个文件里住俩函数
 int bonus_a(void) { return 7; }
 int bonus_b(void) { return 100; }
 ```
 
 ```c
-// a2.c — caller number two: besides helper, it also names bonus_a
+// a2.c —— 调用方二号:除了 helper,还点名 bonus_a
 extern int helper(void);
 extern int bonus_a(void);
 int main(void) { return helper() + bonus_a(); }

@@ -24,9 +24,9 @@ video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/04-template-compilation-and-future.md
   source_hash: e836440db3417fdb31349353273529f82ab0158b0fec98be20e4f1eb5de8dffe
-  translated_at: '2026-09-26T15:17:03+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17876
 ---
 # Templates Should Not Be Compiled in Isolation
 
@@ -53,14 +53,14 @@ I wrote some code to verify this behavior, running on my Arch Linux WSL, with GC
 #include <list>
 #include <iostream>
 
-// A simplified advance that mimics the standard library's behavior
+// 一个简化版的 advance，模拟标准库的行为
 template<typename Iter>
 void my_advance(Iter& it, int n) {
-    // If the iterator supports +=, jump straight there
+    // 如果迭代器支持 +=，直接跳
     if constexpr (requires(Iter i, int m) { i += m; }) {
         it += n;
     } else {
-        // Otherwise, walk one step at a time
+        // 否则一步一步走
         for (int i = 0; i < n; ++i) {
             ++it;
         }
@@ -68,17 +68,17 @@ void my_advance(Iter& it, int n) {
 }
 
 int main() {
-    // vector's iterator is a random_access_iterator and supports +=
+    // vector 的迭代器是 random_access_iterator，支持 +=
     std::vector<int> vec = {10, 20, 30, 40, 50};
     auto vit = vec.begin();
     my_advance(vit, 2);
-    std::cout << *vit << "\n";  // outputs 30
+    std::cout << *vit << "\n";  // 输出 30
 
-    // list's iterator is a bidirectional_iterator and does not support +=
+    // list 的迭代器是 bidirectional_iterator，不支持 +=
     std::list<int> lst = {10, 20, 30, 40, 50};
     auto lit = lst.begin();
     my_advance(lit, 2);
-    std::cout << *lit << "\n";  // outputs 30
+    std::cout << *lit << "\n";  // 输出 30
 
     return 0;
 }
@@ -95,13 +95,13 @@ When the compiler sees the definition of `my_advance`, it checks every line of c
 Then I'd have no choice but to split the code into two overloads:
 
 ```cpp
-// The version for random_access_iterator
+// 给 random_access_iterator 用的版本
 template<std::random_access_iterator Iter>
 void my_advance(Iter& it, int n) {
     it += n;
 }
 
-// The version for other iterators
+// 给其他迭代器用的版本
 template<std::input_iterator Iter>
     requires (!std::random_access_iterator<Iter>)
 void my_advance(Iter& it, int n) {
@@ -164,20 +164,20 @@ My test environment is Arch Linux WSL, GCC 16.1.1, compile command with `-std=c+
 #include <concepts>
 #include <type_traits>
 
-// The simplest Concept: takes one type parameter, returns bool
+// 最简单的 Concept：接受一个类型参数，返回 bool
 template<typename T>
 concept HasSize = requires(T t) {
     { t.size() } -> std::convertible_to<std::size_t>;
 };
 
-// A Concept taking two type parameters: expresses a cross-type constraint
+// 接受两个类型参数的 Concept：表达跨类型约束
 template<typename T, typename U>
 concept CanAdd = requires(T a, U b) {
-    a + b;  // only requires that a + b is a valid expression
+    a + b;  // 只要求 a + b 是合法表达式
 };
 
-// A Concept taking a type parameter and a value parameter
-// sizeof is evaluated at compile time, so no runtime information is needed here
+// 接受类型参数和值参数的 Concept
+// sizeof 在编译期求值，所以这里不需要运行时信息
 template<typename T, std::size_t N>
 concept IsLargeType = (sizeof(T) >= N);
 
@@ -185,8 +185,8 @@ void test_single_param(HasSize auto& container) {
     std::cout << "size = " << container.size() << "\n";
 }
 
-// A two-parameter concept cannot use the "CanAdd auto" syntax — that only works for single-parameter concepts
-// You must use an explicit requires clause and pass both template arguments in
+// 双参数 concept 不能用 "CanAdd auto" 语法——那只对单参数 concept 有效
+// 必须用显式的 requires 子句，把两个模板参数传进去
 template<typename T, typename U>
     requires CanAdd<T, U>
 void test_cross_add(T a, U b) {
@@ -196,14 +196,14 @@ void test_cross_add(T a, U b) {
 
 int main() {
     std::string s = "hello";
-    test_single_param(s);  // OK, string has size()
+    test_single_param(s);  // OK，string 有 size()
 
-    // test_single_param(42);  // compile error: int does not satisfy HasSize
+    // test_single_param(42);  // 编译错误：int 不满足 HasSize
 
-    test_cross_add(10, 20);      // OK, int + int -> int
-    test_cross_add(10, 3.14);    // OK, int + double -> double
+    test_cross_add(10, 20);      // OK，int + int -> int
+    test_cross_add(10, 3.14);    // OK，int + double -> double
 
-    // test_cross_add("hello", 42);  // compile error: const char* + int is not valid
+    // test_cross_add("hello", 42);  // 编译错误：const char* + int 不合法
 
     static_assert(IsLargeType<double, 4>);  // sizeof(double) == 8 >= 4
     static_assert(!IsLargeType<char, 4>);   // sizeof(char) == 1 < 4
@@ -226,25 +226,25 @@ I wrote an example to verify these three cases:
 #include <vector>
 #include <list>
 
-// Constraint A: a sortable container
+// 约束 A：可排序的容器
 template<typename T>
 concept SortableContainer = requires(T t) {
     requires std::ranges::range<T>;
     requires std::totally_ordered<typename T::value_type>;
 };
 
-// Constraint B: a sortable random-access container (stricter than A)
+// 约束 B：可排序的随机访问容器（比 A 更严格）
 template<typename T>
 concept RandomAccessSortable = SortableContainer<T> && requires(T t) {
     requires std::random_access_iterator<typename T::iterator>;
 };
 
-// Case 1: only one matches
+// 情况1：只有一个匹配
 void process(SortableContainer auto& c) {
     std::cout << "sortable container\n";
 }
 
-// Case 2: both match, but one is a subset of the other -> pick the stricter one
+// 情况2：两个都匹配，但一个是另一个的子集 -> 选最严格的
 void process(RandomAccessSortable auto& c) {
     std::cout << "random access sortable container\n";
 }
@@ -253,8 +253,8 @@ int main() {
     std::list<int> lst = {3, 1, 2};
     std::vector<int> vec = {3, 1, 2};
 
-    process(lst);  // only matches SortableContainer -> outputs "sortable container"
-    process(vec);  // both match, but RandomAccessSortable is stricter -> outputs "random access sortable container"
+    process(lst);  // 只匹配 SortableContainer -> 输出 "sortable container"
+    process(vec);  // 两个都匹配，但 RandomAccessSortable 更严格 -> 输出 "random access sortable container"
 }
 ```
 
@@ -273,8 +273,8 @@ Following that thread, I wrote my own `SafeNumericConvert` Concept to separate "
 #include <limits>
 #include <stdexcept>
 
-// Compile-time judgment: whether converting from From to To might lose data
-// Safe condition: To is strictly wider, or the same width with matching signedness
+// 编译期判断：从 From 到 To 的转换是否可能丢失数据
+// 安全条件：To 严格更宽，或者同宽且符号性相同
 template<typename From, typename To>
 concept SafeNumericConvert =
     std::integral<From> && std::integral<To> &&
@@ -282,26 +282,26 @@ concept SafeNumericConvert =
      (sizeof(From) == sizeof(To) &&
       std::is_signed_v<From> == std::is_signed_v<To>));
 
-// A wrapper that only compiles for safe conversions
+// 只有安全转换才能编译通过的包装函数
 template<typename To, typename From>
     requires SafeNumericConvert<From, To>
 constexpr To safe_cast(From val) {
     return static_cast<To>(val);
 }
 
-// The version checked at runtime: handles the cases that cannot be decided at compile time
+// 运行时才检查的版本：处理编译期无法判断的情况
 template<typename To, typename From>
     requires (std::integral<From> && std::integral<To> && !SafeNumericConvert<From, To>)
 To checked_cast(From val) {
     if constexpr (std::is_signed_v<From> && std::is_unsigned_v<To>) {
         if (val < 0) throw std::overflow_error("negative to unsigned");
     } else if constexpr (std::is_unsigned_v<From> && std::is_signed_v<To>) {
-        // unsigned -> signed, same size: 0 is always valid, only the upper bound needs checking
+        // unsigned -> signed 同 size：0 永远合法，只需检查上界
         if (val > static_cast<From>(std::numeric_limits<To>::max())) {
             throw std::overflow_error("narrowing conversion would overflow");
         }
     } else {
-        // signed -> signed narrowing, or other cases: compare safely via the common type
+        // signed -> signed 缩小 或其他情况，用公共类型做安全比较
         using Common = std::common_type_t<From, To>;
         if (static_cast<Common>(val) < static_cast<Common>(std::numeric_limits<To>::min()) ||
             static_cast<Common>(val) > static_cast<Common>(std::numeric_limits<To>::max())) {
@@ -313,13 +313,13 @@ To checked_cast(From val) {
 
 int main() {
     int x = 42;
-    auto y = safe_cast<long long>(x);       // OK, int -> long long is safe
-    // auto z = safe_cast<char>(x);          // compile error! int -> char may narrow
-    // auto u = safe_cast<int>(uint32_t(0)); // compile error! uint32_t -> int32_t, same size but unsigned -> signed
+    auto y = safe_cast<long long>(x);       // OK，int -> long long 是安全的
+    // auto z = safe_cast<char>(x);          // 编译错误！int -> char 可能窄化
+    // auto u = safe_cast<int>(uint32_t(0)); // 编译错误！uint32_t -> int32_t 同 size 但 unsigned -> signed
 
-    // For scenarios that need runtime checks, use checked_cast
-    auto w = checked_cast<char>(x);         // runtime check: 42 is within char's range, OK
-    // auto q = checked_cast<char>(300);     // throws at runtime
+    // 需要运行时检查的场景，用 checked_cast
+    auto w = checked_cast<char>(x);         // 运行时检查，42 在 char 范围内，OK
+    // auto q = checked_cast<char>(300);     // 运行时抛异常
 }
 ```
 
@@ -345,7 +345,7 @@ Let's look at a perfectly ordinary concept definition:
 #include <concepts>
 #include <type_traits>
 
-// The concepts I used to write looked like this — type parameters only
+// 我以前写的 concept，长这样——只接受类型参数
 template<typename T>
 concept Addable = requires(T a, T b) {
     { a + b } -> std::convertible_to<T>;
@@ -372,12 +372,12 @@ Once that relationship is clear, the code writes itself. Let's define a concept 
 #include <concepts>
 #include <array>
 
-// This concept takes a type parameter and a value parameter
-// What it says is: T is an integral type, and the value v must be greater than or equal to 0
+// 这个 concept 接受一个类型参数和一个值参数
+// 它表达的含义是：T 是一个整数类型，且值 v 必须大于等于 0
 template<typename T, T v>
 concept NonNegativeIntegral = std::integral<T> && (v >= 0);
 
-// Use it to constrain a function
+// 用它来约束一个函数
 template<typename T, T v>
     requires NonNegativeIntegral<T, v>
 constexpr T safe_value() {
@@ -385,14 +385,14 @@ constexpr T safe_value() {
 }
 
 int main() {
-    // This one is fine: type int, value 42, satisfies >= 0
+    // 这个没问题，int 类型，值是 42，满足 >= 0
     std::cout << safe_value<int, 42>() << "\n";
 
-    // This one is fine too: value 0, the boundary case
+    // 这个也没问题，值是 0，边界情况
     std::cout << safe_value<int, 0>() << "\n";
 
-    // If you uncomment the next line, compilation fails outright
-    // because the value -1 does not satisfy the v >= 0 constraint
+    // 下面这行如果取消注释，编译会直接报错
+    // 因为值 -1 不满足 v >= 0 的约束
     // std::cout << safe_value<int, -1>() << "\n";
 
     return 0;
@@ -409,21 +409,21 @@ Since concepts can carry value parameters, can I use different values to trigger
 #include <iostream>
 #include <string>
 
-// Define two concepts, distinguished by different values
+// 定义两个 concept，用不同的值来区分
 template<int N>
 concept IsSmall = (N <= 10);
 
 template<int N>
 concept IsLarge = (N > 10);
 
-// This implementation is chosen when N is less than or equal to 10
+// 当 N 小于等于 10 时走这个实现
 template<int N>
     requires IsSmall<N>
 std::string describe_size() {
     return "small: " + std::to_string(N);
 }
 
-// This implementation is chosen when N is greater than 10
+// 当 N 大于 10 时走这个实现
 template<int N>
     requires IsLarge<N>
 std::string describe_size() {
@@ -431,8 +431,8 @@ std::string describe_size() {
 }
 
 int main() {
-    std::cout << describe_size<3>() << "\n";   // outputs: small: 3
-    std::cout << describe_size<50>() << "\n";  // outputs: LARGE: 50
+    std::cout << describe_size<3>() << "\n";   // 输出: small: 3
+    std::cout << describe_size<50>() << "\n";  // 输出: LARGE: 50
     return 0;
 }
 ```
@@ -448,7 +448,7 @@ I chewed on this for a long time before landing on a very simple criterion. Ask 
 Here's an intuitive example. Suppose I want to compute an integer's factorial at compile time:
 
 ```cpp
-// The result is a value, so a constexpr function is exactly right
+// 结果是值，用 constexpr 函数，天经地义
 constexpr int factorial(int n) {
     int result = 1;
     for (int i = 2; i <= n; ++i) {
@@ -518,10 +518,10 @@ I had wondered about this myself before. I've written code like this:
 #include <string>
 
 int main() {
-    // This thing compiles, but you can barely do anything meaningful with it
+    // 这玩意儿能编译通过，但你基本没法对它做任何有意义的事
     std::vector<std::unique_ptr<int>> v;
-    // v.push_back(std::make_unique<int>(42));  // compile error
-    // but instantiating the vector itself is perfectly legal
+    // v.push_back(std::make_unique<int>(42));  // 编译错误
+    // 但 vector 本身的实例化是完全合法的
 }
 ```
 
@@ -541,14 +541,14 @@ I ran a small experiment to see what this "accumulate string concatenation" is a
 int main() {
     std::vector<std::string> words = {"hello", " ", "world"};
 
-    // accumulate's default operation is std::plus, which for string is just operator+
-    // The initial value "" is a string, so the whole deduction follows along from there
+    // accumulate 的默认操作是 std::plus，对 string 来说就是 operator+
+    // 初始值 "" 是 string，所以整个推导就顺着走下去了
     auto result = std::accumulate(
         words.begin(), words.end(),
         std::string("")
     );
 
-    // result == "hello world" — it really does run
+    // result == "hello world"，确实能跑
 }
 ```
 

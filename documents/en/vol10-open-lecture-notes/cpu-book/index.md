@@ -3,9 +3,10 @@ title: "C/C++ in the CPU's Eyes"
 description: "From a single line of code down to instructions, stack frames, and page tables: every layer of C++ abstraction, looked at once more from the CPU's point of view"
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/index.md
-  source_hash: 523f76e5fa827a12dc0a033c00cbb35418bf215bb8f7f56a66344bbccd857587
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: d09ef29b7baad3bbbf558c1f21b285194a0bf0c2d4235a415c35943b2b6fe872
+  translated_at: '2026-11-22T16:49:49Z'
+  engine: glm-5.3-refresh
+  token_count: 1530
 ---
 
 # C/C++ in the CPU's Eyes
@@ -29,3 +30,7 @@ The series covers 11 topics, written up as 35 short articles, and any one of the
   <ChapterLink href="10-new-in-assembly/">The Two Steps of new in Assembly: One Allocation, End to End</ChapterLink>
   <ChapterLink href="11-template-instantiation/">Template Instantiation: The Code the Compiler Writes for You</ChapterLink>
 </ChapterNav>
+
+## Acknowledgments
+
+> Many thanks to @owollz4 for recommending the book 《CPU 眼里的 C/C++》 ("C/C++ in the Eyes of the CPU"). This volume is our own exploration and reflection on the topic rather than a reproduction of the book. Should anything here prove inappropriate or infringing, contact @Charliechen114514 right away, and this volume's content will be pulled.

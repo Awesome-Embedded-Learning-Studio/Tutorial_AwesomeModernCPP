@@ -19,10 +19,10 @@ tags:
   - 类型安全
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage1/06-tensor.md
-  source_hash: 39e8cde596c9a57858b55e0ca1e11900ee70166724d1c249c0288f00accb9044
-  translated_at: '2026-09-26T04:10:30+00:00'
-  engine: anthropic
-  token_count: 2100
+  source_hash: 81a262663689bcc781609a254df81f5a4d19d11b6fe38ec6b8330dd4879aea3b
+  translated_at: '2026-11-22T16:40:49+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8870
 ---
 
 # The fixed-dimension Tensor — the inference engine's data foundation
@@ -73,17 +73,17 @@ namespace tamcpp::tinyml {
 template <std::size_t Rows, std::size_t Cols, typename StorageType = float>
 class Tensor {
   public:
-    // Error codes live inside the class: every Tensor dimension carries its own copy — enough, no fuss
+    // 错误码挂类内:每个维度的 Tensor 各带一份,够用不折腾
     enum class Error { kShapeMismatch, kOutOfRange };
 
-    // Checked safe read: out-of-range goes through expected's error, no exception thrown
+    // 带检查的安全读取:越界走 expected 错误,不抛异常
     constexpr std::expected<StorageType, Error>
     at(std::size_t i, std::size_t j) noexcept {
         if (i >= Rows || j >= Cols) return std::unexpected{Error::kOutOfRange};
         return internals_[i * Cols + j];
     }
     constexpr std::expected<const StorageType, Error>
-    at(std::size_t i, std::size_t j) const noexcept;   // same as above, const version
+    at(std::size_t i, std::size_t j) const noexcept;   // 同上,const 版
 
     static_assert(Rows > 0 && Cols > 0, "dims must be positive");
 
@@ -95,11 +95,11 @@ class Tensor {
     constexpr std::size_t col() const noexcept { return Cols; }
     constexpr std::size_t size() const noexcept { return internals_.size(); }
 
-    // Hot-path access: returns a reference, no check, out-of-bounds is UB
+    // 热路径访问:返回引用、不检查,越界 UB
     constexpr StorageType&       operator()(std::size_t i, std::size_t j) noexcept;
     constexpr const StorageType& operator()(std::size_t i, std::size_t j) const noexcept;
 
-    // Flat span view (Stage 2 Dense reads weights through it, no copy)
+    // 扁平 span 视图(Stage 2 Dense 读权重用,不拷贝)
     constexpr std::span<const StorageType, Rows * Cols> view() const noexcept;
     constexpr std::span<StorageType,       Rows * Cols> view()       noexcept;
 
@@ -107,7 +107,7 @@ class Tensor {
     constexpr std::array<const StorageType, Rows * Cols>& storage() const noexcept;
 
   private:
-    std::array<StorageType, Rows * Cols> internals_{};   // this {} must not be dropped — see common pitfalls
+    std::array<StorageType, Rows * Cols> internals_{};   // 这个 {} 不能省,见常见坑
 };
 
 template <std::size_t Cols, typename StorageType = float>
@@ -157,7 +157,7 @@ function(tamcpp_add_test name source)
 endfunction()
 
 tamcpp_add_test(smoke_catch2 smoke.cpp)
-tamcpp_add_test(tensor_api  tensor_api.cpp)   # ← don't miss this one, see pitfall 5
+tamcpp_add_test(tensor_api  tensor_api.cpp)   # ← 这个别漏,见常见坑 5
 ```
 
 One more easily-forgotten line: the top level needs `enable_testing()`, otherwise every `add_test` registered by `catch_discover_tests` dangles in the air, and `ctest` forever reports "No tests found".
@@ -198,7 +198,7 @@ TEST_CASE("out-of-range goes through expected", "[tensor]") {
     REQUIRE_FALSE(r);
     REQUIRE(r.error() == Tensor<2, 2>::Error::kOutOfRange);
 
-    // A single out-of-range dimension must be caught too (regression guard against &&: i out of range while j is within)
+    // 单维越界也要拦(防 && 回归:i 越界但 j 在范围内)
     auto r_single = t.at(99, 0);
     REQUIRE_FALSE(r_single);
     REQUIRE(r_single.error() == Tensor<2, 2>::Error::kOutOfRange);

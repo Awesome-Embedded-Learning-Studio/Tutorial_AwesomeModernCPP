@@ -17,10 +17,10 @@ tags:
 title: Pointers, Arrays, const, and Null Pointers
 translation:
   source: documents/vol1-fundamentals/c_tutorials/07B-pointers-arrays-const.md
-  source_hash: df0e77a3de5736ad685d9b47f4296bb4ca776bcb781c70940e88ecda478854fd
-  translated_at: '2026-09-25T13:05:18+00:00'
-  engine: anthropic
-  token_count: 2800
+  source_hash: ed139495cbbf271882c3dfeaaaeaf779ef4801e56c12fd62f5d6277156afa2ec
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9533
 ---
 # Pointers, Arrays, const, and Null Pointers
 
@@ -36,7 +36,7 @@ C has one very important rule here: **in most contexts, an array name automatica
 
 ```c
 int numbers[5] = {1, 2, 3, 4, 5};
-int* ptr = numbers;      // Legal: numbers decays to &numbers[0]
+int* ptr = numbers;      // 合法：numbers 退化为 &numbers[0]
 ```
 
 The type of `numbers` itself is `int[5]` (an array containing 5 ints), but when assigned to a pointer it automatically converts to `int*` (a pointer to the first element). This means `numbers[i]` and `*(numbers + i)` are fully equivalent—the subscript operator `[]` is essentially syntactic sugar over pointer arithmetic.
@@ -114,8 +114,8 @@ Combining `const` with pointers is a classic interview question, and something y
 
 ```c
 const int* p1 = &value;
-// *p1 = 100;   // Error: cannot modify the pointed-to data through p1
-p1 = &other;    // Legal: the pointer itself may point somewhere else
+// *p1 = 100;   // 错误：不能通过 p1 修改指向的数据
+p1 = &other;    // 合法：指针本身可以指向别的地方
 ```
 
 `const int*` means "the int that p1 points to is read-only"—you can't change that value through `p1`, but `p1` itself is free to point at other variables. Note that `value` doesn't have to be `const` itself; you're simply promising not to modify it through this particular channel. This pattern is extremely common in function parameters—`void process(const int* data)` is telling the caller, "relax, I promise I won't touch your data".
@@ -124,8 +124,8 @@ p1 = &other;    // Legal: the pointer itself may point somewhere else
 
 ```c
 int* const p2 = &value;
-*p2 = 100;      // Legal: the pointed-to data can be modified
-// p2 = &other;  // Error: the pointer itself is immutable
+*p2 = 100;      // 合法：可以修改指向的数据
+// p2 = &other;  // 错误：指针本身不可变
 ```
 
 The pointer itself is `const`—once initialized it points at the same address forever, but you can still modify the data in that memory through it. This is very common in embedded development, for example mapping a hardware register at a fixed address:
@@ -140,8 +140,8 @@ The pointer's value (the address) is fixed, while the register can still be read
 
 ```c
 const int* const p3 = &value;
-// *p3 = 100;    // Error
-// p3 = &other;  // Error
+// *p3 = 100;    // 错误
+// p3 = &other;  // 错误
 ```
 
 Both sides are locked down—the pointer can't change direction, and the data can't be modified through the pointer. This is typically used for accessing read-only hardware registers or constant lookup tables.
@@ -175,16 +175,16 @@ A wild pointer is a pointer that points at invalid memory. It usually has three 
 The first is the **uninitialized pointer**—declared but never assigned, it holds a random value from the stack, and that address could point anywhere. The second is the **dangling pointer**—a pointer that once pointed at valid memory, but that memory has since been freed (continuing to use the pointer after `free`). The third is **out-of-bounds access**—pointer arithmetic that runs past the legal range.
 
 ```c
-// Uninitialized — the most classic wild pointer
+// 未初始化——最经典的野指针
 int* wild;
-*wild = 42;   // Undefined behavior: writing 42 to a random address
+*wild = 42;   // 未定义行为：往随机地址写入 42
 
-// Dangling pointer
+// 悬空指针
 int* dangling = (int*)malloc(sizeof(int));
 free(dangling);
-*dangling = 42;  // Undefined behavior: the memory has been freed
+*dangling = 42;  // 未定义行为：内存已经释放了
 
-// Good habit: set it to NULL after freeing
+// 好习惯：释放后置 NULL
 dangling = NULL;
 ```
 
@@ -203,10 +203,10 @@ The best defense is actually quite simple—just remember these three rules:
 ```c
 int* safe_ptr = NULL;
 
-// ... memory gets allocated somewhere ...
+// ... 某处分配了内存 ...
 
 if (safe_ptr != NULL) {
-    *safe_ptr = 42;   // Safe: use it only after confirming it's non-null
+    *safe_ptr = 42;   // 安全：确认非空才使用
 }
 ```
 
@@ -221,12 +221,12 @@ First, **references**. `int& r = value` is essentially a const pointer that the 
 Then there are **smart pointers**. `std::unique_ptr` and `std::shared_ptr` manage the memory's lifetime automatically through RAII—when the pointer goes out of scope, the memory is released automatically, eliminating at the root the memory leaks and dangling pointers that manual `malloc`/`free` cause.
 
 ```cpp
-// C++ smart pointers — a sneak preview
+// C++ 智能指针——先睹为快
 #include <memory>
 
 std::unique_ptr<int> p = std::make_unique<int>(42);
-// *p == 42, used exactly the same way as a raw pointer
-// Automatically deleted on leaving scope; no manual release needed
+// *p == 42，使用方式和原始指针一样
+// 离开作用域时自动 delete，不需要手动释放
 ```
 
 We'll discuss all of this in depth in the C++ tutorials ahead. For now, you only need one core idea: **C++'s philosophy is to make management automatic through the type system and object lifetimes, rather than relying on the programmer's self-discipline**.
@@ -240,11 +240,11 @@ We'll discuss all of this in depth in the C++ tutorials ahead. For now, you only
 Implement a linear search function that returns a pointer to the first occurrence of a target value in an array. If the target is not found, return `NULL`.
 
 ```c
-/// @brief Linearly search an int array for a target value
-/// @param data address of the array's first element
-/// @param count number of elements
-/// @param target the value to search for
-/// @return pointer to the target element, or NULL if not found
+/// @brief 在 int 数组中线性搜索目标值
+/// @param data 数组首元素地址
+/// @param count 元素个数
+/// @param target 要搜索的值
+/// @return 指向目标元素的指针，未找到则返回 NULL
 const int* linear_search(const int* data, size_t count, int target);
 ```
 
@@ -258,7 +258,7 @@ int main(void) {
     const int arr[] = {10, 21, 32, 43, 54, 65, 76, 87, 98, 9};
     int target = 43;
 
-    // Use sizeof to compute the array size automatically
+    // 使用 sizeof 自动计算数组大小
     size_t count = sizeof(arr) / sizeof(arr[0]);
 
     const int* result = linear_search(arr, count, target);
@@ -274,7 +274,7 @@ int main(void) {
 }
 
 const int* linear_search(const int* data, size_t count, int target) {
-    // Defensive programming: if the pointer is null, or the count is 0, return NULL right away
+    // 防御性编程：如果指针为空，或者数量为0，直接返回 NULL
     if (data == NULL || count == 0) {
         return NULL;
     }
@@ -304,9 +304,9 @@ The address itself isn't worth memorizing—the key is that trailing part saying
 Implement a function that reverses an array in place, using only pointer arithmetic (two pointers converging from both ends toward the middle) and no array subscripts:
 
 ```c
-/// @brief Reverse an int array in place
-/// @param data address of the array's first element
-/// @param count number of elements
+/// @brief 原地反转 int 数组
+/// @param data 数组首元素地址
+/// @param count 元素个数
 void reverse_array(int* data, size_t count);
 ```
 
@@ -401,9 +401,9 @@ const int* p1 = &value;
 int* const p2 = &value;
 const int* const p3 = &value;
 
-// For each pointer p1/p2/p3, determine whether these operations are legal:
-// *px = 50;      // modify the data through the pointer
-// px = &other;   // change where the pointer points
+// 对每个指针 p1/p2/p3，判断以下操作是否合法：
+// *px = 50;      // 通过指针修改数据
+// px = &other;   // 修改指针指向
 ```
 
 ::: details Reference solution
@@ -415,16 +415,15 @@ const int* p1 = &value;
 int* const p2 = &value;
 const int* const p3 = &value;
 
-// The six lines below test legality; read them line by line against the
-// declarations above (they're all written as comments, because the illegal
-// ones would fail to compile if written out for real):
-// *p1 = other;   // Illegal: p1 points to const int, no way to write through it
-// *p2 = other;   // Legal: p2 is a const pointer (fixed target), but it points to a plain int, so the value can change
-// *p3 = other;   // Illegal: p3 points to const int and is itself const—neither the value nor the direction can change
+// 下面六行用来判断合法性，逐行对照上面的声明看（都写成注释，
+// 因为不合法的那几行真写出来会编译报错）：
+// *p1 = other;   // 不合法：p1 指向 const int，无法通过它改值
+// *p2 = other;   // 合法：p2 是 const 指针（指向固定），但它指向的是普通 int，值能改
+// *p3 = other;   // 不合法：p3 既指向 const int，自身也是 const，改值改向都不行
 //
-// p1 = &other;   // Legal: p1 itself is not a const pointer, so it can be redirected
-// p2 = &other;   // Illegal: p2 is a const pointer, its target cannot change
-// p3 = &other;   // Illegal: p3 is likewise a const pointer, its target cannot change
+// p1 = &other;   // 合法：p1 本身不是 const 指针，可以改指向
+// p2 = &other;   // 不合法：p2 是 const 指针，指向不能改
+// p3 = &other;   // 不合法：p3 同样是 const 指针，指向不能改
 
 ```
 

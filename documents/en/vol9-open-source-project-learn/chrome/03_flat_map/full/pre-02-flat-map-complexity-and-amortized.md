@@ -24,9 +24,9 @@ title: 'flat_map prerequisite (II): complexity and amortized analysis'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-02-flat-map-complexity-and-amortized.md
   source_hash: 13feb033f429c8d49d81b5e8bff189630d1b23f51056a9a790d550aaf3a6cc37
-  translated_at: '2026-09-26T02:47:43+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5333
 ---
 # flat_map prerequisite (II): complexity and amortized analysis
 
@@ -55,7 +55,7 @@ So flat_map's single-element insert is `O(n)` single-shot and still `O(n)` amort
 flat_map's lookups—`find`, `contains`, `lower_bound`, `equal_range`—are all `O(log n)`, all riding on binary search over a sorted array. Take `lower_bound` as the example (flat_tree.h:1027 uses `std::ranges::lower_bound`):
 
 ```cpp
-// Find, in the sorted array [first, last), the first position not less than key
+// 在有序数组 [first, last) 里找第一个不小于 key 的位置
 auto it = std::ranges::lower_bound(data, key, comp);
 ```
 
@@ -72,8 +72,8 @@ flat_map's inserts (`insert`/`emplace`/`operator[]`/`insert_or_assign`) all walk
 Saying `O(n)` is not tangible enough on its own, so we ran an experiment: insert at the head of a vector 100k times (`emplace(begin)`), shifting every element behind it on every single call:
 
 ```text
-100k vector::emplace(begin)  →  264 ms   (O(n²) total cost)
-100k vector::push_back       →  0 ms      (amortized O(1))
+10 万次 vector::emplace(begin)  →  264 ms   (O(n²) 总代价)
+10 万次 vector::push_back       →  0 ms      (摊还 O(1))
 ```
 
 Two orders of magnitude apart. Use flat_map the way you use std::map, frequently inserting in the middle, and that 264ms curve is what you will see. flat_map's `O(n)` insert is not a textbook warning meant to scare you; it is a performance wall you will genuinely slam into.
@@ -83,12 +83,12 @@ Two orders of magnitude apart. Use flat_map the way you use std::map, frequently
 But flat_map does have a cheap construction path. If you can feed it a whole blob of data in one shot (say, move-constructing from a `vector<pair<K,V>>`), it has no need for per-element inserts—instead it appends every element first, then sorts and deduplicates in one pass (`sort_and_unique`, flat_tree.h:147-149):
 
 ```text
-flat_map construction (N elements):
-  1. append all elements         O(N)
+flat_map 构造(N 个元素):
+  1. append 所有元素         O(N)
   2. sort_and_unique:
-       std::stable_sort          O(N log N)
-       unique + erase            O(N)
-  total                          O(N log N)  (with spare memory; otherwise O(N log²N))
+       std::stable_sort      O(N log N)
+       unique + erase        O(N)
+  总计                       O(N log N)  (有额外内存时;否则 O(N log²N))
 ```
 
 `stable_sort` is `O(N log N)` when spare memory is available—it can grab a temporary buffer and do a merge; when memory falls short it degrades to `O(N log²N)`, because an in-place merge pays `O(N log N)` per level. So flat_map's batch construction is `O(N log N)`, far cheaper than the `O(N²)` of inserting one by one. That is the implementation-level reason flat_map is strictly better in the "write once" scenario.

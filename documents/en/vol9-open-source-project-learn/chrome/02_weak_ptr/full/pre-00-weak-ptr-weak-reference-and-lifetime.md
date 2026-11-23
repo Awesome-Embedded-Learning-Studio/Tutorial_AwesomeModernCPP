@@ -24,10 +24,10 @@ tags:
 title: "WeakPtr prerequisite (0): weak references and the lifetime puzzle"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-00-weak-ptr-weak-reference-and-lifetime.md
-  source_hash: 794aca9bc62695b2587fdbbd0eaa9cbd82486f4e0d1d823dbc721d4d2f5b2e4c
-  translated_at: '2026-09-26T01:21:37+00:00'
-  engine: anthropic
-  token_count: 6400
+  source_hash: d9def12e492bff15d3dba30aebcca36ac92f1b5441113d5fa2ff7c4526f3e78d
+  translated_at: '2026-11-22T16:41:57.448855+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7036
 ---
 # WeakPtr prerequisite (0): weak references and the lifetime puzzle
 
@@ -46,11 +46,11 @@ Let's pull the camera all the way back first. In C++, "A references B" sits at t
 `std::shared_ptr<T>` is the canonical strong reference. It expresses shared ownership: as long as one `shared_ptr` still points at B, B is not allowed to die; only when the last one leaves is B destroyed.
 
 ```cpp
-auto sp = std::make_shared<Foo>();  // reference count = 1
+auto sp = std::make_shared<Foo>();  // 引用计数 = 1
 {
-    std::shared_ptr<Foo> sp2 = sp;  // reference count = 2
-}   // sp2 leaves, the count drops back to 1, Foo lives on
-// sp is still here, Foo is still alive
+    std::shared_ptr<Foo> sp2 = sp;  // 引用计数 = 2
+}   // sp2 离开,引用计数回到 1,Foo 没死
+// sp 还在,Foo 还活着
 ```
 
 The rules are safe, but the price is honest: whoever takes a `shared_ptr` gets a hand in B's lifespan. Picture A as a timer and B as a business object, with A holding a reference to B so it can call B's method when the timer fires. What happens if A holds a `shared_ptr<B>`? As long as the timer stays scheduled, B can never be destroyed — even when business semantics say B should have left long ago. A only meant to "borrow it for a bit", and ended up "co-owning" it. The ownership graph is muddied, and everyone who later has to reason about lifetimes pays for it with a frown.
@@ -61,8 +61,8 @@ On the other end sits the raw pointer `T*`. It stays entirely out of ownership: 
 
 ```cpp
 Foo* p = obj;
-obj = nullptr;       // someone elsewhere destroyed the object
-p->do_something();   // dangling pointer, undefined behavior, most likely a segfault
+obj = nullptr;       // 别处把对象析构了
+p->do_something();   // 悬垂指针,未定义行为,大概率段错误
 ```
 
 Note that the raw pointer's sin is not "doesn't extend the lifetime" — that is exactly what we asked for. The sin is that it has no way whatsoever to express "but I'd still like to confirm the other side is alive". A pointer is just an address, and an address doesn't turn null because the object was destroyed. `p` is still the same `p`, while the memory it aims at may long since have been taken over by some other object — one touch and it's a use-after-free.
@@ -87,8 +87,8 @@ The rule grows out of its mechanism. Inside a `shared_ptr` there is more than a 
 flowchart TB
     SP["shared_ptr"]
     WP["weak_ptr"]
-    CB["control block (on the heap)<br/>strong count = 1<br/>weak count = 1<br/>ptr to Foo"]
-    Foo["Foo (on the heap)"]
+    CB["控制块(堆上)<br/>strong count = 1<br/>weak count = 1<br/>ptr to Foo"]
+    Foo["Foo(堆上)"]
     SP --> CB
     WP --> CB
     CB --> Foo
@@ -100,11 +100,11 @@ Here is the crux: a `weak_ptr` doesn't increase the strong count, so it has no h
 
 ```cpp
 auto sp = std::make_shared<Foo>();
-std::weak_ptr<Foo> wp = sp;   // constructed from the shared_ptr, does not increase the strong count
+std::weak_ptr<Foo> wp = sp;   // 从 shared_ptr 构造,不增加 strong count
 
-wp.use_count();   // how many strong references are left
-wp.expired();     // equivalent to use_count() == 0, has the object been destroyed
-auto locked = wp.lock();  // try to upgrade back to a shared_ptr
+wp.use_count();   // 看 strong count 还剩几个
+wp.expired();     // 等价于 use_count() == 0,对象是否已析构
+auto locked = wp.lock();  // 尝试升级回 shared_ptr
 ```
 
 `expired()` tells you whether the object is dead; `lock()` nudges the weak reference toward a strong one — if the object is alive it hands you a valid `shared_ptr`, and if it's already gone you get an empty one.
@@ -115,11 +115,11 @@ The most natural way for a newcomer to write it is this — and it is also the e
 
 ```cpp
 std::weak_ptr<Foo> wp = sp;
-// ... someone else may have released sp ...
+// ... 别处可能把 sp 释放了 ...
 
 if (!wp.expired()) {
-    // wp hasn't expired here?
-    sp->do_something();   // wrong! sp may have been released after expired() but before this line
+    // 这里 wp 还没过期?
+    sp->do_something();   // 错!sp 可能已经在 expired() 之后、这一行之前被释放
 }
 ```
 
@@ -129,7 +129,7 @@ The correct fix is `lock()`: it packs "check liveness" and "upgrade to a strong 
 
 ```cpp
 if (auto locked = wp.lock()) {
-    locked->do_something();   // locked now holds a strong count, the object is guaranteed alive
+    locked->do_something();   // 此时 locked 持有 strong count,对象保证活着
 }
 ```
 
@@ -144,8 +144,8 @@ At this point one detail deserves a pause, because it leads straight into "intru
 `std::shared_ptr`'s control block is non-intrusive: a separate block of heap memory living apart from the object. So behind the single statement `std::shared_ptr<Foo>(new Foo)` there are actually two heap allocations — one for Foo, one for the control block.
 
 ```cpp
-std::shared_ptr<Foo> sp1(new Foo);   // two heap allocations: Foo + control block
-auto sp2 = std::make_shared<Foo>();   // one heap allocation: Foo and the control block packed together
+std::shared_ptr<Foo> sp1(new Foo);   // 两次堆分配:Foo + 控制块
+auto sp2 = std::make_shared<Foo>();   // 一次堆分配:Foo 和控制块打包在一起
 ```
 
 `std::make_shared` squeezes the object and the control block into the same heap allocation, done in one shot — the main reason it beats `shared_ptr(new)` on speed. But this optimization drags out a counterintuitive side effect: as long as one `weak_ptr` still points at it, the whole block of memory (the part the object occupied included) is never returned, even long after the object has been destroyed.
@@ -153,12 +153,12 @@ auto sp2 = std::make_shared<Foo>();   // one heap allocation: Foo and the contro
 ```cpp
 std::weak_ptr<Foo> wp;
 {
-    auto sp = std::make_shared<Foo>();   // one allocation: control block + Foo
+    auto sp = std::make_shared<Foo>();   // 一次分配:控制块 + Foo
     wp = sp;
-}   // sp leaves, Foo is destroyed, but the control block stays because wp is still around
-// Foo's destruction has already run, yet the memory it occupied still hangs there, because the control block is packed with it
-auto sp2 = wp.lock();   // returns an empty shared_ptr — the object is truly gone
-// but the make_shared allocation is only truly returned once wp is destroyed too
+}   // sp 离开,Foo 析构,但控制块因为 wp 还在而保留
+// 此时 Foo 的析构已经跑完,但它占的内存还挂在那里,因为控制块和它打包在一起
+auto sp2 = wp.lock();   // 返回空 shared_ptr——对象确实没了
+// 但 make_shared 那块内存要等 wp 也销毁才真正归还
 ```
 
 Why? The control block has to outlive every `weak_ptr` (otherwise a `weak_ptr` couldn't safely query `expired()`), and `make_shared` insists on tying the control block and the object into one household. Object destroyed does not mean memory returned; in scenarios where the `weak_ptr` lives long, you end up dragging around a chunk of memory that is dead through and through yet still squatting there.

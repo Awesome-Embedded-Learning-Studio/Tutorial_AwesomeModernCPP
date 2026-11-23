@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/08-cache-friendly-cpp/03-data-types-and-cache.md
   source_hash: e38f0b4809995e4dd5b94c9ba28f092ac2798265677cb6fb42fd2d4331f7aa39
-  translated_at: '2026-09-26T16:38:13+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3773
 ---
 
 # Data Types Are Part of the Cache Equation Too: Smaller Isn't Always Faster
@@ -40,10 +40,10 @@ The scenario is thoroughly everyday: an array storing the ages of tens of millio
 Let's compare all three storage layouts — `int32_t`, `int16_t`, and `uint8_t` — accumulating 50 million elements, with 7 runs each on this machine (GCC 16.1.1, `-O2`), taking the median:
 
 ```text
-N=50000000, -O2 (with compiler auto-vectorization)
-  int32_t  : 10301.1 us  (array 190.7 MB, 16 per 64B cache line)
-  int16_t  : 10263.2 us  (array 95.4 MB,  32 per 64B cache line)
-  uint8_t  : 11270.6 us  (array 47.7 MB,  64 per 64B cache line)
+N=50000000, -O2 (含编译器自动向量化)
+  int32_t  : 10301.1 us  (数组 190.7 MB, 每缓存行(64B)装 16 个)
+  int16_t  : 10263.2 us  (数组 95.4 MB,  每缓存行(64B)装 32 个)
+  uint8_t  : 11270.6 us  (数组 47.7 MB,  每缓存行(64B)装 64 个)
 ```
 
 Stare at that result for a moment. By the cache-line-utilization logic, `uint8_t` packs 64 elements per line and should be fastest; `int32_t` fits only 16 per line and should be slowest. But what actually comes out is: `int16_t` is the fastest, and `uint8_t` is **actually the slowest** — about 10% slower than `int16_t`. Cache space shrank 4x, yet speed went down instead of up.
@@ -61,8 +61,8 @@ So the picture becomes: `uint8_t` saves 4x space on the cache side (fewer cache 
 To rule out interference from the compiler's auto-vectorization, let's turn vectorization off (`-fno-tree-vectorize`) and look at pure scalar performance:
 
 ```text
--O2 -fno-tree-vectorize (pure scalar)
-  int32_t  : 11537.6 us   ← fastest
+-O2 -fno-tree-vectorize (纯标量)
+  int32_t  : 11537.6 us   ← 最快
   int16_t  : 12988.0 us
   uint8_t  : 12450.8 us
 ```
@@ -80,7 +80,7 @@ Don't swing to the other extreme and conclude that "shrinking types is useless."
 **For fields that are pure storage and barely touch arithmetic, shrink without hesitation.** The most typical case is enumerations. C++ gives enumerations a default underlying type of `int` (4 bytes), yet most enums have only a handful of values — spending 4 bytes storing a 0/1/2 is pure waste. And you basically never do arithmetic on enum values, so there's no arithmetic-throughput regression to worry about; it's pure space savings:
 
 ```cpp
-enum class Color : uint8_t { Red, Green, Blue };       // 1 byte
+enum class Color : uint8_t { Red, Green, Blue };       // 1 字节
 enum class Month : uint8_t { Jan = 1, Feb, Mar, /*...*/ Dec };
 ```
 

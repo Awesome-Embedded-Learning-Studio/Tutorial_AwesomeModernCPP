@@ -15,10 +15,10 @@ tags:
 reading_time_minutes: 15
 translation:
   source: documents/getting-started/03-first-program.md
-  source_hash: f18795da005d2a60dc5aacfa531648e0388c685b788c74403e6c2fc05255eb46
-  translated_at: '2026-09-26T14:34:39+00:00'
-  engine: anthropic
-  token_count: 2960
+  source_hash: 150d32ed94e90f49ac98918cc6497a9083b7dc585a4d24710739fb966c0dd558
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7095
 ---
 
 # Your First C++ Program — Get Hello Running in vscode

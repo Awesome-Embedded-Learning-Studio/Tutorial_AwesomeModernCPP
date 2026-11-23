@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/02-range-and-concept-composition.md
   source_hash: 81d63705108f30756d72ebf9d55f4497b516113acdd8ea33ebeb4e89e954b674
-  translated_at: '2026-09-26T15:20:50+00:00'
-  engine: anthropic
-  token_count: 7500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 25438
 ---
 # Unchecked Pointers and the Boundaries of Generic Programming
 
@@ -42,36 +42,36 @@ My approach: if `number` has an initializer, take the initializer's type as `num
 #include <iostream>
 #include <type_traits>
 
-// Basic definition of number: holds one value, its type given by the template parameter
+// number 的基础定义：携带一个值，类型由模板参数决定
 template<typename T>
 struct number {
     T value;
-    // No implicit conversion to T, so you can't accidentally use it as a plain number
+    // 禁止隐式转换到 T，防止你把它当普通数值用
     explicit operator T() const { return value; }
 };
 
-// CTAD (class template argument deduction) guide: deduce the type from the initializer
+// CTAD（类模板参数推导）指引：从初始化器推导类型
 template<typename T>
 number(T) -> number<T>;
 
-// When you do need to spell the type out, this alias keeps it short
+// 当你需要显式指定类型时，用这个别名简化书写
 template<typename T>
 using number_of = number<T>;
 
 int main() {
-    // Automatic deduction: number_of<int>
+    // 自动推导：number_of<int>
     number_of a{42};
     static_assert(std::is_same_v<decltype(a), number<int>>);
 
-    // Automatic deduction: number_of<unsigned>
+    // 自动推导：number_of<unsigned>
     number_of b{3u};
     static_assert(std::is_same_v<decltype(b), number<unsigned int>>);
 
-    // Automatic deduction: number_of<double>
+    // 自动推导：number_of<double>
     number_of c{2.718};
     static_assert(std::is_same_v<decltype(c), number<double>>);
 
-    // When you must be explicit: initializing with an integer but wanting double
+    // 需要显式指定的情况：用整数初始化，但想要 double
     number_of d = number_of<double>{1};
     static_assert(std::is_same_v<decltype(d), number<double>>);
 
@@ -80,9 +80,9 @@ int main() {
     std::cout << c.value << "\n";  // 2.718
     std::cout << d.value << "\n";  // 1
 
-    // The line below wouldn't compile, because explicit blocks implicit conversion
+    // 下面这行编译不过，因为 explicit 阻止了隐式转换
     // int x = a;
-    // But this is fine:
+    // 但这样是可以的：
     int x = static_cast<int>(a);
     std::cout << x << "\n";  // 42
 }
@@ -158,14 +158,14 @@ Next I want to write some code and see how concepts actually change the way we w
 #include <algorithm>
 #include <iterator>
 
-// First, define our own concept: a random access iterator range
-// Note: it composes standard library concepts — no need to write one from scratch
+// 先定义我们自己的 concept：随机访问迭代器范围
+// 注意：这里用标准库的 concept 来组合，不需要从零写
 template<typename Iter>
 concept RandomAccessRange =
     std::random_access_iterator<Iter> &&
     std::sentinel_for<Iter, Iter>;
 
-// A constrained sort wrapper
+// 一个受约束的 sort 包装
 template<RandomAccessRange Iter, typename Comp = std::less<>>
     requires std::indirect_strict_weak_order<Comp, Iter>
 void safe_sort(Iter first, Iter last, Comp comp = {}) {
@@ -173,15 +173,15 @@ void safe_sort(Iter first, Iter last, Comp comp = {}) {
 }
 
 int main() {
-    // Correct usage: a vector's iterators are random access iterators
+    // 正确用法：vector 的迭代器是随机访问迭代器
     std::vector<int> v = {5, 3, 1, 4, 2};
     safe_sort(v.begin(), v.end());
     for (int x : v) std::cout << x << " ";
     std::cout << "\n";
-    // Output: 1 2 3 4 5
+    // 输出：1 2 3 4 5
 
-    // Wrong usage: a list's iterators are not random access iterators
-    // Uncomment the two lines below for a very clear error message
+    // 错误用法：list 的迭代器不是随机访问迭代器
+    // 取消下面注释会看到非常清晰的错误信息
     // std::list<int> lst = {5, 3, 1, 4, 2};
     // safe_sort(lst.begin(), lst.end());
 }
@@ -207,7 +207,7 @@ Here is a concept-constrained sort function I wrote:
 #include <iostream>
 #include <list>
 
-// My own sort wrapper, with a concept spelling out the requirements
+// 我自己写的排序包装，用 concept 把要求说清楚
 template<std::random_access_iterator It, typename Comp = std::less<>>
     requires std::sortable<It, Comp>
 void my_sort(It first, It last, Comp comp = {}) {
@@ -215,15 +215,15 @@ void my_sort(It first, It last, Comp comp = {}) {
 }
 
 int main() {
-    // This compiles just fine
+    // 这个能正常编译
     std::vector<int> vec = {5, 3, 1, 4, 2};
     my_sort(vec.begin(), vec.end());
     for (int x : vec) std::cout << x << " ";
     std::cout << "\n";
 
-    // This one gets stopped at compile time
+    // 这个会在编译期被拦住
     std::list<int> lst = {5, 3, 1, 4, 2};
-    my_sort(lst.begin(), lst.end());  // Compile error!
+    my_sort(lst.begin(), lst.end());  // 编译错误！
     return 0;
 }
 ```
@@ -252,9 +252,9 @@ From the authoritative source (cppreference):
 Actual verification (GCC 16.1.1, `-std=c++20`):
 
 ```cpp
-static_assert(std::sortable<std::forward_list<int>::iterator>);  // passes!
-static_assert(std::sortable<std::list<int>::iterator>);           // passes!
-static_assert(std::sortable<std::vector<int>::iterator>);         // passes!
+static_assert(std::sortable<std::forward_list<int>::iterator>);  // 通过！
+static_assert(std::sortable<std::list<int>::iterator>);           // 通过！
+static_assert(std::sortable<std::vector<int>::iterator>);         // 通过！
 ```
 
 A `forward_list` has only forward iterators, yet it still satisfies `std::sortable`.
@@ -278,7 +278,7 @@ I've seen code like this in real projects — someone passed `begin` and `end` i
 
 ```cpp
 std::vector<int> vec = {1, 2, 3, 4, 5};
-std::sort(vec.end(), vec.begin());  // Note: reversed!
+std::sort(vec.end(), vec.begin());  // 注意：反了！
 ```
 
 Do you know what happens then? It doesn't crash right away. Inside `std::sort`, `last - first` gets computed and yields a huge number (pointer subtraction: `end` sits after `begin`, so the result should have been positive, but reversed it's negative, which turns into an enormous unsigned value), and then the algorithm starts frantically reading and writing memory out of bounds. It might run for a long time before segfaulting, or it might "quietly" corrupt your heap and crash somewhere completely unrelated. I debugged one of these once; it ate an entire afternoon.
@@ -288,7 +288,7 @@ And there's an even more absurd case — two iterators from two different contai
 ```cpp
 std::vector<int> a = {1, 2, 3};
 std::vector<int> b = {4, 5, 6};
-std::sort(a.begin(), b.end());  // Iterators from two different containers!
+std::sort(a.begin(), b.end());  // 两个不同容器的迭代器！
 ```
 
 In the C++ standard this is undefined behavior, yet the compiler won't stop you at all. From the type system's point of view, `a.begin()` and `b.end()` have exactly the same type — both are `std::vector<int>::iterator`. The compiler has no way to know whether they came from the same container.
@@ -312,7 +312,7 @@ Look at how clean the range version is:
 #include <string>
 #include <iostream>
 
-// My own range-based sort wrapper
+// 我自己包装的 range 版排序
 template<std::ranges::random_access_range R,
          typename Comp = std::ranges::less>
     requires std::sortable<std::ranges::iterator_t<R>, Comp>
@@ -321,13 +321,13 @@ void my_sort(R&& r, Comp comp = {}) {
 }
 
 int main() {
-    // vector of doubles, ascending
+    // vector of doubles，升序
     std::vector<double> vd = {3.14, 1.41, 2.72, 0.58};
     my_sort(vd);
     for (double x : vd) std::cout << x << " ";
     std::cout << "\n";
 
-    // vector of strings, descending
+    // vector of strings，降序
     std::vector<std::string> vs = {"hello", "world", "cpp", "ranges"};
     my_sort(vs, std::ranges::greater{});
     for (const auto& s : vs) std::cout << s << " ";
@@ -350,7 +350,7 @@ If you try to pass in a `list`:
 
 ```cpp
 std::list<int> lst = {5, 3, 1, 4, 2};
-my_sort(lst);  // Compile error
+my_sort(lst);  // 编译错误
 ```
 
 The error will tell you outright that `std::list<int>` does not satisfy `random_access_range`. Clean and decisive.
@@ -382,15 +382,15 @@ I set out and wrote a constraint for forward-sortable ranges, then provided over
 #include <iostream>
 #include <iterator>
 
-// First, define a concept for a "forward sortable range"
-// It says: the range must be a forward_range, and its elements must be comparable with the given predicate
+// 先定义一个"前向可排序范围"的 concept
+// 它说的是：这个范围必须是 forward_range，并且它的元素必须能用给定的谓词进行比较
 template<typename R, typename C = std::less<>>
 concept forward_sortable_range =
     std::ranges::forward_range<R> &&
     requires(R& r, C comp) {
-        // We need to be able to get a forward iterator
+        // 需要能拿到前向迭代器
         { std::begin(r) } -> std::forward_iterator;
-        // Elements must be comparable with the predicate
+        // 元素之间需要能用谓词比较
         { *std::begin(r) < *std::begin(r) } -> std::convertible_to<bool>;
     };
 ```
@@ -400,8 +400,8 @@ You might ask: why not just use `std::sortable`? Good question. `std::sortable` 
 Then I wrote two `sort` overloads, one for random access ranges and one for forward ranges:
 
 ```cpp
-// Overload 1: for random access ranges (vector, deque, etc.)
-// The stricter constraint; the compiler prefers this one
+// 重载1：给随机访问范围用的（vector、deque 等）
+// 约束更严格，编译器会优先匹配这个
 template<std::ranges::random_access_range R, typename C = std::less<>>
     requires std::sortable<std::ranges::iterator_t<R>, C>
 void my_sort(R& r, C comp = C{}) {
@@ -409,13 +409,13 @@ void my_sort(R& r, C comp = C{}) {
     std::cout << "  [走随机访问路径]\n";
 }
 
-// Overload 2: for forward sortable ranges (forward_list, etc.)
-// Key point: explicitly exclude random access ranges with !random_access_range to avoid ambiguity
+// 重载2：给前向可排序范围用的（forward_list 等）
+// 关键：用 !random_access_range 显式排除随机访问范围，避免歧义
 template<forward_sortable_range R, typename C = std::less<>>
     requires (!std::ranges::random_access_range<R>)
 void my_sort(R& r, C comp = C{}) {
-    // Simple implementation: copy into a vector, sort, copy back
-    // Production code could use a more efficient list-sorting algorithm; this is just a demo
+    // 简单实现：复制到 vector，排序，再复制回来
+    // 生产环境可以用更高效的 list 排序算法，这里只是为了演示
     std::vector<std::ranges::range_value_t<R>> tmp(
         std::begin(r), std::end(r)
     );
@@ -447,21 +447,21 @@ Let's run it to verify:
 
 ```cpp
 int main() {
-    // Test 1: vector takes the random access path
+    // 测试1：vector 走随机访问路径
     std::vector<int> v = {5, 3, 1, 4, 2};
     std::cout << "排序 vector: ";
     my_sort(v);
     for (int x : v) std::cout << x << ' ';
     std::cout << '\n';
 
-    // Test 2: forward_list takes the forward iterator path
+    // 测试2：forward_list 走前向迭代器路径
     std::forward_list<int> fl = {5, 3, 1, 4, 2};
     std::cout << "排序 forward_list: ";
     my_sort(fl);
     for (int x : fl) std::cout << x << ' ';
     std::cout << '\n';
 
-    // Test 3: descending order with greater
+    // 测试3：用 greater 降序排
     std::vector<int> v2 = {1, 2, 3, 4, 5};
     std::cout << "降序排序 vector: ";
     my_sort(v2, std::greater<>{});
@@ -526,12 +526,12 @@ I used to think concept composition was some profound thing, until one day I wro
 #include <algorithm>
 #include <iostream>
 
-// A concept of my own: a sortable range
-// It is essentially the "AND" of forward_range and sortable
+// 我自己定义的一个 concept：可排序的范围
+// 本质上就是 forward_range 和 sortable 的"与"操作
 template<typename R>
 concept sortable_range = std::ranges::forward_range<R> && std::sortable<std::ranges::iterator_t<R>>;
 
-// Constrain the function template with this composed concept
+// 用这个组合出来的 concept 去约束函数模板
 template<sortable_range R>
 void my_sort(R&& r) {
     std::ranges::sort(std::forward<R>(r));
@@ -539,13 +539,13 @@ void my_sort(R&& r) {
 
 int main() {
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
-    my_sort(v);  // Compiles: vector<int> satisfies both forward_range and sortable
+    my_sort(v);  // 编译通过，vector<int> 既满足 forward_range 又满足 sortable
 
-    // my_sort("hello");  // Compile error: a string does not satisfy sortable
-    // The error will tell you plainly: constraint 'sortable_range<R>' not satisfied
+    // my_sort("hello");  // 编译错误，字符串不满足 sortable
+    // 报错信息会明确告诉你：约束 'sortable_range<R>' 未满足
 
     for (int x : v) std::cout << x << ' ';
-    // Output: 1 1 2 3 4 5 6 9
+    // 输出：1 1 2 3 4 5 6 9
 }
 ```
 
@@ -563,23 +563,23 @@ Let's look at how the classic `equality_comparable` should be written by hand:
 #include <concepts>
 #include <type_traits>
 
-// A hand-rolled, simplified equality_comparable
-// Checks whether equality and inequality comparisons are possible between T and U
+// 自己实现一个简化版的 equality_comparable
+// 检查 T 和 U 之间是否可以进行相等和不相等比较
 template<typename T, typename U>
 concept my_equality_comparable =
     requires(const T& t, const U& u) {
-        // Each line below is a check of one "use pattern"
-        // The compiler tries to compile these expressions; if they all compile, the requirement holds
+        // 下面每一行都是一个"使用模式"的检查
+        // 编译器会尝试编译这些表达式，如果都能编译通过，这一项就是 true
         { t == u } -> std::convertible_to<bool>;
         { u == t } -> std::convertible_to<bool>;
         { t != u } -> std::convertible_to<bool>;
         { u != t } -> std::convertible_to<bool>;
     };
 
-// Verify
-static_assert(my_equality_comparable<int, double>);   // int and double compare fine
-static_assert(my_equality_comparable<int, int>);      // same type, of course
-static_assert(!my_equality_comparable<int, std::nullptr_t>);  // int and nullptr don't compare
+// 验证一下
+static_assert(my_equality_comparable<int, double>);   // int 和 double 可以比较
+static_assert(my_equality_comparable<int, int>);      // 同类型当然可以
+static_assert(!my_equality_comparable<int, std::nullptr_t>);  // int 和 nullptr 不能比较
 ```
 
 There are a few details here I got burned by before. First, the parameter list inside the `requires` braces — `const T& t, const U& u` — introduces "hypothetical variables" used only by the checks inside the braces; they are never actually created. Second, the syntax `{ t == u } -> std::convertible_to<bool>`: inside the braces is the expression to check, and after the arrow is the requirement on its return type. Note that this uses `convertible_to<bool>` rather than `same_as<bool>`, because the `==` operator doesn't necessarily return exactly `bool` — being implicitly convertible to bool is enough. This is explicitly specified in the C++20 standard.
@@ -589,14 +589,14 @@ There are a few details here I got burned by before. First, the parameter list i
 The talk said "if you require requires in your code, you might be doing something wrong." At first I didn't understand that sentence; after thinking it over, I realized it refers to this kind of situation:
 
 ```cpp
-// Bad example: a requires expression written directly in the function's constraints
+// 反面教材：直接在函数约束里写 requires 表达式
 template<typename T>
     requires requires(T t) { t + t; }
 auto add_stuff(T a, T b) {
     return a + b;
 }
 
-// The right way: give it a name and define a concept
+// 正确做法：给它起个名字，定义成 concept
 template<typename T>
 concept addable = requires(T t) { t + t; };
 
@@ -620,25 +620,25 @@ But use patterns take a completely different approach: they don't care how you i
 #include <concepts>
 #include <string>
 
-// I only require that the expression A + B compiles and that the result converts to some common type
-// Whether A + B is implemented as a member function or a free function, I don't care at all
+// 我只要求 A + B 这个表达式能编译通过，并且结果能转成某种公共类型
+// 至于 A + B 是通过成员函数实现还是自由函数实现，我完全不关心
 template<typename A, typename B>
 concept can_add = requires(A a, B b) {
     { a + b } -> std::convertible_to<std::common_type_t<A, B>>;
 };
 
-// Now let's see the power of use patterns
+// 来验证一下使用模式的威力
 
-// Case 1: addition of built-in types
+// 情况1：内置类型的加法
 static_assert(can_add<int, int>);
 
-// Case 2: mixed-mode arithmetic, int + double
+// 情况2：混合模式算术，int + double
 static_assert(can_add<int, double>);
 
-// Case 3: std::string addition (implemented via a free operator+)
+// 情况3：std::string 的加法（通过自由函数 operator+ 实现）
 static_assert(can_add<std::string, std::string>);
 
-// Case 4: a user-defined type implementing operator+ as a member function
+// 情况4：自定义类型，用成员函数实现 operator+
 class MyInt {
     int val;
 public:
@@ -647,7 +647,7 @@ public:
 };
 static_assert(can_add<MyInt, MyInt>);
 
-// Case 5: another user-defined type implementing operator+ as a free function
+// 情况5：另一个自定义类型，用自由函数实现 operator+
 class MyFloat {
     float val;
 public:
@@ -659,7 +659,7 @@ MyFloat operator+(const MyFloat& a, const MyFloat& b) {
 }
 static_assert(can_add<MyFloat, MyFloat>);
 
-// Case 6: int and std::string cannot be added
+// 情况6：int 和 std::string 不能相加
 static_assert(!can_add<int, std::string>);
 ```
 
@@ -693,13 +693,13 @@ concept can_compare = requires(A a, B b) {
     { a == b } -> std::convertible_to<bool>;
 };
 
-// int and double compare fine, because int implicitly converts to double
+// int 和 double 可以比较，因为 int 会隐式转换为 double
 static_assert(can_compare<int, double>);
 
-// int and long compare fine
+// int 和 long 可以比较
 static_assert(can_compare<int, long>);
 
-// int and std::string don't: there is no implicit conversion from string to int
+// int 和 std::string 不行，没有从 string 到 int 的隐式转换
 static_assert(!can_compare<int, std::string>);
 ```
 

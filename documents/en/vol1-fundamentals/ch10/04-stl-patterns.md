@@ -21,10 +21,10 @@ tags:
 title: Common STL Patterns
 translation:
   source: documents/vol1-fundamentals/ch10/04-stl-patterns.md
-  source_hash: 5b7b2220440d741d7ce82ce7e2abb8c796d1889ddce7fd113c20cc8dcf47871c
-  translated_at: '2026-09-27T04:05:04+00:00'
-  engine: anthropic
-  token_count: 10500
+  source_hash: 723323773104b2bc6f7f00d5f56d45971fc16dea691fa852aa6d49903d799578
+  translated_at: '2026-11-22T16:41:53+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13700
 ---
 # Common STL Patterns: Choosing Containers and Dodging Pitfalls in Real Code
 
@@ -68,14 +68,14 @@ We raised this issue when we covered `vector`, but it affects more than `vector`
 
 ```cpp
 std::vector<int> v = {1, 2, 3, 4, 5};
-auto it = v.begin() + 2;  // points to 3
-v.push_back(6);           // may trigger a reallocation
-// it is now a dangling iterator — dereferencing it is undefined behavior
+auto it = v.begin() + 2;  // 指向 3
+v.push_back(6);           // 可能触发扩容
+// it 现在是悬垂迭代器——解引用是未定义行为
 
 std::map<int, std::string> m = {{1, "a"}, {2, "b"}, {3, "c"}};
 auto mit = m.find(2);
-m.erase(1);               // erases the element with key=1
-// mit is still valid — map's erase does not affect other iterators
+m.erase(1);               // 删除 key=1 的元素
+// mit 仍然有效——map 的 erase 不影响其他迭代器
 ```
 
 The practical upshot of this difference: when we need to erase elements while walking a `map`, we can do it directly through iterators; erasing while walking a `vector` demands real care. Let's look at that more concrete scenario next.
@@ -90,7 +90,7 @@ Here is a classic crash site. First, the version that "looks fine at a glance bu
 std::vector<int> v = {1, 2, 3, 4, 5, 6};
 for (auto it = v.begin(); it != v.end(); ++it) {
     if (*it % 2 == 0) {
-        v.erase(it);  // undefined behavior! it is already invalidated
+        v.erase(it);  // 未定义行为！it 已失效
     }
 }
 ```
@@ -98,9 +98,9 @@ for (auto it = v.begin(); it != v.end(); ++it) {
 Notice that after `erase` returns, `it` is dead, and doing `++it` on it afterward is undefined behavior. The correct approach uses `erase`'s return value, which is an iterator to the element following the erased one:
 
 ```cpp
-for (auto it = v.begin(); it != v.end(); /* no ++it here */) {
+for (auto it = v.begin(); it != v.end(); /* 不在这里 ++it */) {
     if (*it % 2 == 0) {
-        it = v.erase(it);  // erase returns an iterator to the next element
+        it = v.erase(it);  // erase 返回下一个元素的迭代器
     } else {
         ++it;
     }
@@ -110,11 +110,11 @@ for (auto it = v.begin(); it != v.end(); /* no ++it here */) {
 This pattern is still error-prone, though—one brief lapse and we forget that the `erase` branch must not do `++it`. The more recommended approach first moves the doomed elements to the end with `std::remove_if`, then erases them in one shot:
 
 ```cpp
-// Before C++20
+// C++20 之前
 auto it = std::remove_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
 v.erase(it, v.end());
 
-// C++20 — done in one line
+// C++20——一行搞定
 std::erase_if(v, [](int x) { return x % 2 == 0; });
 ```
 
@@ -132,10 +132,10 @@ The sneakiest scenario we're likely to hit is accidentally triggering `operator[
 std::map<std::string, int> word_count = {{"hello", 2}, {"world", 1}};
 
 
-// "Safely" read the values of all keys — not actually safe!
+// "安全地"读取所有 key 的值——其实不是！
 for (const auto& [word, count] : word_count) {
-    // if word_count[some_other_key] is called here, the map gets modified
-    // modifying container structure inside a range-for = undefined behavior
+    // 如果在这里调用 word_count[some_other_key]，map 会被修改
+    // 在 range-for 中修改容器结构 = 未定义行为
 }
 ```
 
@@ -161,7 +161,7 @@ A classic benchmark result: for containers of small elements like `int` or `doub
 
 ```cpp
 std::vector<int> v;
-v.reserve(10000);  // one allocation; the 10000 push_backs afterward never reallocate
+v.reserve(10000);  // 一次分配，之后 10000 次 push_back 零扩容
 for (int i = 0; i < 10000; ++i) {
     v.push_back(i);
 }
@@ -189,14 +189,14 @@ Now let's knead everything this chapter has discussed—container selection, pit
 #include <unordered_set>
 #include <vector>
 
-/// A single sensor reading
+/// 单条传感器读数
 struct Reading {
     std::string sensor_id;
     double value;
     uint32_t timestamp;
 };
 
-/// An analysis report
+/// 分析报告
 struct Report {
     std::string sensor_id;
     double min_val;
@@ -205,14 +205,14 @@ struct Report {
     std::size_t count;
 };
 
-/// Filter outliers: group by sensor and drop data deviating from that sensor's mean by more than kSigma standard deviations
+/// 过滤异常值：按传感器分组，去掉偏离该传感器均值超过 kSigma 个标准差的数据
 void filter_outliers(std::vector<Reading>& readings, double k_sigma)
 {
     if (readings.empty()) {
         return;
     }
 
-    // Group by sensor and compute the mean and standard deviation for each
+    // 按传感器分组，分别计算均值和标准差
     std::unordered_map<std::string, std::vector<double>> groups;
     for (const auto& r : readings) {
         groups[r.sensor_id].push_back(r.value);
@@ -230,7 +230,7 @@ void filter_outliers(std::vector<Reading>& readings, double k_sigma)
         stats[id] = {mean, stddev};
     }
 
-    // remove-erase to drop the outliers
+    // remove-erase 删除异常值
     auto it = std::remove_if(readings.begin(), readings.end(),
         [&](const Reading& r) {
             const auto& [mean, stddev] = stats[r.sensor_id];
@@ -239,15 +239,15 @@ void filter_outliers(std::vector<Reading>& readings, double k_sigma)
     readings.erase(it, readings.end());
 }
 
-/// Generate an analysis report for each sensor
+/// 为每个传感器生成分析报告
 std::vector<Report> generate_reports(const std::vector<Reading>& readings)
 {
-    // Group by sensor with an unordered_map (no ordered traversal needed, O(1) lookup)
+    // 用 unordered_map 按传感器分组（不需要有序遍历，O(1) 查找）
     std::unordered_map<std::string, std::vector<Reading>> groups;
-    groups.reserve(16);  // pre-allocate to reduce rehashes
+    groups.reserve(16);  // 预分配，减少 rehash
 
-    // Read-only analysis: push_back copies. Don't write std::move(r) here—
-    // that would strip the sensor_id out of every element in the caller's readings
+    // 只读分析：push_back 直接拷贝。别写 std::move(r)——
+    // 那会把调用方 readings 里每个元素的 sensor_id 都移走
     for (const auto& r : readings) {
         groups[r.sensor_id].push_back(r);
     }
@@ -260,13 +260,13 @@ std::vector<Report> generate_reports(const std::vector<Reading>& readings)
             continue;
         }
 
-        // sort by timestamp
+        // 按时间戳排序
         std::sort(recs.begin(), recs.end(),
             [](const Reading& a, const Reading& b) {
                 return a.timestamp < b.timestamp;
             });
 
-        // compute the statistics with STL algorithms
+        // 用 STL 算法计算统计量
         auto [min_it, max_it] = std::minmax_element(recs.begin(), recs.end(),
             [](const Reading& a, const Reading& b) {
                 return a.value < b.value;
@@ -284,29 +284,29 @@ std::vector<Report> generate_reports(const std::vector<Reading>& readings)
         });
     }
 
-    // sort the output by sensor ID so the result is stable
+    // 按传感器 ID 排序输出，保证结果稳定
     std::sort(reports.begin(), reports.end(),
         [](const Report& a, const Report& b) { return a.sensor_id < b.sensor_id; });
 
     return reports;
 }
 
-/// Remove duplicate readings (same sensor plus same timestamp counts as a duplicate)
+/// 去除重复读数（同一传感器、同一时间戳视为重复）
 void deduplicate(std::vector<Reading>& readings)
 {
-    // Track the (sensor_id, timestamp) combinations already seen in an unordered_set
+    // 用 unordered_set 记录已见过的 (sensor_id, timestamp) 组合
     struct Key {
         std::string sensor_id;
         uint32_t timestamp;
     };
 
-    // Custom hash and equality — required by unordered_set
+    // 自定义哈希和相等比较——unordered_set 必需
     struct KeyHash {
         std::size_t operator()(const Key& k) const
         {
             auto h1 = std::hash<std::string>{}(k.sensor_id);
             auto h2 = std::hash<uint32_t>{}(k.timestamp);
-            return h1 ^ (h2 << 1);  // a simple combined hash
+            return h1 ^ (h2 << 1);  // 简单组合哈希
         }
     };
 
@@ -324,7 +324,7 @@ void deduplicate(std::vector<Reading>& readings)
         [&seen](const Reading& r) {
             Key k{r.sensor_id, r.timestamp};
             if (seen.count(k)) {
-                return true;  // duplicate; mark for removal
+                return true;  // 重复，标记删除
             }
             seen.insert(k);
             return false;
@@ -334,19 +334,19 @@ void deduplicate(std::vector<Reading>& readings)
 
 int main()
 {
-    // Simulated sensor data — contains duplicates and outliers
+    // 模拟传感器数据——包含重复和异常值
     std::vector<Reading> readings = {
         {"temp-01", 22.5, 1001},
         {"temp-01", 22.7, 1002},
-        {"temp-01", 22.5, 1001},  // duplicate
-        {"temp-01", 85.0, 1003},  // outlier
+        {"temp-01", 22.5, 1001},  // 重复
+        {"temp-01", 85.0, 1003},  // 异常值
         {"temp-01", 22.9, 1004},
         {"temp-01", 22.6, 1005},
         {"temp-01", 23.0, 1006},
         {"press-01", 1013.2, 1001},
         {"press-01", 1013.5, 1002},
-        {"press-01", 1013.2, 1001},  // duplicate
-        {"press-01", 12.0, 1003},    // outlier
+        {"press-01", 1013.2, 1001},  // 重复
+        {"press-01", 12.0, 1003},    // 异常值
         {"press-01", 1013.8, 1004},
         {"press-01", 1013.0, 1005},
         {"press-01", 1013.6, 1006},
@@ -354,15 +354,15 @@ int main()
 
     std::cout << "=== Raw readings: " << readings.size() << " ===\n";
 
-    // Step 1: deduplicate
+    // 第一步：去重
     deduplicate(readings);
     std::cout << "After dedup: " << readings.size() << "\n";
 
-    // Step 2: filter outliers (2 standard deviations)
+    // 第二步：过滤异常值（2 倍标准差）
     filter_outliers(readings, 2.0);
     std::cout << "After outlier filter: " << readings.size() << "\n";
 
-    // Step 3: generate the analysis reports
+    // 第三步：生成分析报告
     auto reports = generate_reports(readings);
 
     std::cout << "\n=== Analysis Reports ===\n";

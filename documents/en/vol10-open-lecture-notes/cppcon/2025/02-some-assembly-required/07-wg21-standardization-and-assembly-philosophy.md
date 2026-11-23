@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/07-wg21-standardization-and-assembly-philosophy.md
   source_hash: 5999582e915fb6ab7f63b74f58ebda7946c81b5a165ab46834c33a852a948b41
-  translated_at: '2026-09-26T15:58:46+00:00'
-  engine: anthropic
-  token_count: 13000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 42116
   notes: '原文一处事实疑点按原文照译：「CppCon 在夏威夷办过」——CppCon 历届均在 Bellevue/Aurora 举办，从未在夏威夷；疑为演讲者实际说的是 WG21 会议（曾在夏威夷 Kona 举行）。'
 ---
 # WG21 and the Organizational Chain Behind the C++ Standard
@@ -230,12 +230,12 @@ The NV condition code exists only in **ARMv4 and earlier**. Starting with ARMv5,
 Actual verification results (arm-none-linux-gnueabihf-gcc 15.2 + qemu-arm-static):
 
 ```bash
-# ARMv4: NV works as documented
+# ARMv4：NV 正常工作
 $ arm-none-linux-gnueabihf-gcc -static -march=armv4 test.c && qemu-arm-static ./a.out
 AL (always): result = 42
-NV (never):  result = 0         # ← as expected: NV skipped the MOV
+NV (never):  result = 0         # ← 符合预期，NV 跳过了 MOV
 
-# ARMv7: raises SIGILL right away (illegal instruction exception)
+# ARMv7：直接触发 SIGILL（非法指令异常）
 $ arm-none-linux-gnueabihf-gcc -static -march=armv7-a test.c && qemu-arm-static ./a.out
 qemu: uncaught target signal 4 (Illegal instruction) - core dumped
 ```
@@ -308,7 +308,7 @@ Disassembly of section .text:
 00000000 <foo>:
    0:   e52db004        push    {r7}
    4:   e24db000        sub     r7, sp, #0
-   8:   e3a0002a        mov     r0, #42     ; note this: 0xe3a0002a
+   8:   e3a0002a        mov     r0, #42     ; 注意这里：0xe3a0002a
    c:   e320f000        nop
   10:   e49db004        pop     {r7}
   14:   e12fff1e        bx      lr
@@ -328,12 +328,12 @@ Stuff the machine code in directly with `.word` to verify:
 
 void foo(void) {
     int result = 0;
-    // A normal MOV R0, #42 with condition code AL (0xe)
+    // 正常的 MOV R0, #42，条件码 AL (0xe)
     __asm__ volatile("mov r0, #42" : "=r"(result));
     printf("AL (always): result = %d\n", result);
 
     result = 0;
-    // The same instruction, hand-patched with condition code NV (0xf)
+    // 手动塞入条件码 NV (0xf) 的同一条指令
     // 0xf3a0002a = MOVNV R0, #42  (ARMv4 only!)
     __asm__ volatile(".word 0xf3a0002a" : "=r"(result));
     printf("NV (never):  result = %d\n", result);
@@ -449,7 +449,7 @@ So the criteria are fairly clear: only when you have hit an extreme hotspot the 
 The greatest value of learning assembly is not being able to write it, but being able to read what the compiler produced. A concrete example:
 
 ```cpp
-// Count occurrences of the character ch in buf (length known)
+// 统计 buf 中字符 ch 出现的次数（已知长度）
 size_t count_char(const char* buf, size_t len, char ch) {
     size_t count = 0;
     for (size_t i = 0; i < len; i++) {
@@ -467,7 +467,7 @@ The original version of the example used a `while (*str)` null-terminated loop. 
 Readers can verify with the following commands (environment: GCC 16.1.1, x86-64):
 
 ```bash
-# while(*str) version — not vectorized
+# while(*str) 版本 — 不会被向量化
 cat > /tmp/test.cpp << 'EOF'
 #include <cstddef>
 __attribute__((noinline))
@@ -476,7 +476,7 @@ size_t f(const char* s, char c) {
 }
 EOF
 g++ -O3 -march=x86-64-v2 -S /tmp/test.cpp -o /tmp/test.s
-grep pcmpeqb /tmp/test.s   # no output = not vectorized
+grep pcmpeqb /tmp/test.s   # 无输出 = 没有向量化
 ```
 
 Verification code in the repository: [05-04-count-char-vec.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-04-count-char-vec.cpp).
@@ -485,22 +485,22 @@ Verification code in the repository: [05-04-count-char-vec.cpp](https://github.c
 The real GCC output (core loop, simplified):
 
 ```asm
-# Core loop emitted by GCC 16 -O3 -march=x86-64-v2 (simplified)
+# GCC 16 -O3 -march=x86-64-v2 输出的核心循环（简化）
 count_char:
-    movd    %r8d, %xmm4            # lowest byte of ch into XMM4
-    pxor    %xmm2, %xmm2           # XMM2 = all zeros (pshufb broadcast mask)
-    pshufb  %xmm2, %xmm4           # broadcast ch to 16 bytes
-                                    # pshufb zero mask: each byte takes src[0], i.e. broadcast the lowest byte
-    pxor    %xmm2, %xmm2           # zero the count accumulator
+    movd    %r8d, %xmm4            # ch 放入 XMM4 最低字节
+    pxor    %xmm2, %xmm2           # XMM2 = 全零（用于 pshufb 广播掩码）
+    pshufb  %xmm2, %xmm4           # 广播 ch 到 16 个字节
+                                    # pshufb 零掩码：每个字节取 src[0]，即广播最低字节
+    pxor    %xmm2, %xmm2           # count 累加器清零
 .L4:
-    movdqu  (%rax), %xmm0          # load 16 bytes
-    pcmpeqb %xmm4, %xmm0           # byte-wise compare; matches 0xFF, misses 0x00
-    pmovsxbw %xmm0, %xmm6          # sign-extend low 8 bytes → 8 words
-    pmovsxwd %xmm6, %xmm5          # sign-extend → 8 dwords
-    pmovsxdq %xmm5, %xmm5          # sign-extend → 4 qwords (each 0 or -1)
-    # ... convert -1 to +1 and accumulate into xmm2 ...
-    paddq   %xmm1, %xmm2           # accumulate into the counter
-    cmpq    %rax, %rcx              # loop done?
+    movdqu  (%rax), %xmm0          # 加载 16 字节
+    pcmpeqb %xmm4, %xmm0           # 逐字节比较，匹配的位置 0xFF，不匹配 0x00
+    pmovsxbw %xmm0, %xmm6          # 符号扩展低 8 字节 → 8 个 word
+    pmovsxwd %xmm6, %xmm5          # 符号扩展 → 8 个 dword
+    pmovsxdq %xmm5, %xmm5          # 符号扩展 → 4 个 qword（每个值为 0 或 -1）
+    # ... 将 -1 转为 +1 并累加到 xmm2 ...
+    paddq   %xmm1, %xmm2           # 累加到计数器
+    cmpq    %rax, %rcx              # 循环是否结束
     jne     .L4
 ```
 
@@ -547,7 +547,7 @@ In the Q&A, Matt Godbolt was asked "if you could remove one feature, what would 
 In early C++ projects, screens full of `#define`, `#ifdef`, and nested conditional compilation were the norm. Take the logging macro:
 
 ```cpp
-// How I wrote it in 2022 — I want to slap my past self looking at it now
+// 我 2022 年的写法，现在看着想打自己
 #define LOG(level, msg) \
     do { \
         if (level >= g_log_level) { \
@@ -576,7 +576,7 @@ enum class LogLevel { Debug = 0, Info = 1, Error = 2 };
 
 inline LogLevel g_log_level = LogLevel::Info;
 
-// A constexpr function instead of a macro — type-safe, accepts arbitrary arguments
+// 用 constexpr 函数替代宏，类型安全，支持任意参数
 template <typename... Args>
 void log(LogLevel level, const std::format_string<Args...> fmt, Args&&... args,
          const std::source_location& loc = std::source_location::current())
@@ -588,7 +588,7 @@ void log(LogLevel level, const std::format_string<Args...> fmt, Args&&... args,
     }
 }
 
-// inline constexpr variables instead of macro constants
+// 用 inline constexpr 变量替代宏常量
 inline constexpr LogLevel log_debug = LogLevel::Debug;
 inline constexpr LogLevel log_info  = LogLevel::Info;
 inline constexpr LogLevel log_error = LogLevel::Error;
@@ -601,7 +601,7 @@ inline constexpr LogLevel log_error = LogLevel::Error;
 int main() {
     g_log_level = LogLevel::Debug;
 
-    // Called like this — expressions with commas are no problem at all
+    // 这样调用，带逗号的表达式完全没问题
     log(log_debug, "value is {}", std::max(1, 2));
     log(log_info, "program started");
     log(log_error, "something went wrong: code={}", 404);
@@ -615,7 +615,7 @@ You might ask: what about `__FILE__` and `__LINE__`? That is exactly the problem
 The preprocessor's most deep-rooted presence comes from `#include`. C++20 introduced modules<RefLink :id="8" preview="cppreference.com, Modules (since C++20)" />, shaking the preprocessor's position at the root. A minimal example:
 
 ```cpp
-// math_utils.cppm — this is a module interface file
+// math_utils.cppm —— 这是一个模块接口文件
 export module math_utils;
 
 export int square(int x) {
@@ -675,26 +675,26 @@ Verification code in the repository: [05-02-consteval-endian-broken.cpp](https:/
 With the fix in place, there are two compile-time ways to detect endianness:
 
 ```cpp
-// Method 1: compiler built-in macros (recommended — simple and reliable)
+// 方法 1：编译器内置宏（推荐，简洁可靠）
 consteval bool is_little_endian() {
     return __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__;
 }
 
-// Method 2: std::bit_cast (C++20, usable in constexpr/consteval)
+// 方法 2：使用 std::bit_cast（C++20，可在 constexpr/consteval 中使用）
 #include <array>
 #include <bit>
 consteval bool is_little_endian_bitcast() {
-    // std::bit_cast works in constant expressions; reinterpret_cast does not
+    // std::bit_cast 可以在常量表达式中使用，而 reinterpret_cast 不行
     constexpr auto bytes = std::bit_cast<std::array<unsigned char, sizeof(int)>>(1);
     return bytes[0] == 1;
 }
 
 void write_bytes(int value) {
     if constexpr (is_little_endian()) {
-        // little-endian handling path
+        // 小端序的处理逻辑
         std::cout << "little endian path\n";
     } else {
-        // big-endian handling path
+        // 大端序的处理逻辑
         std::cout << "big endian path\n";
     }
 }
@@ -730,7 +730,7 @@ int32_t classify(int32_t value) {
         case 10: return 3;
         case 11: return 4;
     }
-    // My thinking at the time: if it's none of these four values, just return 0
+    // 我当时觉得：如果不是上面这四个值，就返回 0 吧
     return 0;
 }
 ```
@@ -746,7 +746,7 @@ Not every UB shows up as `UD2`. Much of the time, after encountering UB, the com
 
 int sum_array(const int* arr, size_t n) {
     int sum = 0;
-    for (size_t i = 0; i <= n; ++i) {  // note the <= here
+    for (size_t i = 0; i <= n; ++i) {  // 注意这里是 <=
         sum += arr[i];
     }
     return sum;
@@ -792,12 +792,12 @@ The C++ standard defines so many things as UB essentially to give the compiler r
 Since eyeballing the code can hardly tell UB from non-UB, stop guessing and use tools.
 
 ```cmake
-# The warning set standard in my projects, works for GCC/Clang
+# 我的项目里标配的警告选项，GCC/Clang 通用
 add_compile_options(
     -Wall -Wextra -Wpedantic
-    -Werror          # warnings as errors — force yourself to deal with them
-    -Wconversion     # implicit conversion warnings; this one has caught me several times
-    -Wsign-conversion # signed/unsigned mixing warnings
+    -Werror          # 警告当错误，强迫自己处理
+    -Wconversion     # 隐式类型转换警告，这个抓过我好几次坑
+    -Wsign-conversion # 有符号无符号混用警告
 )
 ```
 
@@ -806,12 +806,12 @@ The first habit: turn compiler warnings up to maximum strictness. `-Wconversion`
 The second habit: Sanitizers. Turn on UBSan and ASan when running tests during development:
 
 ```cmake
-# Options in development mode
+# 开发模式下的选项
 add_compile_options(
     -fsanitize=undefined,address
-    -fno-sanitize-recover=all  # abort immediately on UB instead of carrying on
-    -g -O1                     # note: Sanitizers work best at -O0,
-                               # but -O1 is closer to real scenarios; I pick -O1 as the compromise
+    -fno-sanitize-recover=all  # 遇到 UB 直接 abort，别继续跑
+    -g -O1                     # 注意：Sanitizer 在 -O0 下效果最好，
+                               # 但 -O1 更接近真实场景，我选 -O1 做折中
 )
 add_link_options(-fsanitize=undefined,address)
 ```
@@ -856,7 +856,7 @@ Start with the simplest scenario: take the absolute value of every element in an
 #include <cmath>
 #include <chrono>
 
-constexpr int N = 1024 * 1024;  // 1M int32s
+constexpr int N = 1024 * 1024;  // 1M 个 int32
 
 void abs_c(int32_t* dst, const int32_t* src, int n) {
     for (int i = 0; i < n; i++) {
@@ -864,49 +864,49 @@ void abs_c(int32_t* dst, const int32_t* src, int n) {
     }
 }
 
-// Hand-written SSE assembly version, 4 int32s at a time
+// 手写 SSE 汇编版本，每次处理 4 个 int32
 void abs_asm(int32_t* dst, const int32_t* src, int n) {
-    // GCC extended inline asm
-    // Core idea: use PSIGND, which can negate based on the sign mask;
-    // but the simpler route is the PXOR + PSUBD trick:
-    // abs(x) = (x ^ mask) - mask, where mask = x >> 31 (sign bit splat)
+    // 这里用 GCC 扩展内联汇编
+    // 核心思路：用 PSIGND 指令，它可以根据符号掩码取反
+    // 但更简单的方式是用 PXOR + PSUBD 的技巧：
+    // abs(x) = (x ^ mask) - mask，其中 mask = x >> 31（符号位扩展）
     __asm__ volatile (
         "xor %%eax, %%eax\n\t"         // i = 0
         "1:\n\t"
-        "cmp %2, %%eax\n\t"            // compare i with n
-        "jge 2f\n\t"                   // if i >= n, jump to the end
-        "movdqu (%1, %%eax, 4), %%xmm0\n\t"  // load 4 int32s
-        "movdqa %%xmm0, %%xmm1\n\t"   // keep a copy
-        "psrad $31, %%xmm1\n\t"       // arithmetic right shift by 31 → sign mask
+        "cmp %2, %%eax\n\t"            // 比较 i 和 n
+        "jge 2f\n\t"                   // 如果 i >= n，跳到结束
+        "movdqu (%1, %%eax, 4), %%xmm0\n\t"  // 加载 4 个 int32
+        "movdqa %%xmm0, %%xmm1\n\t"   // 复制一份
+        "psrad $31, %%xmm1\n\t"       // 算术右移 31 位，得到符号掩码
         "pxor %%xmm1, %%xmm0\n\t"     // x ^ mask
         "psubd %%xmm1, %%xmm0\n\t"    // (x ^ mask) - mask = abs(x)
-        "movdqu %%xmm0, (%0, %%eax, 4)\n\t"  // store
-        "add $4, %%eax\n\t"           // i += 4 (4 per iteration)
-        "jmp 1b\n\t"                  // continue the loop
+        "movdqu %%xmm0, (%0, %%eax, 4)\n\t"  // 存储
+        "add $4, %%eax\n\t"           // i += 4（一次处理 4 个）
+        "jmp 1b\n\t"                  // 继续循环
         "2:\n\t"
-        : // output operands, none needed here
-        : "r"(dst), "r"(src), "r"(n)   // input operands
-        : "eax", "xmm0", "xmm1", "memory", "cc"  // clobber list
+        : // 输出操作数，这里不需要
+        : "r"(dst), "r"(src), "r"(n)   // 输入操作数
+        : "eax", "xmm0", "xmm1", "memory", "cc"  // clobber 列表
     );
 }
 
 int main() {
-    // allocate aligned memory
+    // 分配对齐的内存
     int32_t* src = (int32_t*)std::aligned_alloc(16, N * sizeof(int32_t));
     int32_t* dst_c = (int32_t*)std::aligned_alloc(16, N * sizeof(int32_t));
     int32_t* dst_asm = (int32_t*)std::aligned_alloc(16, N * sizeof(int32_t));
 
-    // fill with random data (negatives included)
+    // 填充随机数据（包含负数）
     srand(42);
     for (int i = 0; i < N; i++) {
         src[i] = (int32_t)(rand() - RAND_MAX / 2);
     }
 
-    // warm-up
+    // 预热
     abs_c(dst_c, src, N);
     abs_asm(dst_asm, src, N);
 
-    // correctness check — never skip this step; I once got excited for nothing over an unchecked version
+    // 正确性验证——这一步千万别省，我之前就因为没验证白高兴半天
     bool correct = true;
     for (int i = 0; i < N; i++) {
         if (dst_c[i] != dst_asm[i]) {
@@ -917,7 +917,7 @@ int main() {
     }
     printf("Correctness: %s\n", correct ? "PASS" : "FAIL");
 
-    // benchmark
+    // 性能测试
     constexpr int ITER = 1000;
     auto t0 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < ITER; i++) abs_c(dst_c, src, N);
@@ -962,12 +962,12 @@ abs_asm_nasm:
 .loop:
     cmp eax, edx          ; i < n?
     jge .done
-    movdqu xmm0, [rsi + rax*4]   ; load 4 int32s
-    movdqa xmm1, xmm0            ; copy
-    psrad xmm1, 31               ; sign mask
+    movdqu xmm0, [rsi + rax*4]   ; 加载 4 个 int32
+    movdqa xmm1, xmm0            ; 复制
+    psrad xmm1, 31               ; 符号掩码
     pxor xmm0, xmm1              ; x ^ mask
     psubd xmm0, xmm1             ; abs(x)
-    movdqu [rdi + rax*4], xmm0   ; store
+    movdqu [rdi + rax*4], xmm0   ; 存储
     add eax, 4                   ; i += 4
     jmp .loop
 .done:
@@ -1005,12 +1005,12 @@ In the Q&A, one audience member pointed out that LLM-generated assembly code had
 A concrete example. Ask an LLM to write an assembly function that "takes three integer arguments and returns their sum":
 
 ```asm
-; LLM-generated code — looks reasonable, but carries a hidden hazard
+; LLM 生成的代码——看起来很合理，但有隐患
 section .text
 global add_three
 
 add_three:
-    ; first argument in rdi, second in rsi, third in rdx
+    ; 第一参数在 rdi，第二在 rsi，第三在 rdx
     lea rax, [rdi + rsi + rdx]
     ret
 ```
@@ -1018,13 +1018,13 @@ add_three:
 Looks fine at a glance — under the System V AMD64 ABI the first six integer arguments are indeed rdi, rsi, rdx, rcx, r8, r9, and adding three values with one lea is more elegant than a chain of adds. Compile, link, run — and the result is even correct. But the problem comes afterward — ask it to generate a version that "takes six arguments and returns their sum":
 
 ```asm
-; LLM-generated code — wrong this time
+; LLM 生成的代码——这次有错了
 section .text
 global add_six
 
 add_six:
-    ; arguments: rdi, rsi, rdx, rcx, r8, r9
-    lea rax, [rdi + rsi]        ; add the first two
+    ; 参数：rdi, rsi, rdx, rcx, r8, r9
+    lea rax, [rdi + rsi]        ; 先加前两个
     add rax, rdx
     add rax, rcx
     add rax, r8

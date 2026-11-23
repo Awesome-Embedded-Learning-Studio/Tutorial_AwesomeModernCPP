@@ -28,9 +28,9 @@ title: "WeakPtr prerequisite (II): std::atomic and memory_order"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-02-weak-ptr-atomic-and-memory-order.md
   source_hash: de265b5bfe21f39dd3549f481eac3163538830893ba97d50345bd92e28d16aa8
-  translated_at: '2026-09-26T01:23:38+00:00'
-  engine: anthropic
-  token_count: 5100
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7446
 ---
 # WeakPtr prerequisite (II): std::atomic and memory_order
 
@@ -46,9 +46,9 @@ Start with the smallest scenario that actually breaks: two threads poking an ord
 
 ```cpp
 int counter = 0;
-// Thread A
+// 线程 A
 counter++;
-// Thread B (at the same time)
+// 线程 B(同时)
 counter++;
 ```
 
@@ -64,9 +64,9 @@ counter++;
 
 ```cpp
 std::atomic<int> a{0};
-a.store(1, std::memory_order_release);   // atomic write
-int v = a.load(std::memory_order_acquire);   // atomic read
-a.fetch_add(1, std::memory_order_relaxed);   // atomic +1
+a.store(1, std::memory_order_release);   // 原子写
+int v = a.load(std::memory_order_acquire);   // 原子读
+a.fetch_add(1, std::memory_order_relaxed);   // 原子 +1
 ```
 
 Every operation can take a `memory_order` parameter; if you leave it off, the default is `std::memory_order_seq_cst`, the strongest and the most expensive. C++ offers six in total, laid out from weakest to strongest:
@@ -96,20 +96,20 @@ In our experience, the most natural home for `relaxed` is a pure counter — you
 
 ```cpp
 std::atomic<int> hits{0};
-// Multiple threads all execute:
-hits.fetch_add(1, std::memory_order_relaxed);   // only wants to count the total right
+// 多个线程都执行:
+hits.fetch_add(1, std::memory_order_relaxed);   // 只想数对总次数
 ```
 
 The trap hides here too. `relaxed` cannot carry a signal like "the data is ready"; if you cut corners and write this:
 
 ```cpp
-// Thread A
-data = 42;                                   // ordinary write
+// 线程 A
+data = 42;                                   // 普通写
 ready.store(true, std::memory_order_relaxed);
 
-// Thread B
+// 线程 B
 while (!ready.load(std::memory_order_relaxed));
-assert(data == 42);   // Not guaranteed to pass! May read a stale value of data
+assert(data == 42);   // 不保证通过!可能读到 data 的旧值
 ```
 
 `relaxed` neither blocks the "write `ready` before `data`" reordering, nor guarantees that when B reads `ready==true`, `data==42` is visible to it. Whether the assert fires is pure luck. To carry that kind of signal, you have to upgrade to `release`/`acquire`.
@@ -134,15 +134,15 @@ int data = 0;
 std::atomic<bool> ready{false};
 
 void producer() {
-    data = 42;                                   // (1) ordinary write
-    ready.store(true, std::memory_order_release); // (2) release: "publishes" (1)
+    data = 42;                                   // (1) 普通写
+    ready.store(true, std::memory_order_release); // (2) release:把 (1) "发布"出去
 }
 
 void consumer() {
-    while (!ready.load(std::memory_order_acquire)) { // (3) acquire: waits for the release
+    while (!ready.load(std::memory_order_acquire)) { // (3) acquire:等 release
         // spin
     }
-    assert(data == 42);                          // (4) guaranteed to pass!
+    assert(data == 42);                          // (4) 保证通过!
 }
 
 int main() {
@@ -166,7 +166,7 @@ In [prerequisite (I)](./pre-01-weak-ptr-intrusive-refcount-and-scoped-refptr.md)
 With the tools in hand, we can finally zoom in precisely on WeakPtr's liveness mechanism. Chromium's `base::AtomicFlag` is a semantically narrowed-down wrapper over `std::atomic<uint_fast8_t>`, and WeakPtr uses it with remarkable restraint: `Set()` with release, `IsSet()` with acquire — that is the whole pair:
 
 ```cpp
-// Simplified equivalent of base::AtomicFlag (our teaching version uses std::atomic directly)
+// base::AtomicFlag 简化等价(我们教学版直接用 std::atomic)
 class AtomicFlag {
 public:
     void Set() {

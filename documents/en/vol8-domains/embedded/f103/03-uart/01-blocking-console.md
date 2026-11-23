@@ -21,10 +21,10 @@ related:
   - 'One burst of bounce, two chains: polling debounce vs. the EXTI edge chain'
 translation:
   source: documents/vol8-domains/embedded/f103/03-uart/01-blocking-console.md
-  source_hash: b381057c54391c91ee7cdd2cf672e17a7313d4b87a45c6fdba0bba5b2ed96c79
-  translated_at: '2026-11-01T05:18:00+00:00'
-  engine: anthropic
-  token_count: 4400
+  source_hash: ae1cf72728499a41c13175253296b1e340382e3e18e2a52cdaedd27b7c6bb67b
+  translated_at: '2026-11-22T16:43:13+00:00'
+  engine: glm-5.3-refresh
+  token_count: 15268
 ---
 
 # A blocking command console: the divider arithmetic of UART frames and the 48-byte line buffer
@@ -55,18 +55,18 @@ The tempo on the wire is pressed out by a divider. RM0008 (ST's STM32F1 referenc
 
 ```text
 HSI 8MHz / 2 × 16 → SYSCLK 64MHz → AHB /1 = HCLK 64MHz
-HCLK → APB1 /2 = PCLK1 32MHz (clock of USART2 and USART3)
-HCLK → APB2 /1 = PCLK2 64MHz (clock of USART1)
+HCLK → APB1 /2 = PCLK1 32MHz（USART2、USART3 的时钟）
+HCLK → APB2 /1 = PCLK2 64MHz（USART1 的时钟）
 ```
 
 In `05_uart`'s `SystemClock_Config`, `APB1CLKDivider = RCC_HCLK_DIV2` and `APB2CLKDivider = RCC_HCLK_DIV1` — we checked the source's gear settings against the walkthrough above, and they agree to the last digit. Now the arithmetic for USART1, one step at a time:
 
 ```text
 USARTDIV = 64MHz / (16 × 115200) = 34.72
-DIV_Mantissa (integer part, BRR bits 15:4)   = 34
-DIV_Fraction (fractional part, BRR bits 3:0) = 0.72 × 16 ≈ 12
-True USARTDIV   = 34 + 12/16 = 34.75
-Actual baud rate = 64MHz / (16 × 34.75) = 64MHz / 556 = 115107.9
+DIV_Mantissa（整数部分，BRR 第 15:4 位）= 34
+DIV_Fraction（小数部分，BRR 第 3:0 位）  = 0.72 × 16 ≈ 12
+USARTDIV 实值 = 34 + 12/16 = 34.75
+实际波特率   = 64MHz / (16 × 34.75) = 64MHz / 556 = 115107.9
 ```
 
 The fraction cannot be made arbitrarily fine: BRR (the baud rate divider register) gives only 4 fractional bits, so the rounding lands on a grid of 1/16<RefLink :id="1" preview="STMicroelectronics, RM0008" />. After rounding, the line actually runs 115107.9 baud, and the gap against 115200 is an error of 0.08% — UART transfers are not sensitive to a deviation that small, and at this magnitude we can rely on it. Put USART2 on APB1's 32MHz instead and the same formula yields 17 for the integer part and 6 for the fraction; BRR holds 278, the actual baud rate is still 115107.9, and the error is again on the order of 0.08%. The two buses divide at different gears, yet after rounding they land on the same spot.

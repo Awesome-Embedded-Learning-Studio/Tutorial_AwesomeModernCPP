@@ -10,9 +10,10 @@ description: "How the 8 MiB stack window gets stretched and then punched through
 reading_time_minutes: 22
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/04-stack-overflow-why-no-crash/04-stack-headroom-asan-and-luck.md
-  source_hash: 69949bc86397953645e0fae05eb40f02b444db31c0d39059f5c6b1c3c077a1c7
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: dbbf5db584acd21f8097552d8c1fd1848e43a59673cfffb754bc80166d480003
+  translated_at: '2026-11-22T16:48:20Z'
+  engine: glm-5.3-refresh
+  token_count: 12360
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -26,7 +27,7 @@ current_status:
 One road to no crash is still left, and it is decided by headroom, not by where the write lands. The environment is the same one as in [the first piece](01-stack-frame-neighbors.md); follow it if you want to rerun anything. How big a window does the stack carve out for each process? We will settle it with three layers of evidence: the 8192 (KiB) that ulimit -s reports is one, the line in /proc/self/limits is another, and the [stack] range in /proc/self/maps is the third; we print the last two straight from inside a program. d4a declares a 7 MiB char array, touches both ends of it once, then prints the [stack] range it sees along with the limit:
 
 ```cpp
-// d4a.cpp — a 7 MiB stack array, hugging the 8 MiB limit without crossing it
+// d4a.cpp —— 7 MiB 栈数组，贴着 8 MiB 上限但不越限
 #include <cstdio>
 #include <cstring>
 
@@ -51,11 +52,11 @@ static void print_stack_facts(const char* tag) {
 int main() {
     print_stack_facts("begin:");
 
-    static const unsigned N = 7u << 20; // 7 MiB, below the 8 MiB limit
+    static const unsigned N = 7u << 20; // 7 MiB，小于 8 MiB 限额
     char big[N];
 
-    big[0]     = 1; // lowest address of the array, the leading edge as the stack grows downward
-    big[N - 1] = 2; // highest address of the array, close to rbp
+    big[0]     = 1; // 数组最低地址，栈向下生长的前沿
+    big[N - 1] = 2; // 数组最高地址，靠近 rbp
 
     std::printf("touched both ends of the %u MiB array, still alive\n", N >> 20);
     print_stack_facts("end:  ");
@@ -90,9 +91,9 @@ Every fresh process starts out with a [stack] of 0x22000. That works out to 136 
 0000000000001307 <main>:
     1307:	push   %rbp
     1308:	mov    %rsp,%rbp
-    130b:	sub    $0x700010,%rsp        <- moves rsp down silently, touching no page
+    130b:	sub    $0x700010,%rsp        <- 无声下移 rsp，不碰任何页
     ...
-    132b:	call   1189 <print_stack_facts(char const*)>   <- this call pushes the return address at the bottom of the frame, the first touch
+    132b:	call   1189 <print_stack_facts(char const*)>   <- 这次 call 把返回地址压到帧底，首次触碰
     1330:	movb   $0x1,-0x700010(%rbp)   <- big[0]
 ```
 
@@ -101,20 +102,20 @@ sub only moves registers and touches no memory, so rsp crossed the 7 MiB without
 What happens if we push the array to 8 MiB, flush against the limit, and try again? d4b changes nothing but the array size:
 
 ```cpp
-// d4b.cpp — an 8 MiB stack array, exactly at the 8 MiB limit
-// progress lines go to stderr (unbuffered), so nothing already printed is lost on the way down
+// d4b.cpp —— 8 MiB 栈数组，正好顶到 8 MiB 限额
+// 进度打印走 stderr(无缓冲)，崩在半路也不丢已打印的行
 #include <cstdio>
 
 int main() {
-    static const unsigned N = 8u << 20; // 8 MiB, equal to the ulimit -s limit
+    static const unsigned N = 8u << 20; // 8 MiB，与 ulimit -s 的限额相等
     char big[N];
 
     std::fprintf(stderr, "frame set up, array declared, nothing touched yet\n");
 
-    big[N - 1] = 2; // highest address of the array, nearest to rbp
+    big[N - 1] = 2; // 数组最高地址，离 rbp 最近
     std::fprintf(stderr, "high end (big[N-1]) touched, still alive\n");
 
-    big[0] = 1; // lowest address of the array, an access past the 8 MiB boundary
+    big[0] = 1; // 数组最低地址，越过 8 MiB 边界的访问
     std::fprintf(stderr, "low end (big[0]) touched, still alive\n");
     return 0;
 }
@@ -133,8 +134,8 @@ We never got a single line of output, not even the shadow of that first frame se
     114a:	mov    %rsp,%rbp
     114d:	sub    $0x800010,%rsp
     ...
-    117e:	call   1040 <fwrite@plt>     <- fprintf got rewritten into fwrite; this is the first call
-    11a7:	movb   $0x1,-0x800010(%rbp)  <- big[0], never executed
+    117e:	call   1040 <fwrite@plt>     <- fprintf 被改写成 fwrite，这是第一条 call
+    11a7:	movb   $0x1,-0x800010(%rbp)  <- big[0]，永远没执行到
 ```
 
 ```text
@@ -171,10 +172,10 @@ The canary (a sentinel value the stack protector plants) performs one sentinel c
 We cut the overflow down to a minimal version that steps out exactly one slot: g_index holds 4, one slot past the upper boundary of `int arr[4]`:
 
 ```cpp
-// d6.cpp — the smallest overflow there is, one step past the end, caught by ASan on the spot
+// d6.cpp —— 最小越界，数组刚出头一步，ASan 当场拦截
 #include <cstdio>
 
-volatile int g_index   = 4; // arr[4] is exactly one step past the upper boundary of int arr[4]
+volatile int g_index   = 4; // arr[4] 刚好越过 int arr[4] 的上边界一步
 volatile int g_payload = 999;
 
 __attribute__((noinline))
@@ -185,7 +186,7 @@ void f() {
     std::printf("before: scalar=%d arr={%d,%d,%d,%d}\n",
                 scalar, arr[0], arr[1], arr[2], arr[3]);
 
-    arr[g_index] = g_payload; // the out-of-bounds write
+    arr[g_index] = g_payload; // 越界写
 
     std::printf("after : scalar=%d arr[g_index]=%d\n",
                 scalar, arr[g_index]);
@@ -225,7 +226,7 @@ Shadow bytes around the buggy address:
   0x7921c1eeff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
 =>0x7921c1ef0000: f1 f1 f1 f1 00 00[f3]f3 00 00 00 00 00 00 00 00
   0x7921c1ef0080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-  ...(remaining lines elided)
+  ...（后续行删节）
 Shadow byte legend (one shadow byte represents 8 application bytes):
   Addressable:           00
   Partially addressable: 01 02 03 04 05 06 07
@@ -263,16 +264,16 @@ $ g++ -O0 -g -fsanitize=address -o d1_asan d1.cpp && ./d1_asan
 WRITE of size 4 at 0x77ee0d0f001c thread T0
     #0 0x59e780e7f3c6 in f() /tmp/cpu-book-04/d1.cpp:18
     #1 0x59e780e7f496 in main /tmp/cpu-book-04/d1.cpp:25
-    ...(libc frames and the SUMMARY line elided, same shape as the previous report)
+    ...（libc 帧与 SUMMARY 行删节，与上份报告同形）
 
 Address 0x77ee0d0f001c is located in stack of thread T0 at offset 28 in frame
     #0 0x59e780e7f1d8 in f() /tmp/cpu-book-04/d1.cpp:11
 
   This frame has 1 object(s):
     [32, 48) 'arr' (line 12) <== Memory access at offset 28 underflows this variable
-...(the HINT and SUMMARY lines and the all-00 shadow rows around => elided)
+...（HINT 与 SUMMARY 行、=> 前后的全 00 影子行删节）
 =>0x77ee0d0f0000: f1 f1 f1[f1]00 00 f3 f3 00 00 00 00 00 00 00 00
-...(shadow byte legend same as the previous report, elided)
+...（影子图例同上份报告，删节）
 ==181448==ABORTING
 exit=1
 ```
@@ -283,6 +284,6 @@ The negative subscript hit the left redzone (offset 28, the fourth f1 in the sha
 
 The program didn't crash, printf did its job as usual, the exit code was still 0. Watched from start to finish, the scene is easy to read as "nothing wrong with this way of writing code". Put the standard's position next to it: an out-of-bounds write is undefined behavior, and the standard's stance is that it promises nothing. The compiler is free to arrange variables however it likes and optimize however it likes, and whatever result comes out counts as correct. So the "didn't crash" we watched today is one concrete arrangement, on this machine's build of GCC, under this particular round of options. Change the compiler version, change the optimization level, change the shape of the function, and the layout rearranges itself; the landing spot of the very same out-of-bounds write moves with it, and the arr[-1] that stayed quiet last time may be sitting on somebody's return address the next time around. This time we missed the vitals, and luck is the reason. Nothing in the standard ever promised that no crash means you may write this way.
 
-A few places to go next, picked for you. An overflow on the heap is a different scene, its layout decided by the allocator and malloc's metadata, and the crash-lab volume on this site has the full forensic practice: [how to read a crash scene](../../../crash-lab/a-memory-safety/01-null-deref.md) trains the craft of reading a scene with gdb. We do not take up the systematic treatment of C strings and buffer safety in this piece; why strcpy and its kind are dangerous, and what the safe alternatives look like, is in [vol1's piece on buffer safety](../../../vol1-fundamentals/c_tutorials/11-c-strings-and-buffer-safety.md). For how a stack frame stands up, [the stack frame walkthrough in topic 02](../02-function-calls-and-stack-frames/01-call-and-stack-frame-walkthrough.md) is the place to go back to.
+A few places to go next, picked for you. An overflow on the heap is a different scene, its layout decided by the allocator and malloc's metadata, and the crash-lab volume on this site has the full forensic practice: [how to read a crash scene](../../../crash-lab/a-memory-safety/01-null-deref.md) trains the craft of reading a scene with gdb, and [heap buffer overflow](../../../crash-lab/a-memory-safety/03-heap-buffer-overflow.md) covers the layout on the heap side and how the interception works. We do not take up the systematic treatment of C strings and buffer safety in this piece; why strcpy and its kind are dangerous, and what the safe alternatives look like, is in [vol1's piece on buffer safety](../../../vol1-fundamentals/c_tutorials/11-c-strings-and-buffer-safety.md). For how a stack frame stands up, [the stack frame walkthrough in topic 02](../02-function-calls-and-stack-frames/01-call-and-stack-frame-walkthrough.md) is the place to go back to.
 
 The next piece in the series enters the world of member functions, and the this pointer previewed at the end of [the third piece](../03-arguments-in-registers/03-floats-structs-and-abi-docs.md) finally takes the stage, walking exactly that rdi position. And we leave you with the cheapest self-check there is: compile d1.cpp twice, once bare at -O0 and once with -fsanitize=address. The first run finishes quietly (exit code 0); the second stops the process on the spot, at the very line of the write.

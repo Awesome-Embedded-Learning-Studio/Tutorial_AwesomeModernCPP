@@ -23,9 +23,9 @@ title: enum class and Scoped Enums
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/01-enum-class.md
   source_hash: be78df547fee8f906bff3a9dd9f1aa6b187707a97a9a426cbd7754673a5b8057
-  translated_at: '2026-09-27T12:17:19+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12632
 ---
 # enum class and Scoped Enums
 
@@ -49,12 +49,12 @@ enum Fruit { Apple, Orange, Banana };
 
 void paint(int c);
 
-paint(Red);       // OK, implicitly converts to int
-paint(Orange);    // Also OK! But the semantics are completely wrong
-paint(42);        // Compiles; you only find out at runtime
+paint(Red);       // OK，隐式转成 int
+paint(Orange);    // 也 OK！但语义完全错了
+paint(42);        // 编译通过，运行时才知道出问题
 
 if (Red == Apple) {
-    // This actually compiles, and it's true! Both are 0
+    // 居然编译通过，而且为 true！因为都是 0
 }
 ```
 
@@ -68,9 +68,9 @@ The old-style `enum`'s second failing is that it dumps every enumerator straight
 
 ```cpp
 enum Status { None, Ok, Error };
-enum Permission { None, Read, Write, Execute };  // Compile error! None redefined
+enum Permission { None, Read, Write, Execute };  // 编译错误！None 重定义
 
-// The common workaround: add prefixes
+// 常见的变通方案：加前缀
 enum Status { Status_None, Status_Ok, Status_Error };
 enum Permission { Perm_None, Perm_Read, Perm_Write, Perm_Execute };
 ```
@@ -83,13 +83,13 @@ The third failing has its root in declarations. Forward declarations (a declarat
 
 ```cpp
 // status.h
-enum Status { Ok, Error };  // The full definition must be visible
+enum Status { Ok, Error };  // 必须看到完整定义
 
 // device.h
-// enum Status;  // Compile error! Cannot forward-declare
+// enum Status;  // 编译错误！无法前向声明
 class Device {
 public:
-    Status get_status() const;  // Must include status.h
+    Status get_status() const;  // 必须包含 status.h
 };
 ```
 
@@ -105,9 +105,9 @@ The first improvement is scope isolation: `enum class` enumerators no longer lea
 enum class Color { Red, Green, Blue };
 enum class Fruit { Apple, Orange, Banana };
 
-Color c = Color::Red;   // Correct
-// Color c = Red;        // Compile error! Red is not in the enclosing scope
-// Fruit f = Color::Red; // Compile error! Type mismatch
+Color c = Color::Red;   // 正确
+// Color c = Red;        // 编译错误！Red 不在外部作用域
+// Fruit f = Color::Red; // 编译错误！类型不匹配
 ```
 
 From here on, `Color::Red` and `Fruit::Apple` each keep to their own lane; name collisions and mix-ups simply can't happen anymore. And every cross-type misuse, the compiler intercepts for you at compile time.
@@ -119,13 +119,13 @@ The second improvement takes aim at implicit conversion: an `enum class` no long
 ```cpp
 enum class Color : uint8_t { Red, Green, Blue };
 
-// int x = Color::Red;                          // Compile error!
-int x = static_cast<int>(Color::Red);           // OK, explicit conversion
+// int x = Color::Red;                          // 编译错误！
+int x = static_cast<int>(Color::Red);           // OK，显式转换
 
 void paint(Color c);
 paint(Color::Red);      // OK
-// paint(0);             // Compile error!
-// paint(static_cast<Color>(0));  // OK but not recommended — bypasses type checking
+// paint(0);             // 编译错误！
+// paint(static_cast<Color>(0));  // OK 但不推荐——绕过类型检查
 ```
 
 You might feel that writing `static_cast` every time is a hassle. Me, I'm happy to type a few extra characters in exchange for that bit of friction. Wherever a spot genuinely needs to treat an enumerator as an integer, you must write it out explicitly. That means you're making a conscious decision at that location, rather than being waved through by the compiler without noticing.
@@ -139,17 +139,17 @@ We've put the earlier counterexamples and the corrected forms side by side in on
 The third improvement is that the underlying type can now be specified: if you don't write one, the default is still `int`. Once the underlying type is pinned down, the compiler knows the size from the declaration alone, and forward declarations become viable along with it:
 
 ```cpp
-// status.h — forward declaration
+// status.h —— 前向声明
 enum class Status : uint8_t;
 
-// device.h — only the forward declaration is needed
+// device.h —— 只需要前向声明
 class Device {
 public:
     Status get_status() const;
     void set_status(Status s);
 };
 
-// status.cpp — full definition
+// status.cpp —— 完整定义
 enum class Status : uint8_t { kOk = 0, kError = 1, kBusy = 2 };
 ```
 
@@ -171,7 +171,7 @@ static_assert(sizeof(SensorState) == 1, "SensorState should be 1 byte");
 Bit flags (a bitmask: treating each binary digit as an independent switch) are extremely common in C-style code, and assembling permissions out of enumerator values is routine business for us:
 
 ```cpp
-// C style: bitwise operations work natively (because of the implicit conversion to int)
+// C 风格：天然支持位运算（因为隐式转换成 int）
 enum Permission { Read = 1, Write = 2, Execute = 4 };
 int perms = Read | Write;  // OK
 ```
@@ -188,7 +188,7 @@ enum class Permission : uint32_t {
     kExecute = 1 << 2
 };
 
-// Helper: convert an enumerator to its underlying type
+// 辅助函数：枚举值到底层类型的转换
 template <typename E>
 constexpr auto to_underlying(E e) noexcept
 {
@@ -227,13 +227,13 @@ constexpr Permission& operator&=(Permission& a, Permission b) noexcept
     return a;
 }
 
-// Helper check: whether any flag bit is set
+// 辅助判断：是否有任何标志位被设置
 constexpr bool has_any_flag(Permission flags) noexcept
 {
     return to_underlying(flags) != 0;
 }
 
-// Helper check: whether a specific flag bit is included
+// 辅助判断：是否包含特定标志位
 constexpr bool has_flag(Permission flags, Permission flag) noexcept
 {
     return to_underlying(flags & flag) != 0;
@@ -246,11 +246,11 @@ Here's what usage looks like:
 Permission user_perms = Permission::kRead | Permission::kWrite;
 
 if (has_flag(user_perms, Permission::kWrite)) {
-    // The user has write permission
+    // 用户有写权限
 }
 
-user_perms |= Permission::kExecute;  // Add execute permission
-user_perms &= ~Permission::kWrite;   // Remove write permission
+user_perms |= Permission::kExecute;  // 添加执行权限
+user_perms &= ~Permission::kWrite;   // 移除写权限
 ```
 
 Long, yes — all six operators have to be written by our own hand, after all. What we get in exchange is very real: you can no longer mix `Permission` and `Color` values in a bitwise operation. In real projects, people generally collect these operators into a shared header and reuse them via templates or macros.
@@ -277,7 +277,7 @@ std::string_view to_string(NetworkState state)
     case NetworkState::kDisconnected: return "disconnected";
     case NetworkState::kConnecting:   return "connecting";
     case NetworkState::kConnected:    return "connected";
-    // If the kError branch is missing, -Wswitch emits a warning
+    // 如果缺少 kError 分支，-Wswitch 会发出警告
     }
     return "unknown";
 }
@@ -300,7 +300,7 @@ enum class TokenType {
 
 std::string_view token_to_string(TokenType type)
 {
-    // Bring all enumerators into the function scope
+    // 把所有枚举值引入函数作用域
     using enum TokenType;
 
     switch (type) {
@@ -324,7 +324,7 @@ The effect of `using enum` extends only to the current block (inside the braces)
 ```cpp
 class Lexer {
 public:
-    using enum TokenType;  // All enumerators become members of the class
+    using enum TokenType;  // 所有枚举值成为类的成员
 
     TokenType next_token();
     bool is_operator(TokenType t);
@@ -441,7 +441,7 @@ Result open_file(const char* path)
     if (!path || path[0] == '\0') {
         return {ErrorCode::kInvalidArgument, "path is empty"};
     }
-    // ... the actual file-opening logic
+    // ... 实际的文件打开逻辑
     return {ErrorCode::kOk, "success"};
 }
 ```
@@ -463,7 +463,7 @@ enum class HalMode : uint8_t {
 
 void set_device_mode(HalMode mode)
 {
-    // enum class -> underlying type -> C interface
+    // enum class -> 底层类型 -> C 接口
     hal_set_mode(static_cast<uint8_t>(mode));
 }
 ```

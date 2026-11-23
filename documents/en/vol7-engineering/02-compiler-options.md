@@ -19,10 +19,10 @@ tags:
 title: A Guide to Common Compiler Options
 translation:
   source: documents/vol7-engineering/02-compiler-options.md
-  source_hash: 0727003c8586c60045636cc22aa1d24ac2d36ec380e0974e040a71c9a5eaf078
-  translated_at: '2026-09-27T02:28:47+00:00'
-  engine: anthropic
-  token_count: 2500
+  source_hash: f36f7a3ab2282ba2e5d141bc131ff7f850af39a98a8d60a83a52b4e70eb31f9c
+  translated_at: '2026-11-22T16:43:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6134
 ---
 # Modern Embedded C++ Tutorial: A Guide to Common Compiler Parameters
 
@@ -104,23 +104,23 @@ Have you ever wondered how CMake knows that "because you changed one header, the
 
 ```cmake
 
-# Compile options
+# 编译参数
 target_compile_options(${PROJECT_NAME} PRIVATE
-    -std=c++17             # Core: defines the language standard
-    -g3                    # Debug: rich debug information
-    -Wall -Wextra          # Quality: strict warnings
-    -Werror                # Quality: zero tolerance for warnings
-    -Wdouble-promotion     # Performance: prevents implicit double-precision math
-    -ffunction-sections    # Size: one section per function
-    -fdata-sections        # Size: one section per data object
-    -fno-exceptions        # Trimming: disables exceptions
-    -fno-rtti              # Trimming: disables RTTI
+    -std=c++17             # 核心：定义语言标准
+    -g3                    # 调试：丰富的调试信息
+    -Wall -Wextra          # 质量：严格警告
+    -Werror                # 质量：零容忍警告
+    -Wdouble-promotion     # 性能：防止隐式双精度运算
+    -ffunction-sections    # 体积：函数分区
+    -fdata-sections        # 体积：数据分区
+    -fno-exceptions        # 裁剪：禁用异常
+    -fno-rtti              # 裁剪：禁用 RTTI
 )
 
-# Link options
+# 链接参数
 target_link_options(${PROJECT_NAME} PRIVATE
-    -Wl,--gc-sections      # Size: garbage-collects dead code
-    -Wl,-Map=${PROJECT_NAME}.map  # Diagnostics: generates the memory map file
+    -Wl,--gc-sections      # 体积：垃圾回收死代码
+    -Wl,-Map=${PROJECT_NAME}.map  # 诊断：生成内存映射文件
 )
 
 ```
@@ -184,26 +184,26 @@ Turning the theory above into code. In your top-level `CMakeLists.txt`, it is a 
 
 ```cmake
 
-# Create a dedicated INTERFACE library for compile options so every target can reuse it
+# 创建一个专门的编译选项接口库，方便所有 Target 复用
 add_library(project_warnings INTERFACE)
 
 target_compile_options(project_warnings INTERFACE
-    $<$<CONFIG:Release>:-Os>                 # Release mode: optimize for size
-    $<$<CONFIG:Debug>:-Og -g3>               # Debug mode: friendly to debugging
-    -fno-exceptions                          # Disables exceptions
-    -fno-rtti                                # Disables RTTI
-    -ffunction-sections                      # One section per function
-    -fdata-sections                          # One section per data object
-    -Wall -Wextra -Wpedantic                 # Strict warnings on (trouble caught early)
+    $<$<CONFIG:Release>:-Os>                 # Release 模式优化尺寸
+    $<$<CONFIG:Debug>:-Og -g3>               # Debug 模式方便调试
+    -fno-exceptions                          # 禁用异常
+    -fno-rtti                                # 禁用 RTTI
+    -ffunction-sections                      # 函数分区
+    -fdata-sections                          # 数据分区
+    -Wall -Wextra -Wpedantic                 # 开启严格警告（防患未然）
 )
 
-# Linker options
+# 链接器选项
 target_link_options(project_warnings INTERFACE
-    "-Wl,--gc-sections"                      # Removes dead code at link time
-    "--specs=nano.specs"                     # Uses the stripped-down C library (Newlib-nano)
+    "-Wl,--gc-sections"                      # 链接时删除死代码
+    "--specs=nano.specs"                     # 使用精简版 C 库 (Newlib-nano)
 )
 
-# To use it, simply link against this interface
+# 使用时只需要链接这个接口
 target_link_libraries(my_firmware PRIVATE project_warnings)
 
 ```

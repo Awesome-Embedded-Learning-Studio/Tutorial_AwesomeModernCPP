@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/06-toolchain-and-project-design.md
   source_hash: 1ae336104031473913510c392f13141c0da0e5eb3517454a6ad397cbad699490
-  translated_at: '2026-09-26T15:33:28+00:00'
-  engine: anthropic
-  token_count: 4700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13101
   notes: '原文一处数字断言按文意译出：中文源「首先是头文件 math_utils.h，就声明一个函数」原文疑为「就声明两个函数」——紧随其后的代码块实际声明了 square 与 add_one 两个函数，故英文作 "a couple of functions"。'
 ---
 # The C++ Assembly Project: Compilers, Toolchains, and Those "Not in the Standard but Excellent" Libraries
@@ -63,14 +63,13 @@ First, the header `math_utils.h`, which just declares a couple of functions:
 
 ```cpp
 // math_utils.h
-// constexpr functions are implicitly inline ([dcl.constexpr]/1), so they can live
-// in headers without violating the ODR—the compiler may also evaluate them
-// directly at compile time
+// constexpr 函数隐式 inline（[dcl.constexpr]/1），因此可以放在头文件中
+// 而不会违反 ODR——编译器也可能在编译期直接求值
 constexpr int square(int x) {
     return x * x;
 }
 
-// This function has a definition living in the header; inline prevents ODR violations
+// 这个函数有定义，放在头文件里，inline 防止 ODR 违规
 inline int add_one(int x) {
     return x + 1;
 }
@@ -83,8 +82,8 @@ Then another header, `format_utils.h`, which depends on `math_utils.h` above:
 #include "math_utils.h"
 #include <string>
 
-// Formats the computed result into a string
-// Deliberately not using std::format (C++20) here—std::to_string keeps it simple
+// 把计算结果格式化成字符串
+// 这里故意不用 std::format（C++20），用 to_string 保持简单
 inline std::string describe(int x) {
     return "value=" + std::to_string(add_one(square(x)));
 }
@@ -107,18 +106,18 @@ int main() {
 This example is almost embarrassingly simple, but that makes it perfect for demonstrating the compilation pipeline step by step. You can drive each stage manually with these commands:
 
 ```bash
-# Step 1: preprocess only, to see what the compiler actually sees
+# 第一步：只预处理，看编译器看到了什么
 g++ -E main.cpp -o main.ii
 
-# Step 2: compile without linking, producing an object file
+# 第二步：只编译不链接，生成目标文件
 g++ -c main.cpp -o main.o
 
-# Step 3: link (this example has a single .o, so linking is trivial)
+# 第三步：链接（这个例子只有一个 .o，所以链接很简单）
 g++ main.o -o main
 
-# Run
+# 运行
 ./main
-# Output: value=26
+# 输出：value=26
 ```
 
 If you inspect the preprocessed `main.ii` with `-E`, you will find the contents of `math_utils.h` and `format_utils.h` fully expanded into it. That is why function definitions in headers need `inline` or `constexpr`<RefLink :id="7" preview="constexpr is implicitly inline" />—otherwise, if two different `.cpp` files include the same header, the linker sees two copies of the definition and reports an ODR violation outright.
@@ -130,7 +129,7 @@ There is a common misconception about `inline`: many people think it is merely a
 Day-to-day development is mostly GCC first, Clang second. The reason is simple: GCC has the best ecosystem on Linux and its diagnostics feel familiar; Clang's error messages are genuinely friendlier in some situations (especially template-related ones), so when a diagnostic makes no sense, switching to Clang and recompiling gives a second angle on the problem.
 
 ```bash
-# Compile the same code with both compilers and compare the diagnostics
+# 同一份代码，用两个编译器各编一次，对比报错信息
 g++ -std=c++20 -Wall -Wextra main.cpp -o main_gcc
 clang++ -std=c++20 -Wall -Wextra main.cpp -o main_clang
 ```
@@ -164,10 +163,10 @@ Then we tried C++20 Modules. When we first heard about Modules we were thrilled�
 Below is the minimal runnable example we eventually wrestled out. The example itself is not complicated, but getting it working consumed an entire weekend. The global module fragment introduced by `module;` is where traditional headers go<RefLink :id="11" preview="C++20 global module fragment" />:
 
 ```cpp
-// math_utils.cppm (module interface unit)
+// math_utils.cppm (模块接口单元)
 module;
-#include <cmath>  // traditional headers go in the global module fragment, before the module declaration
-export module math_utils;  // declare the module name
+#include <cmath>  // module 声明之前的全局模块片段中放传统头文件
+export module math_utils;  // 声明模块名
 
 export double compute_sqrt(double x) {
     return std::sqrt(x);
@@ -185,8 +184,8 @@ export namespace stats {
 ```
 
 ```cpp
-// main.cpp (consumer)
-import math_utils;  // not #include, but import
+// main.cpp (消费者)
+import math_utils;  // 不是 #include，是 import
 #include <iostream>
 
 int main() {
@@ -202,7 +201,7 @@ int main() {
 cmake_minimum_required(VERSION 3.28)
 project(module_test CXX)
 
-# Must be enabled explicitly, and behavior differs across compilers
+# 必须显式开启，而且不同编译器行为有差异
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -249,7 +248,7 @@ project(my_tool LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# The core is just these few lines: find dependencies, add the executable, link
+# 核心就这几行：找依赖、加可执行文件、链接
 find_package(fmt REQUIRED)
 
 add_executable(my_tool src/main.cpp)
@@ -262,11 +261,11 @@ The README.md was rewritten too—no more of that "feature list plus a pile of b
 ```markdown
 # my_tool
 
-A small tool that does XXX.
+一个做 XXX 的小工具。
 
-## Build
+## 构建
 
-Prerequisites: you need a compiler with C++20 support, and the fmt library.
+前提：你需要一个支持 C++20 的编译器，以及 fmt 库。
 
 Ubuntu/Debian:
     sudo apt install libfmt-dev g++
@@ -274,17 +273,17 @@ Ubuntu/Debian:
 macOS:
     brew install fmt
 
-Then:
+然后：
     mkdir build && cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make -j$(nproc)
 
-The build artifact lands in build/my_tool.
+构建产物在 build/my_tool。
 
-## Troubleshooting
+## 踩坑记录
 
-- If you are on GCC 11 or older, you may hit the XXX issue; upgrading to GCC 12 fixes it
-- fmt needs to be >= 9.0; older versions fail with the XXX error
+- 如果你用的是 GCC 11 以下，可能遇到 XXX 问题，升级到 GCC 12 即可
+- fmt 版本需要 >= 9.0，太旧的话会报 XXX 错误
 ```
 
 Notice that final "Troubleshooting" section—it was added after we stepped in those pits ourselves. We used to think writing this kind of thing looked "unprofessional"; now we think it is the most professional part of all. You are saving time for the next person who arrives, and saving people time is the greatest kindness.

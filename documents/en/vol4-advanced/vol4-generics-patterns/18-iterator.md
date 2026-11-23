@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/18-iterator.md
   source_hash: c96fcb06dae43aeffc2c69bfdaddd606331fa31c7c610c432b1d9354f445e227
-  translated_at: '2026-09-26T05:42:50+00:00'
-  engine: anthropic
-  token_count: 12500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 21787
 ---
 
 # Iterator Pattern: From Manual Traversal to Generic Element Sequences with C++20 Ranges
@@ -61,7 +61,7 @@ std::vector<int> flatten(const BinaryTree& tree) {
     return out;
 }
 
-for (int v : flatten(tree)) {  // Flatten the whole tree first, then read element by element
+for (int v : flatten(tree)) {  // 先整棵树压平,再逐个读
     if (v == target) break;
 }
 ```
@@ -90,22 +90,22 @@ class InorderIterator {
 public:
     using Node = TreeNode<T>;
 
-    InorderIterator() = default;              // A default-constructed one is end()
+    InorderIterator() = default;              // 默认构造出来的就是 end()
     explicit InorderIterator(Node* root) {
-        push_left(root);                       // Push the left subtree onto the stack all the way, stopping at the leftmost leaf
+        push_left(root);                       // 一路把左子树压栈,停在最左叶
     }
 
     T& operator*() const { return stack_.top()->val; }
 
     InorderIterator& operator++() {
         Node* node = stack_.top();
-        stack_.pop();                           // Current node fully visited, pop it
-        if (node->right) push_left(node->right); // Turn to the right subtree, keep pushing the left chain
+        stack_.pop();                           // 访问完当前节点,弹出
+        if (node->right) push_left(node->right); // 转向右子树,继续压左链
         return *this;
     }
 
     bool operator==(const InorderIterator& other) const {
-        // Equal if both stacks are empty (both at end); otherwise compare top pointers
+        // 两个都空(都到 end)就算相等;否则比较栈顶指针
         if (stack_.empty() && other.stack_.empty()) return true;
         if (stack_.empty() != other.stack_.empty()) return false;
         return stack_.top() == other.stack_.top();
@@ -139,7 +139,7 @@ public:
 
     void set_root(Node* r) { root_ = r; }
     iterator begin() { return iterator(root_); }
-    iterator end()   { return iterator(); }    // Default-constructed = end()
+    iterator end()   { return iterator(); }    // 默认构造 = end()
 
 private:
     Node* root_ = nullptr;
@@ -155,7 +155,7 @@ Using it is a single range-for, so clean you can hardly tell we hand-wrote anyth
 //   / \ / \
 //  1  3 5  7
 BinaryTree<int> tree;
-// ... build the tree ...
+// ... 建树 ...
 for (int v : tree) {
     std::cout << v << " ";   // 1 2 3 4 5 6 7
 }
@@ -249,7 +249,7 @@ C++20 introduced a concept-based iterator hierarchy (`std::input_iterator`, `std
 #include <iterator>
 #include <iostream>
 
-// Assume InorderIterator / BinaryTree are the definitions from above
+// 假设 InorderIterator / BinaryTree 就用上面的定义
 int main() {
     using It = InorderIterator<int>;
     std::cout << std::boolalpha;
@@ -278,7 +278,7 @@ Let's keep drilling: what does the `weakly_incrementable` concept actually requi
 This is the easiest place to faceplant. Our iterator only defined the prefix `operator++()`, not the postfix `operator++(int)`, so it got filtered out right at the concept-check step. This isn't the standard library being deliberately difficult — the internal implementation of the ranges machinery (all that `it++`-style code) is written under the premise "the postfix must exist too", with no syntactic fallback. Add the postfix, and the whole concept goes through:
 
 ```cpp
-void operator++(int) { ++(*this); }   // Postfix ++: forwards to the prefix, discards the return value
+void operator++(int) { ++(*this); }   // 后缀 ++:转发给前缀,丢掉返回值
 ```
 
 While we're at it, let's add it together with two other "standard kit" pieces of C++20 iterators and look at the whole thing. C++20 recommends declaring the iterator category through the nested `iterator_concept` (note: `iterator_concept`, not the old standard's `iterator_category`), together with the two associated types `value_type` and `difference_type`. The two old-standard aliases `pointer`/`reference` are actually omittable in modern code, but carrying them is harmless and keeps some old algorithms quiet:
@@ -288,8 +288,8 @@ template<typename T>
 class InorderIterator {
 public:
     using Node = TreeNode<T>;
-    using iterator_concept  = std::input_iterator_tag;  // C++20: use iterator_concept
-    using iterator_category = std::input_iterator_tag;  // Compatibility with old algorithms
+    using iterator_concept  = std::input_iterator_tag;  // C++20:用 iterator_concept
+    using iterator_category = std::input_iterator_tag;  // 兼容老算法
     using value_type        = T;
     using difference_type   = std::ptrdiff_t;
     using pointer           = T*;
@@ -300,13 +300,13 @@ public:
 
     reference operator*() const { return stack_.top()->val; }
 
-    InorderIterator& operator++() {                       // Prefix
+    InorderIterator& operator++() {                       // 前缀
         Node* node = stack_.top();
         stack_.pop();
         if (node->right) push_left(node->right);
         return *this;
     }
-    void operator++(int) { ++(*this); }                   // Postfix (the key part!)
+    void operator++(int) { ++(*this); }                   // 后缀(关键!)
 
     bool operator==(const InorderIterator& other) const {
         if (stack_.empty() && other.stack_.empty()) return true;
@@ -335,7 +335,7 @@ int main() {
     std::cout << "input_range:    " << std::ranges::input_range<BinaryTree<int>> << "\n";
 
     BinaryTree<int> tree;
-    // ... build the tree ...
+    // ... 建树 ...
 
     std::cout << "filter even: ";
     for (int v : tree | std::views::filter([](int x) { return x % 2 == 0; })) {
@@ -373,7 +373,7 @@ The C++20 iterator concepts (`weakly_incrementable`, `input_iterator`, `forward_
 You may have noticed that we keep saying `input_iterator`, never `forward_iterator`. There's something worth calling out explicitly here: **this stack iterator can never be promoted to forward_iterator, no matter how diligently you add the postfix `++`**. Let's verify:
 
 ```sh
-$ # Extending the concept_check from above
+$ # 接着上面的 concept_check 扩展
 forward_iterator: false
 forward_range:    false
 ```
@@ -422,7 +422,7 @@ auto view = tree
     | std::views::transform([](int v) { return v * v; });
 
 for (int v : view) {
-    std::cout << v << " ";   // 4 16 36 (squares of the even values 2/4/6)
+    std::cout << v << " ";   // 4 16 36(偶数 2/4/6 平方)
 }
 ```
 
@@ -443,7 +443,7 @@ void for_each_inorder(TreeNode* node, F&& fn) {
     for_each_inorder(node->right, fn);
 }
 
-// Caller: no need to care how the traversal works, just write "what to do with each value"
+// 调用方:不用管怎么遍历,只写「拿到一个值干什么」
 for_each_inorder(root, [](int v) {
     if (v % 2 == 0) std::cout << v << " ";
 });
@@ -471,7 +471,7 @@ public:
         std::suspend_always initial_suspend() noexcept { return {}; }
         std::suspend_always final_suspend() noexcept { return {}; }
         std::suspend_always yield_value(T value) {
-            current_value = std::move(value);   // Suspend here, handing the value to the caller
+            current_value = std::move(value);   // 暂停在这里,把值交给调用方
             return {};
         }
         void return_void() {}
@@ -487,7 +487,7 @@ public:
     Generator& operator=(Generator&&) = delete;
     ~Generator() { if (handle_) handle_.destroy(); }
 
-    bool next() {                                // Advance one step, return whether a value remains
+    bool next() {                                // 推进一步,返回是否还有值
         if (!handle_ || handle_.done()) return false;
         handle_.resume();
         return !handle_.done();
@@ -508,10 +508,10 @@ template<typename T>
 Generator<T> inorder_generator(TreeNode<T>* node) {
     if (!node) co_return;
     if (node->left) {
-        Generator<T> left = inorder_generator(node->left);  // Recurse into the left subtree
-        while (left.next()) co_yield left.value();          // Yield the left subtree's values one by one
+        Generator<T> left = inorder_generator(node->left);  // 递归左子树
+        while (left.next()) co_yield left.value();          // 把左子树的值逐个 yield 出去
     }
-    co_yield node->val;                                      // Then yield the root
+    co_yield node->val;                                      // 再 yield 根
     if (node->right) {
         Generator<T> right = inorder_generator(node->right);
         while (right.next()) co_yield right.value();
@@ -523,7 +523,7 @@ Look: this code has no stack, no `push_left`, no `pop` — just plain recursion 
 
 ```cpp
 int main() {
-    // ... build the same 1..7 tree ...
+    // ... 同样的 1..7 建树 ...
     auto gen = inorder_generator(root);
     while (gen.next()) {
         std::cout << gen.value() << " ";

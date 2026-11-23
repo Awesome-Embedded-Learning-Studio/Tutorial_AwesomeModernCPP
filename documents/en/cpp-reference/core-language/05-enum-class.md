@@ -18,10 +18,10 @@ tags:
 title: enum class
 translation:
   source: documents/cpp-reference/core-language/05-enum-class.md
-  source_hash: cb6c8b5560edf460b5c23246c67bca7a6ef5d0d364016c9e4a7910524d9efeb0
-  translated_at: '2026-09-27T01:31:22+00:00'
-  engine: anthropic
-  token_count: 1150
+  source_hash: 36b76f026472f4496d193b023f48cb4c31ac97c53674cddc40cc762cadc4cd57
+  translated_at: '2026-11-22T16:41:57.207750+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1614
 ---
 # enum class (C++11)
 

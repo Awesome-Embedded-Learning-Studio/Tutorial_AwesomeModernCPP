@@ -25,9 +25,9 @@ title: Building a Dynamic Array from Scratch — Implementing a Container
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/05-handmade-dynamic-array.md
   source_hash: 60babcaf5657547423feb32e0bf4140d99f6c315e54f285726a74ab5f70f6d2b
-  translated_at: '2026-09-25T13:52:30+00:00'
-  engine: anthropic
-  token_count: 8600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15661
 ---
 # Building a Dynamic Array from Scratch — Implementing a Container
 
@@ -40,10 +40,10 @@ Today we'll start from zero and hand-build a complete dynamic array library. Alo
 Every code example in this article compiles and runs under standard C. Always compile with `-Wall -Wextra` — a dynamic array implementation involves a lot of pointer arithmetic and `memcpy/memmove` calls, and compiler warnings will catch quite a few potential problems for you.
 
 ```text
-Platform: Linux / macOS / Windows (MSVC/MinGW)
-Compiler: GCC >= 9 or Clang >= 12
-Standard: -std=c11 (the C parts) / -std=c++17 (the C++ comparison parts)
-Dependencies: none
+平台：Linux / macOS / Windows (MSVC/MinGW)
+编译器：GCC >= 9 或 Clang >= 12
+标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
+依赖：无
 ```
 
 ## Step 1 — Figure Out What a Dynamic Array Actually Is
@@ -54,8 +54,8 @@ Let's start with the simplest possible sketch:
 
 ```c
 typedef struct {
-    void* data;          // Contiguous memory block
-    size_t size;         // How many elements it currently holds
+    void* data;          // 连续内存块
+    size_t size;         // 当前有多少个元素
 } DynamicArray;
 ```
 
@@ -65,10 +65,10 @@ So we need to add `capacity` and `element_size`:
 
 ```c
 typedef struct _DynamicArray_ {
-    void* data;              // Contiguous memory block (stores the actual data)
-    size_t size;             // Current number of elements
-    size_t capacity;         // Total allocated capacity (in elements)
-    size_t element_size;     // Size of a single element in bytes
+    void* data;              // 连续内存块（存储实际数据）
+    size_t size;             // 当前元素个数
+    size_t capacity;         // 当前分配的总容量（元素个数计）
+    size_t element_size;     // 单个元素的字节大小
 } DynamicArray;
 ```
 
@@ -86,11 +86,11 @@ We'll use an enum to build a clear system of error codes:
 
 ```c
 typedef enum _DynamicArrayStatus_ {
-    kSuccess            = 0,    // Completed normally
-    kNullPointer        = -1,   // A NULL pointer was passed
-    kOutOfMemory        = 1,    // Memory allocation failed
-    kIndexOutOfRange    = -2,   // Index out of range
-    kInvalidOperation   = -3    // Invalid operation (e.g. popping an empty array)
+    kSuccess            = 0,    // 正常执行
+    kNullPointer        = -1,   // 传入了 NULL 指针
+    kOutOfMemory        = 1,    // 内存分配失败
+    kIndexOutOfRange    = -2,   // 下标越界
+    kInvalidOperation   = -3    // 非法操作（如对空数组 pop）
 } DynamicArrayStatus;
 ```
 
@@ -120,10 +120,10 @@ Separating the *display* of error messages from the *generation* of error codes 
 In object-oriented languages this is called a constructor; in C we call it a factory function — it "manufactures" a fully initialized object and hands it back to the caller.
 
 ```c
-/// @brief Create a dynamic array
-/// @param initial_capacity the initial capacity
-/// @param element_size the size of a single element in bytes
-/// @return pointer to the newly created dynamic array, NULL on failure
+/// @brief 创建一个动态数组
+/// @param initial_capacity 初始容量
+/// @param element_size 单个元素的字节大小
+/// @return 指向新创建的动态数组的指针，失败返回 NULL
 DynamicArray* dynamic_array_create(size_t initial_capacity, size_t element_size)
 {
     DynamicArray* arr = (DynamicArray*)malloc(sizeof(DynamicArray));
@@ -134,7 +134,7 @@ DynamicArray* dynamic_array_create(size_t initial_capacity, size_t element_size)
     size_t actual_capacity = (initial_capacity < 8) ? 8 : initial_capacity;
     arr->data = malloc(actual_capacity * element_size);
     if (arr->data == NULL) {
-        free(arr);  // The data region failed but the struct is already allocated — free it!
+        free(arr);  // 数据区失败，但结构体已分配，记得释放！
         return NULL;
     }
 
@@ -164,14 +164,14 @@ Pass `sizeof(int)`, never a hardcoded `4` — the size of `int` varies across pl
 ### Destruction — the Free Order Must Not Be Reversed
 
 ```c
-/// @brief Destroy the dynamic array and free all memory
+/// @brief 销毁动态数组，释放所有内存
 DynamicArrayStatus dynamic_array_destroy(DynamicArray* arr)
 {
     if (arr == NULL) {
         return kNullPointer;
     }
-    free(arr->data);   // Free the data region first
-    free(arr);          // Then free the struct
+    free(arr->data);   // 先释放数据区
+    free(arr);          // 再释放结构体
     return kSuccess;
 }
 ```
@@ -180,7 +180,7 @@ The free order must not be reversed — if you `free(arr)` first, then `arr->dat
 
 ```c
 dynamic_array_destroy(nums);
-nums = NULL;  // Set to NULL manually to prevent accidental reuse
+nums = NULL;  // 手动置 NULL，防止后续误用
 ```
 
 `std::vector` locks this create/destroy pairing into the language itself through RAII — the destructor runs automatically when the object leaves scope, and leaking memory becomes essentially impossible. In our C version, every single resource-management step depends on human discipline.
@@ -192,7 +192,7 @@ nums = NULL;  // Set to NULL manually to prevent accidental reuse
 When `size == capacity`, the array is full and the next insertion has to grow it. Grow by how much, though? Adding 1 each time means N consecutive insertions trigger N `realloc` calls, for a total copy volume of 1 + 2 + ... + N = O(N^2) — utterly unacceptable. Doubling — every time the array fills, double the capacity — needs only about log₂(N) regrows, with a total copy volume ≈ 2N = O(N), amortized to O(1) per insertion. It's like moving house: instead of buying one more box every time, you double your floor area on each move — that one move is exhausting, but spread across the days you barely notice it.
 
 ```c
-/// @brief Grow the capacity to at least min_capacity
+/// @brief 将容量扩展到至少 min_capacity
 DynamicArrayStatus dynamic_array_reserve(DynamicArray* arr, size_t min_capacity)
 {
     if (arr == NULL) return kNullPointer;
@@ -219,7 +219,7 @@ DynamicArrayStatus dynamic_array_reserve(DynamicArray* arr, size_t min_capacity)
 If an array once grew to 10,000 elements and later gets trimmed down to 10, the memory for 9,990 elements is just sitting there wasted. But the timing of shrinking is far more delicate than that of growing — picture an array oscillating back and forth between 100 and 50: shrink the moment it drops to 50, and the very next insertion grows it right back to 100 — that back-and-forth is the classic "thrashing" problem. Our strategy shrinks down to `size` but keeps a minimum capacity of 8, and it is invoked explicitly by the caller:
 
 ```c
-/// @brief Shrink the capacity to roughly the actual size
+/// @brief 将容量缩减到接近实际大小
 DynamicArrayStatus dynamic_array_shrink_to_fit(DynamicArray* arr)
 {
     if (arr == NULL) return kNullPointer;
@@ -228,7 +228,7 @@ DynamicArrayStatus dynamic_array_shrink_to_fit(DynamicArray* arr)
     if (new_capacity >= arr->capacity) return kSuccess;
 
     void* new_data = realloc(arr->data, new_capacity * arr->element_size);
-    if (new_data == NULL) return kOutOfMemory;  // A failed shrink leaves the existing data untouched
+    if (new_data == NULL) return kOutOfMemory;  // 缩容失败不影响现有数据
 
     arr->data = new_data;
     arr->capacity = new_capacity;
@@ -243,13 +243,13 @@ DynamicArrayStatus dynamic_array_shrink_to_fit(DynamicArray* arr)
 We offer two access styles: a fast, unchecked version (like `std::vector::operator[]`) and a safe, bounds-checked version (like `std::vector::at()`).
 
 ```c
-/// @brief Fast access without bounds checking
+/// @brief 不检查边界的快速访问
 void* dynamic_array_at_unchecked(const DynamicArray* arr, size_t index)
 {
     return (char*)arr->data + index * arr->element_size;
 }
 
-/// @brief Safe access with bounds checking
+/// @brief 带边界检查的安全访问
 DynamicArrayStatus dynamic_array_at(
     const DynamicArray* arr, size_t index, void* out
 )
@@ -264,7 +264,7 @@ DynamicArrayStatus dynamic_array_at(
 The safe version works by copying into a caller-supplied buffer, because C has no references and the data region is `void*`, so the function can't directly return a correctly typed value. It really is clumsier than C++'s `vec.at(i)`, but that's the price of generic programming in C.
 
 ```c
-// Usage example
+// 使用示例
 DynamicArray* nums = dynamic_array_create(8, sizeof(int));
 int val = 42;
 dynamic_array_push_back(nums, &val);
@@ -282,7 +282,7 @@ printf("%d\n", out);  // 42
 ### push_back — Appending at the End
 
 ```c
-/// @brief Append an element to the end of the array
+/// @brief 在数组尾部追加一个元素
 DynamicArrayStatus dynamic_array_push_back(DynamicArray* arr, const void* element)
 {
     if (arr == NULL || element == NULL) return kNullPointer;
@@ -328,7 +328,7 @@ The initial capacity of 4 was raised to the guaranteed minimum of 8, and after 2
 ### pop_back — Removing from the End
 
 ```c
-/// @brief Remove the element at the end of the array
+/// @brief 删除数组尾部的元素
 DynamicArrayStatus dynamic_array_pop_back(DynamicArray* arr)
 {
     if (arr == NULL) return kNullPointer;
@@ -347,7 +347,7 @@ We deliberately don't trigger a shrink after `pop_back` — if you `pop` and the
 `insert` has to shift every element after the insertion position one slot toward the tail; `erase` shifts the elements one slot toward the head to overwrite the removed one. Both must use `memmove` rather than `memcpy` — the source and destination regions overlap, and `memcpy` on overlapping regions is undefined behavior.
 
 ```c
-/// @brief Insert an element at the given position
+/// @brief 在指定位置插入一个元素
 DynamicArrayStatus dynamic_array_insert(
     DynamicArray* arr, size_t index, const void* element
 )
@@ -374,7 +374,7 @@ DynamicArrayStatus dynamic_array_insert(
     return kSuccess;
 }
 
-/// @brief Remove the element at the given position
+/// @brief 删除指定位置的元素
 DynamicArrayStatus dynamic_array_erase(DynamicArray* arr, size_t index)
 {
     if (arr == NULL) return kNullPointer;
@@ -420,7 +420,7 @@ Since C++11, `std::vector::push_back` has an rvalue-reference overload that acce
 The container's interior is `void*` and knows nothing about the element type, so "what to do with each element" has to be supplied by the caller as a callback function — a kind of inversion of control:
 
 ```c
-/// @brief Iterate over the dynamic array, invoking the callback on each element
+/// @brief 遍历动态数组，对每个元素调用回调函数
 DynamicArrayStatus dynamic_array_foreach(
     const DynamicArray* arr,
     void (*callback)(void* element)
@@ -456,8 +456,8 @@ The callback pattern is used all over the C standard library — `qsort`'s compa
 "Comparing for equality" also has to come from the caller:
 
 ```c
-/// @brief Find an element in the dynamic array
-/// @return the index if found, SIZE_MAX otherwise
+/// @brief 在动态数组中查找元素
+/// @return 找到返回下标，否则返回 SIZE_MAX
 size_t dynamic_array_find(
     const DynamicArray* arr,
     const void* target,
@@ -494,14 +494,14 @@ The exercises below give only function signatures and requirement descriptions �
 `reserve` changes only the capacity, not the size; `resize` has to change the size. When the new size is larger than the old, the extra positions should be filled with a default value.
 
 ```c
-/// @brief Change the number of elements in the dynamic array
-/// @param default_value pointer to the default value (used to fill new positions); may be NULL (fill with zeros)
+/// @brief 改变动态数组的元素个数
+/// @param default_value 指向默认值的指针（用于填充新增位置），可以为 NULL（填零）
 DynamicArrayStatus dynamic_array_resize(
     DynamicArray* arr,
     size_t new_size,
     const void* default_value
 );
-// Exercise: implement it yourself
+// 练习： 自行实现
 ```
 
 ### Exercise 2: Implement filter
@@ -511,12 +511,12 @@ DynamicArrayStatus dynamic_array_resize(
 Given a dynamic array and a filter predicate, return a newly created dynamic array containing only the elements that satisfy the predicate.
 
 ```c
-/// @brief Filter the elements of a dynamic array by predicate
+/// @brief 根据谓词过滤动态数组的元素
 DynamicArray* dynamic_array_filter(
     const DynamicArray* arr,
     int (*pred)(const void* element)
 );
-// Exercise: implement it yourself
+// 练习： 自行实现
 ```
 
 ### Exercise 3: Implement map
@@ -526,14 +526,14 @@ DynamicArray* dynamic_array_filter(
 Given a dynamic array and a transform function, apply the transform to every element and store the results in a new array to return.
 
 ```c
-/// @brief Apply a transform function to every element of the dynamic array
-/// @param out_element_size the element size of the output array (may differ from the input)
+/// @brief 对动态数组的每个元素应用变换函数
+/// @param out_element_size 输出数组的元素大小（可能与输入不同）
 DynamicArray* dynamic_array_map(
     const DynamicArray* arr,
     void (*transform)(const void* in, void* out),
     size_t out_element_size
 );
-// Exercise: implement it yourself
+// 练习： 自行实现
 ```
 
 ### Exercise 4: Implement concatenation
@@ -543,12 +543,12 @@ DynamicArray* dynamic_array_map(
 Concatenate two dynamic arrays of the same element type into a new dynamic array.
 
 ```c
-/// @brief Concatenate two dynamic arrays into a new dynamic array
+/// @brief 将两个动态数组拼接成一个新的动态数组
 DynamicArray* dynamic_array_concat(
     const DynamicArray* arr1,
     const DynamicArray* arr2
 );
-// Exercise: implement it yourself
+// 练习： 自行实现
 ```
 
 > **Self-assessment**: if you find the exercises hard, revisit the design ideas in the corresponding sections. Especially resize — it is essentially a combination of reserve + memset/memcpy; think through which positions need filling and with what value, and the code practically writes itself.

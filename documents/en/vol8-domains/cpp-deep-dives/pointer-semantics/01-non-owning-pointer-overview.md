@@ -23,9 +23,9 @@ title: 'Non-Owning Pointers: A Panorama from T* to Borrowed to ObserverPtr'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md
   source_hash: 03111f3329d1f66c018ac3f0b937826d767efb2f816966e09316f6c7edc12d0d
-  translated_at: '2026-09-27T02:43:50+00:00'
-  engine: anthropic
-  token_count: 6900
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9696
 ---
 # Non-Owning Pointers: A Panorama from T* to Borrowed to ObserverPtr
 
@@ -75,8 +75,8 @@ First, the core implementation:
 
 ```cpp
 // borrowed.h
-// Teaching-version Borrowed<T>: explicit non-null borrowing semantics
-// Note: this is not a production-grade implementation; it is for teaching
+// 教学版 Borrowed<T>：显式非空借用语义
+// 注意：这不是生产级实现，用于教学演示
 
 #pragma once
 
@@ -86,28 +86,28 @@ First, the core implementation:
 template <typename T>
 class Borrowed {
 public:
-    // Construct from an lvalue reference — the most ordinary usage
+    // 从左值引用构造——这是最正常的用法
     explicit Borrowed(T& ref) noexcept : ptr_(&ref) {}
 
-    // Forbid construction from temporaries
+    // 禁止从临时对象构造
     Borrowed(T&&) = delete;
 
-    // Forbid construction from nullptr (the T* overload accepts only non-null pointers)
+    // 禁止从 nullptr 构造（T* 重载只接受非空指针）
     Borrowed(std::nullptr_t) = delete;
 
-    // Construct from a raw pointer; the caller must guarantee non-null
+    // 从裸指针构造，但调用者需保证非空
     explicit Borrowed(T* ptr) noexcept : ptr_(ptr)
     {
         assert(ptr != nullptr && "Borrowed<T> requires a non-null pointer");
     }
 
-    // Default copy and move — a borrow is transferable
+    // 默认拷贝和移动——借用是可以传递的
     Borrowed(const Borrowed&) = default;
     Borrowed& operator=(const Borrowed&) = default;
     Borrowed(Borrowed&&) = default;
     Borrowed& operator=(Borrowed&&) = default;
 
-    // Access interface
+    // 访问接口
     T& get() const noexcept { return *ptr_; }
     T* operator->() const noexcept { return ptr_; }
     T& operator*() const noexcept { return *ptr_; }
@@ -116,7 +116,7 @@ private:
     T* ptr_;
 };
 
-// Helper: create a Borrowed from a reference, sparing you the explicit constructor
+// 辅助函数：从引用创建 Borrowed，省去写 explicit 构造
 template <typename T>
 Borrowed<T> borrow(T& ref) noexcept
 {
@@ -131,11 +131,10 @@ Obviously, a few questions come up:
 ```cpp
 std::string get_name();
 
-// If construction from temporaries were allowed, this would happen:
-// Borrowed<std::string> b(get_name());  // the temporary is destroyed at the end of the expression
-// By this point the object returned by get_name has been destroyed,
-// and accessing the held reference here means stepping on a landmine
-// b.get();  // dangling reference!
+// 如果允许从临时对象构造，就会出这种事：
+// Borrowed<std::string> b(get_name());  // 临时对象在表达式结束时销毁
+// 到这里，get_name返回的对象就被销毁掉了，这个时候访问持有的引用就是踩到地雷了
+// b.get();  // 悬垂引用！
 ```
 
 With `T&&` marked `= delete`, the compiler rejects this usage outright at compile time. This is the closest imitation of Rust's borrow checker that C++ can offer — not as comprehensive as Rust's, but it at least plugs the most common pitfall.
@@ -151,7 +150,7 @@ A typical correct usage:
 ```cpp
 void process_data(Borrowed<const std::vector<int>> data)
 {
-    // The caller guarantees data is non-null; use it directly
+    // 调用者保证 data 非空，我们直接用
     for (const auto& item : data.get()) {
         // ...
     }
@@ -160,7 +159,7 @@ void process_data(Borrowed<const std::vector<int>> data)
 int main()
 {
     std::vector<int> v{1, 2, 3};
-    process_data(borrow(v));  // Clear: I'm borrowing v
+    process_data(borrow(v));  // 清晰：我在借用 v
 }
 ```
 
@@ -178,8 +177,8 @@ Unfortunately, as of C++26 (26, I believe — I haven't found any newer news, an
 
 ```cpp
 // observer_ptr.h
-// Teaching-version ObserverPtr<T>: a nullable, non-owning observation pointer
-// Modeled on std::experimental::observer_ptr (Library Fundamentals TS v2)
+// 教学版 ObserverPtr<T>：可空非拥有观察指针
+// 参考了 std::experimental::observer_ptr (Library Fundamentals TS v2)
 
 #pragma once
 
@@ -188,25 +187,25 @@ Unfortunately, as of C++26 (26, I believe — I haven't found any newer news, an
 template <typename T>
 class ObserverPtr {
 public:
-    // Default construction: observing nothing
+    // 默认构造：空观察
     ObserverPtr() noexcept : ptr_(nullptr) {}
 
-    // Construct from nullptr: observing nothing
+    // 从 nullptr 构造：空观察
     ObserverPtr(std::nullptr_t) noexcept : ptr_(nullptr) {}
 
-    // Construct from a raw pointer: start observing
+    // 从裸指针构造：开始观察
     explicit ObserverPtr(T* ptr) noexcept : ptr_(ptr) {}
 
-    // Copy and move
+    // 拷贝和移动
     ObserverPtr(const ObserverPtr&) = default;
     ObserverPtr& operator=(const ObserverPtr&) = default;
     ObserverPtr(ObserverPtr&&) = default;
     ObserverPtr& operator=(ObserverPtr&&) = default;
 
-    // Rebind the watched object
+    // 重新绑定观察对象
     void reset(T* ptr = nullptr) noexcept { ptr_ = ptr; }
 
-    // Release the observation relationship, returning the original pointer
+    // 释放观察关系，返回原指针
     T* release() noexcept
     {
         T* old = ptr_;
@@ -214,15 +213,15 @@ public:
         return old;
     }
 
-    // Access
+    // 访问
     T* get() const noexcept { return ptr_; }
     T& operator*() const noexcept { return *ptr_; }
     T* operator->() const noexcept { return ptr_; }
 
-    // Check whether there is a watched object
+    // 检查是否有观察对象
     explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
-    // Swap
+    // 交换
     void swap(ObserverPtr& other) noexcept
     {
         T* tmp = ptr_;
@@ -234,7 +233,7 @@ private:
     T* ptr_;
 };
 
-// Equality comparison
+// 相等比较
 template <typename T, typename U>
 bool operator==(const ObserverPtr<T>& a, const ObserverPtr<U>& b) noexcept
 {
@@ -247,7 +246,7 @@ bool operator==(const ObserverPtr<T>& a, std::nullptr_t) noexcept
     return !a;
 }
 
-// Helper function
+// 辅助函数
 template <typename T>
 ObserverPtr<T> make_observer(T* ptr) noexcept
 {
@@ -271,32 +270,32 @@ public:
     void do_work()
     {
         if (logger_) {
-            // Log only if there is a Logger; otherwise skip it
+            // 有 Logger 才记录，没有就算了
             // ...
         }
     }
 
 private:
-    ObserverPtr<Logger> logger_;  // I observe the Logger, but I don't own it
+    ObserverPtr<Logger> logger_;  // 我观察 Logger，但不拥有它
 };
 ```
 
 A typical wrong usage — async callbacks:
 
 ```cpp
-// Wrong! ObserverPtr cannot guarantee the object is still alive
+// 错误！ObserverPtr 不能保证对象还活着
 void Service::async_task()
 {
-    // If Service is destroyed before the callback executes, logger_ is dangling
-    // This callback captures logger_; running it may be UB
+    // 如果 Service 在回调执行前被销毁，logger_ 就是悬垂的
+    // 这个 callback 捕获了 logger_，执行时可能 UB
     auto callback = [this]() {
-        if (logger_) { // Folks, this kind of thing is dangerous
-            // The Logger that logger_'s ptr_ points to may no longer exist
-            // operator bool only checks whether ptr_ is nullptr
-            // If Logger was destroyed but ptr_ was never reset, this is UB
+        if (logger_) { // 孩子们，这种东西很危险
+            // logger_ 的 ptr_ 指向的 Logger 可能已经不存在了
+            // operator bool 只检查 ptr_ 是否为 nullptr
+            // 如果 Logger 被销毁但 ptr_ 没被 reset，这里就是 UB
         }
     };
-    // post_callback(callback);  // Don't do this
+    // post_callback(callback);  // 别这么做
 }
 ```
 

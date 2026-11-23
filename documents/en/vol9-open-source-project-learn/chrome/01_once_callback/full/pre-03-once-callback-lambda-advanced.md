@@ -25,9 +25,9 @@ title: 'OnceCallback prerequisite (III): advanced lambda features'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-03-once-callback-lambda-advanced.md
   source_hash: 402e8de3c2fdec5059c35265c4f4f18dc05f8b2eeba92c2252e914fb6df380db
-  translated_at: '2026-09-26T00:52:10+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7232
 ---
 # OnceCallback prerequisite (III): advanced lambda features
 
@@ -44,20 +44,20 @@ Here's a side-by-side:
 ```cpp
 int x = 10;
 
-// const lambda: captured variables cannot be modified
+// const lambda：不能修改捕获的变量
 auto f1 = [x]() {
-    // x++;  // compile error: operator() is const
+    // x++;  // 编译错误：operator() 是 const 的
     return x;
 };
 
-// mutable lambda: captured variables can be modified
+// mutable lambda：可以修改捕获的变量
 auto f2 = [x]() mutable {
-    x++;       // OK: operator() is non-const
+    x++;       // OK：operator() 是非 const 的
     return x;
 };
 
-f2();  // returns 11, x's copy has been modified
-f2();  // returns 12, the same lambda object called again, x keeps increasing
+f2();  // 返回 11，x 的副本被修改
+f2();  // 返回 12，同一个 lambda 对象再次调用，x 继续增加
 ```
 
 There's a detail that's easy to miss here — a `mutable` lambda's state **persists across calls**. The first call to `f2` returns 11, the second returns 12. The closure object holds copies of the captured variables, `mutable` hands `operator()` the right to modify those copies, and once modified they stay that way — the next call picks up where the last one left off. OnceCallback makes use of exactly this.
@@ -67,10 +67,10 @@ There's a detail that's easy to miss here — a `mutable` lambda's state **persi
 Every lambda inside `bind_once` and `then()` must be marked `mutable` — no negotiation. The reason boils down to one sentence: these lambdas' capture lists hold a `OnceCallback` object (via `self = std::move(*this)`, more on that in a moment), and the moment you call `std::move(self).run()` you have to mutate its internal state — flipping `status_` from kValid to kConsumed. If the lambda were const, `self` would be a const reference inside the body, and you'd be trying to run a state-mutating operation on a const object? The compiler would be the first to object.
 
 ```cpp
-// the lambda inside then() — mutable is not optional
+// then() 内部的 lambda——mutable 不可省略
 [self = std::move(*this), cont = std::forward<Next>(next)]
 (FuncArgs... args) mutable -> NextRet {
-    // self needs to be modified here (run() consumes it)
+    // self 在这里需要被修改（run() 会消费它）
     auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
     return std::invoke(std::move(cont), std::move(mid));
 }
@@ -89,16 +89,16 @@ Simple capture `[x]` can only grab variables that already exist, and it's copy-o
 ```cpp
 auto ptr = std::make_unique<int>(42);
 
-// 1. move capture — moves the unique_ptr into the lambda
+// 1. 移动捕获——把 unique_ptr 搬进 lambda
 auto f1 = [p = std::move(ptr)]() { return *p; };
-// ptr out here has already been emptied
+// ptr 在外面已经被搬空了
 
-// 2. store a computed result
+// 2. 存储计算结果
 std::string s = "hello";
-auto f2 = [len = s.size()]() { return len; };  // len is of type size_t
+auto f2 = [len = s.size()]() { return len; };  // len 是 size_t 类型
 
-// 3. capture a variable that doesn't exist outside
-auto f3 = [counter = 0]() mutable { return ++counter; };  // counter is the lambda's own variable
+// 3. 捕获不存在于外部的变量
+auto f3 = [counter = 0]() mutable { return ++counter; };  // counter 是 lambda 自己的变量
 ```
 
 The first one is the killer. C++11 lambdas have no move capture, so if you wanted to stuff a `unique_ptr` into a lambda you had to take the scenic route — park it in a `std::function` or hand-roll a functor. Before P0780, Chromium's `base::Bind` carried this gap on its back with hand-written functors. Once init capture arrived, those hacks were pretty much ready for the museum.
@@ -129,7 +129,7 @@ Look at these two steps together: the new lambda that `then()` builds holds comp
 
 ```mermaid
 graph LR
-    A["new OnceCallback"] --> B["move_only_function"] --> C["lambda closure"] --> D["original OnceCallback + continuation"]
+    A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原 OnceCallback + 后续回调"]
 ```
 
 Every layer passes ownership along through move semantics — no sharing anywhere, no copies anywhere. OnceCallback's move-only discipline propagates from the outside all the way to the bottom inside `then()`, with no leaks along the way.
@@ -145,11 +145,11 @@ This is the feature that genuinely lets `bind_once` get away with a few lines of
 ```cpp
 template<typename F, typename... BoundArgs>
 auto bind_old(F&& f, BoundArgs&&... args) {
-    // pack all bound arguments into a tuple
+    // 把所有绑定参数打包进 tuple
     return [f = std::forward<F>(f),
             tup = std::make_tuple(std::forward<BoundArgs>(args)...)]
         (auto&&... call_args) mutable -> decltype(auto) {
-        // expand the tuple with std::apply and call
+        // 用 std::apply 展开 tuple 并调用
         return std::apply([&](auto&... bound) -> decltype(auto) {
             return f(bound..., std::forward<decltype(call_args)>(call_args)...);
         }, tup);
@@ -167,10 +167,10 @@ C++20 finally relented and allows pack expansion in a lambda's init capture. The
 template<typename F, typename... BoundArgs>
 auto bind_new(F&& f, BoundArgs&&... args) {
     return [f = std::forward<F>(f),
-            ...bound = std::forward<BoundArgs>(args)]  // ← pack expansion!
+            ...bound = std::forward<BoundArgs>(args)]  // ← 包展开！
         (auto&&... call_args) mutable -> decltype(auto) {
         return std::invoke(std::move(f),
-                          std::move(bound)...,         // ← expand the captured variables
+                          std::move(bound)...,         // ← 展开捕获变量
                           std::forward<decltype(call_args)>(call_args)...);
     };
 }
@@ -182,11 +182,11 @@ Let's take a concrete call and see what the compiler actually does behind the sc
 
 ```cpp
 [f = std::forward<F>(f),
- b1 = std::forward<int>(arg1),              // int forwarded as-is
- b2 = std::forward<std::string>(arg2)]      // std::string move-forwarded
+ b1 = std::forward<int>(arg1),              // int 直接转发
+ b2 = std::forward<std::string>(arg2)]      // std::string 移动转发
 (auto&&... call_args) mutable -> decltype(auto) {
     return std::invoke(std::move(f),
-                      std::move(b1), std::move(b2),    // expand the captured variables
+                      std::move(b1), std::move(b2),    // 展开捕获变量
                       std::forward<decltype(call_args)>(call_args)...);
 }
 ```
@@ -207,14 +207,14 @@ One last thing: the signature of `bind_once`'s inner lambda, `(auto&&... call_ar
 
 ```cpp
 auto f = [](auto&& x) {
-    // x is a forwarding reference
-    // lvalue passed in: auto = int&, x's type is int& (lvalue reference)
-    // rvalue passed in: auto = int, x's type is int&& (rvalue reference)
+    // x 是转发引用
+    // 传入左值：auto = int&, x 的类型是 int&（左值引用）
+    // 传入右值：auto = int, x 的类型是 int&&（右值引用）
 };
 
 int v = 10;
-f(v);       // x binds to an lvalue
-f(10);      // x binds to an rvalue
+f(v);       // x 绑定到左值
+f(10);      // x 绑定到右值
 ```
 
 The `auto&&...` combination opens the lambda wide open: any number of arguments of any type can be pushed in, and the value category of each one (lvalue or rvalue) is remembered. Pair that with `std::forward<decltype(call_args)>(call_args)...`, and those arguments get perfectly forwarded to the final callable, with not one bit of information lost.

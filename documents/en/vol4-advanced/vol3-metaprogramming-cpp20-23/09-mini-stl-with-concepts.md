@@ -27,9 +27,9 @@ title: 'Capstone Project: A mini-STL Algorithm Library Constrained by Concepts'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/09-mini-stl-with-concepts.md
   source_hash: d2c6896b34cb3aa36490d3a71ccb6e11d6b881323cf6aeb3fdba719a0110c8d9
-  translated_at: '2026-09-26T05:02:20+00:00'
-  engine: anthropic
-  token_count: 2900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5724
 ---
 # Capstone Project: A mini-STL Algorithm Library Constrained by Concepts
 
@@ -135,7 +135,7 @@ The most convincing part is watching how it rejects a wrong type. Define a `NoPl
 ```cpp
 struct NoPlus {};
 std::vector<NoPlus> v(3);
-my::accumulate(v, NoPlus{});   // Addable constraint not satisfied
+my::accumulate(v, NoPlus{});   // Addable 约束不满足
 ```
 
 ```text

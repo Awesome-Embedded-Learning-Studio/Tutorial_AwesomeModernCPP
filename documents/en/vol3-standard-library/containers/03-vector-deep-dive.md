@@ -21,9 +21,9 @@ title: 'Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invali
 translation:
   source: documents/vol3-standard-library/containers/03-vector-deep-dive.md
   source_hash: 568737e0b2aaba326157bd2b56dc279115d97e283e2e0d41ee689cae1a54aec6
-  translated_at: '2026-09-26T02:12:29+00:00'
-  engine: anthropic
-  token_count: 6800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11277
 ---
 # Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation
 
@@ -41,10 +41,10 @@ In the mainstream standard library implementations (libstdc++, libc++, MSVC STL)
 
 ```mermaid
 flowchart LR
-    BEGIN(["begin<br/>first element"]) --> S0["v[0]"]
-    TAIL(["end<br/>size boundary"]) --> S3["free slot"]
-    CAP(["end_of_storage<br/>capacity boundary"]) --> S5["end of buffer"]
-    S0 --- S1["v[1]"] --- S2["v[2]"] --- S3 --- S4["free slot"] --- S5
+    BEGIN(["begin<br/>首元素"]) --> S0["v[0]"]
+    TAIL(["end<br/>size 边界"]) --> S3["空闲槽"]
+    CAP(["end_of_storage<br/>capacity 边界"]) --> S5["缓冲末尾"]
+    S0 --- S1["v[1]"] --- S2["v[2]"] --- S3 --- S4["空闲槽"] --- S5
 ```
 
 Follow this diagram through and everything clicks: `size()` is just `end - begin`, `capacity()` is just `end_of_storage - begin`, and `capacity() - size()` is exactly the number of elements you can still stuff in without triggering a reallocation. The standard text doesn't actually mandate that `vector` must be shaped this way (it only requires contiguous storage plus a pile of interface behaviors), but once you know the underlying machinery is these three pointers, every property that follows becomes perfectly natural:
@@ -64,12 +64,12 @@ This wording is far too easy to read as "every `push_back` is O(1)", so some fol
 ```mermaid
 flowchart TD
     A["push_back(x)"] --> Q{"size &lt; capacity?"}
-    Q -- "yes" --> C["construct x in place<br/>end++ · O(1)"]
-    Q -- "no" --> D["allocate new buffer<br/>2x / 1.5x"]
-    D --> E["move old elements over<br/>move or copy · O(n)"]
-    E --> F["free old buffer"]
-    F --> G["construct x · end++"]
-    C --> H["amortized constant ✓"]
+    Q -- "是" --> C["就地构造 x<br/>end++ · O(1)"]
+    Q -- "否" --> D["申请新缓冲<br/>2x / 1.5x"]
+    D --> E["搬运旧元素<br/>move 或 copy · O(n)"]
+    E --> F["释放旧缓冲"]
+    F --> G["构造 x · end++"]
+    C --> H["摊还常数 ✓"]
     G --> H
 ```
 
@@ -103,13 +103,13 @@ Table too dense for your taste? Compress it into a decision tree and it becomes 
 
 ```mermaid
 flowchart TD
-    OP["mutating operation"] --> T{"reallocation triggered?"}
-    T -- "yes" --> ALL["all references/pointers/iterators invalidated"]
-    T -- "no" --> K{"operation type"}
-    K -- "push_back / resize / reserve<br/>(within capacity)" --> NONE["none invalidated<br/>(except past-the-end)"]
-    K -- "erase" --> AFTER["erased and after invalidated"]
-    K -- "insert" --> POS["pos and after invalidated"]
-    K -- "swap" --> SWAP["not invalidated · points into the other container"]
+    OP["修改操作"] --> T{"触发 reallocation?"}
+    T -- "是" --> ALL["全部引用/指针/迭代器失效"]
+    T -- "否" --> K{"操作类型"}
+    K -- "push_back / resize / reserve<br/>（未超容量）" --> NONE["都不失效<br/>（past-the-end 除外）"]
+    K -- "erase" --> AFTER["被删及之后失效"]
+    K -- "insert" --> POS["pos 及之后失效"]
+    K -- "swap" --> SWAP["不失效 · 指向对方容器"]
 ```
 
 The row easiest to get backwards is the last one, `swap`. It invalidates nothing—what you swap away is the container's contents, but the iterator stays pinned to that original chunk of memory, so what it points into now is the container that was swapped in. Once you understand this, you can see why some libraries love writing eerie-looking code like `vector<T>().swap(v)` to "truly release" memory: it swaps in an empty temporary, carries the original buffer off to destruction along with the capacity, and leaves things spotless.
@@ -177,14 +177,14 @@ Second, the two iterator-invalidation scenarios side by side. `push_back` invali
 int main()
 {
     std::vector<int> v{1, 2, 3};
-    v.reserve(3);  // Reserve: we already hold 3, no reallocation
+    v.reserve(3);  // 预留：当前已有 3，不触发扩容
 
     const int* p = &v[1];
-    v.push_back(4);  // 1 slot of spare capacity left, no reallocation
+    v.push_back(4);  // 还有 1 个余量，不扩容
     std::cout << "no realloc, p valid? " << (p == &v[1]) << '\n';  // 1
 
-    v.reserve(100);  // Exceeds capacity, buffer is inevitably swapped
-    std::cout << "after reserve, p valid? " << (p == &v[1]) << '\n';  // 0, now invalidated
+    v.reserve(100);  // 超过 capacity，必然换缓冲
+    std::cout << "after reserve, p valid? " << (p == &v[1]) << '\n';  // 0，已失效
     return 0;
 }
 ```
@@ -204,7 +204,7 @@ public:
 
     explicit Tracked(int i) : id(i) {}
     Tracked(const Tracked& o) : id(o.id) { ++copy_count; }
-    // Deliberately not marked noexcept: reallocation distrusts it and retreats to copy
+    // 故意不标 noexcept：扩容时不放心，退回 copy
     Tracked(Tracked&& o) noexcept(false) : id(o.id) { ++move_count; }
 };
 int Tracked::move_count = 0;
@@ -216,11 +216,11 @@ int main()
     v.reserve(2);
     v.emplace_back(1);
     v.emplace_back(2);
-    v.emplace_back(3);  // Triggers reallocation
+    v.emplace_back(3);  // 触发扩容
 
     std::cout << "moves=" << Tracked::move_count
               << " copies=" << Tracked::copy_count << '\n';
-    // Unmarked noexcept mostly takes copy; change noexcept(false) to noexcept and run again, it becomes move
+    // 未标 noexcept 时多半走 copy；把 noexcept(false) 改成 noexcept 再跑，会变成 move
     return 0;
 }
 ```
@@ -235,16 +235,16 @@ constexpr int sum_first_n(int n)
 {
     std::vector<int> v;
     for (int i = 0; i < n; ++i) {
-        v.push_back(i + 1);  // Allocated during constant evaluation, must be released before the function returns
+        v.push_back(i + 1);  // 常量求值期分配，函数返回前必须释放
     }
     int sum = 0;
     for (int x : v) {
         sum += x;
     }
-    return sum;  // Return only a scalar; the buffer destructs naturally within the function
+    return sum;  // 只返回标量，缓冲在函数内自然析构
 }
 
-static_assert(sum_first_n(100) == 5050);  // Entirely done at compile time
+static_assert(sum_first_n(100) == 5050);  // 全程编译期完成
 
 int main() { return 0; }
 ```

@@ -21,10 +21,10 @@ tags:
 title: restrict, Incomplete Types, and Structure Pointers
 translation:
   source: documents/vol1-fundamentals/c_tutorials/08B-restrict-incomplete-types.md
-  source_hash: 16c78f0b870bbb61cdffe29d8eac245b5620c8e71cd247c981b0d06ec4c5b9ca
-  translated_at: '2026-09-25T13:05:23+00:00'
-  engine: anthropic
-  token_count: 1800
+  source_hash: 7bafe98e5d115c0f11a838d7b8e7cc72df1e479260128b251e844293ccbfd804
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8698
 ---
 # restrict, Incomplete Types, and Structure Pointers
 
@@ -74,8 +74,8 @@ int foo(int* a, int* b)
     *a = 5;
     *b = 6;
     return *a + *b;
-    // The compiler can't assume *a is still 5, because b might be a
-    // It must reload *a from memory
+    // 编译器不敢假设 *a 还是 5，因为 b 可能就是 a
+    // 必须重新从内存读 *a
 }
 
 int rfoo(int* restrict a, int* restrict b)
@@ -83,8 +83,8 @@ int rfoo(int* restrict a, int* restrict b)
     *a = 5;
     *b = 6;
     return *a + *b;
-    // The compiler knows a and b don't overlap, so *a is definitely 5
-    // It can return 11 directly, without reloading from memory
+    // 编译器知道 a、b 不重叠，*a 一定是 5
+    // 直接返回 11，不用重新读内存
 }
 ```
 
@@ -110,10 +110,10 @@ void* memmove(void* dest, const void* src, size_t n);
 If the compiler knows a type exists but doesn't know its size or internal layout, the type is incomplete (an incomplete type). The most common example:
 
 ```c
-struct Foo;  // Forward declaration: tells the compiler "Foo is a struct" without saying what's inside
+struct Foo;  // 前向声明：告诉编译器"Foo 是个结构体"，但不说里面有什么
 
-struct Foo* p;    // Legal: pointers have a fixed size; Foo's full definition isn't needed
-struct Foo  obj;  // Illegal: the compiler doesn't know Foo's size, so it can't allocate space
+struct Foo* p;    // 合法：指针大小固定，不需要知道 Foo 的完整定义
+struct Foo  obj;  // 非法：编译器不知道 Foo 的大小，无法分配空间
 ```
 
 There's only a little you can do with an incomplete type: declare pointers to it, and use such pointers in function declarations. To do anything more (define variables, access members, take `sizeof`), you must provide the complete definition.
@@ -124,10 +124,10 @@ The most direct use of forward declarations is cutting down header dependencies.
 
 ```c
 // car.h
-struct Engine;  // Forward declaration — no need to #include "engine.h"
+struct Engine;  // 前向声明，不需要 #include "engine.h"
 
 struct Car {
-    struct Engine* engine;  // Only a pointer; the forward declaration is enough
+    struct Engine* engine;  // 只需要指针，前向声明就够
     int speed;
 };
 ```
@@ -141,8 +141,8 @@ Forward declarations only work for declaring pointers or references. If you put 
 Incomplete types have one hugely important application pattern in C: the opaque pointer. The idea is that the header exposes only a forward declaration plus functions that operate on the type—never the struct's internal details.
 
 ```c
-// buffer.h — public header
-typedef struct Buffer Buffer;  // forward declaration + typedef
+// buffer.h — 公开头文件
+typedef struct Buffer Buffer;  // 前向声明 + typedef
 
 Buffer* buffer_create(int capacity);
 void    buffer_destroy(Buffer* buf);
@@ -153,7 +153,7 @@ int     buffer_length(const Buffer* buf);
 Callers can only manipulate `Buffer` through the functions; they never get to see inside `struct Buffer`. The implementation provides the complete definition in the `.c` file:
 
 ```c
-// buffer.c — implementation file
+// buffer.c — 实现文件
 #include "buffer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -184,7 +184,7 @@ void buffer_destroy(Buffer* buf)
 int buffer_append(Buffer* buf, const char* data, int len)
 {
     if (buf->length + len > buf->capacity) {
-        return -1;  // not enough buffer space
+        return -1;  // 缓冲区不足
     }
     memcpy(buf->data + buf->length, data, len);
     buf->length += len;
@@ -212,11 +212,11 @@ typedef struct {
 Point p = {3.0f, 4.0f};
 Point* ptr = &p;
 
-// Approach 1: dereference first, then access the member with .
-float x1 = (*ptr).x;   // The parentheses can't be omitted, because . binds tighter than *
+// 方式 1：先解引用，再用 . 访问成员
+float x1 = (*ptr).x;   // 括号不能省，因为 . 的优先级高于 *
 
-// Approach 2: use the -> operator (syntactic sugar)
-float x2 = ptr->x;     // equivalent to (*ptr).x
+// 方式 2：用 -> 运算符（语法糖）
+float x2 = ptr->x;     // 等价于 (*ptr).x
 ```
 
 `->` is syntactic sugar invented so we can type less. Just remember the rule: **use `.` with struct variables, use `->` with structure pointers**.
@@ -230,8 +230,8 @@ typedef struct {
 Circle c = {{0.0f, 0.0f}, 5.0f};
 Circle* cp = &c;
 
-cp->center.x = 1.0f;        // change the center's x
-cp->radius = 10.0f;          // change the radius
+cp->center.x = 1.0f;        // 修改圆心的 x
+cp->radius = 10.0f;          // 修改半径
 
 void move_circle(Circle* c, float dx, float dy)
 {
@@ -251,18 +251,18 @@ Mixing up `.` and `->` is one of the most common beginner mistakes. `cp->center.
 PIMPL (Pointer to Implementation) is the direct heir of the opaque pointer in C++. It hides a class's private implementation behind a pointer to an incomplete type; the header needs only a forward declaration:
 
 ```cpp
-// widget.h — public header
+// widget.h — 公开头文件
 class Widget {
 public:
     Widget();
     ~Widget();
     void do_something();
 private:
-    struct Impl;          // forward declaration
-    Impl* pimpl_;         // pointer to an incomplete type
+    struct Impl;          // 前向声明
+    Impl* pimpl_;         // 不完整类型的指针
 };
 
-// widget.cpp — implementation file
+// widget.cpp — 实现文件
 struct Widget::Impl {
     int internal_state = 0;
     void helper() { /* ... */ }
@@ -300,31 +300,31 @@ The C++ standard has never adopted `restrict`. Class semantics and references ma
 Implement a simple Stack module using the opaque pointer pattern. Requirements:
 
 ```c
-// stack.h — expose only the interface, not the internal structure
+// stack.h — 只暴露接口，不暴露内部结构
 typedef struct Stack Stack;
 
 Stack* stack_create(int capacity);
 void   stack_destroy(Stack* s);
-int    stack_push(Stack* s, int value);   // returns 0 on success, -1 when the stack is full
-int    stack_pop(Stack* s, int* out);     // returns 0 on success, -1 when the stack is empty
+int    stack_push(Stack* s, int value);   // 成功返回 0，满栈返回 -1
+int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
 int    stack_size(const Stack* s);
 ```
 
 ::: details Reference Solution
 
 ```c
-// stack.h — expose only the interface, not the internal structure
+// stack.h — 只暴露接口，不暴露内部结构
 typedef struct Stack Stack;
 
 Stack* stack_create(int capacity);
 void   stack_destroy(Stack* s);
-int    stack_push(Stack* s, int value);   // returns 0 on success, -1 when the stack is full
-int    stack_pop(Stack* s, int* out);     // returns 0 on success, -1 when the stack is empty
+int    stack_push(Stack* s, int value);   // 成功返回 0，满栈返回 -1
+int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
 int    stack_size(const Stack* s);
 ```
 
 ```c
-// stack.c — implementation file, defines the complete struct
+// stack.c — 实现文件，定义完整结构体
 #include <stdlib.h>
 #include "stack.h"
 
@@ -365,11 +365,11 @@ void stack_destroy(Stack* s){
 
 int stack_push(Stack* s, int value){
     if(s == NULL){
-        return -1;  // the stack doesn't exist, return -1
+        return -1;  // 栈不存在，返回 -1
     }
 
     if(s->size == s->capacity){
-        return -1;  // the stack is full, return -1
+        return -1;  // 栈满，返回 -1
     }
 
     s->data[stack_size(s)] = value;
@@ -380,10 +380,10 @@ int stack_push(Stack* s, int value){
 
 int stack_pop(Stack* s, int* out){
     if(s == NULL || out == NULL){
-        return -1;  // the stack doesn't exist or the output pointer is null, return -1
+        return -1;  // 栈不存在或输出指针为空，返回 -1
     }
     if(stack_size(s) == 0){
-        return -1;  // the stack is empty, return -1
+        return -1;  // 栈空，返回 -1
     }
     *out = s->data[stack_size(s) - 1];
     s->size--;
@@ -392,7 +392,7 @@ int stack_pop(Stack* s, int* out){
 
 int stack_size(const Stack* s){
     if(s == NULL){
-        return 0;  // treat a nonexistent stack as empty
+        return 0;  // 栈不存在视为空
     }
     return s->size;
 }

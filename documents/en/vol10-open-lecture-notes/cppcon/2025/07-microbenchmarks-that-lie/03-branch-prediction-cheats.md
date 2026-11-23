@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/03-branch-prediction-cheats.md
   source_hash: 7ced5827bde04e237172eba73daef3a25afe1a83575934df9bd3a1ab31d93d2b
-  translated_at: '2026-09-26T16:31:00+00:00'
-  engine: anthropic
-  token_count: 1800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4479
 ---
 
 # The Branch Predictor Is Helping You Cheat
@@ -40,7 +40,7 @@ static int classify(int n) {
     if (n % 15 == 0) return 4;   // FizzBuzz
     if (n % 5  == 0) return 3;   // Buzz
     if (n % 3  == 0) return 2;   // Fizz
-    return 1;                    // plain number
+    return 1;                    // 普通数字
 }
 ```
 
@@ -53,11 +53,11 @@ Then prepare three input sets, each two million integers, differing only in how 
 For each input set we call `classify` two million times with nothing else in between, running 5 rounds per set and taking the median. The code shares its skeleton with the noise experiment in the previous part, so here we only look at the results:
 
 ```text
-All identical 15  (branch perfectly predicted):  717.0 us  (0.36 ns/elem)
-Sequential 1..N  (periodic pattern):             1573.0 us  (0.79 ns/elem)
-Shuffled         (predictor defeated):           4021.0 us  (2.01 ns/elem)
+全同值 15  (分支完美预测):    717.0 us  (0.36 ns/elem)
+顺序 1..N  (周期模式):       1573.0 us  (0.79 ns/elem)
+打乱顺序    (预测器失效):     4021.0 us  (2.01 ns/elem)
 
-Shuffled / Identical = 5.61x — same code, same amount of work, and this is what it costs when branch prediction collapses
+打乱 / 全同 = 5.61x —— 同样的代码同样的计算量, 分支预测一垮慢这么多
 ```
 
 Let's sit with these three lines for a moment. Not one line of `classify` changed, the compile flags are unchanged (`-O2`), and the amount of work is exactly the same (two million modulo-and-compare operations either way). The only thing that changed is the ordering of the input. And yet the fastest and the slowest differ by **5.61x**.
@@ -99,9 +99,9 @@ Google Benchmark paired with `<random>` is the standard approach; this machine d
 std::mt19937 rng(42);
 std::vector<int> inputs(2'000'000);
 for (size_t i = 0; i < inputs.size(); ++i) inputs[i] = static_cast<int>(i + 1);
-std::shuffle(inputs.begin(), inputs.end(), rng);  // shuffle, so the branches become unpredictable
+std::shuffle(inputs.begin(), inputs.end(), rng);  // 打乱, 让分支不可预测
 
-// during measurement, iterate over this input set instead of passing a fixed value
+// 测量时遍历这组输入, 而不是传固定值
 size_t idx = 0;
 for (auto _ : state) {
     do_not_optimize(classify(inputs[idx]));

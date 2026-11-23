@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/16-dynamic-lib-as-executable.md
   source_hash: 572c8cb8203dbfab8e5716a515fde18d163da027d089d3d6d56d985be5bc70a1
-  translated_at: '2026-10-13T04:37:32+00:00'
-  engine: anthropic
-  token_count: 12500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13397
 ---
 
 # Side Story: Can a Dynamic Library Run as an Executable
@@ -163,25 +163,22 @@ $ objdump -d --start-address=0x279c0 --stop-address=0x27a20 /usr/lib/libc.so.6
 Having seen how libc.so.6 goes about it, we roll our own. We set the goal out neatly: the three uses one .so must serve are run directly, linked against by others, and dlopen'd; what we hand over is the same binary throughout, without changing a single byte. Here is the seventeen-line source in full:
 
 ```cpp
-// dual.cpp — one file, meant to serve three uses: run directly, linked, dlopen'd
-// The outward interface: an extern "C" bare name + default visibility; both the
-// linker and the user who fetches symbols by name accept it
+// dual.cpp —— 同一个文件,打算伺候三种用法:直接跑、被链接、被 dlopen
+// 对外的接口:extern "C" 裸名 + 默认可见,链接与按名取符号的用户都认它
 extern "C" __attribute__((visibility("default"))) int add(int a, int b) {
     return a + b;
 }
 
-// Process entry: when run directly, control lands here. Marked hidden, kept
-// out of the export table
+// 进程入口:直接跑的时候,控制权落在这儿。标 hidden,不出导出表
 extern "C" __attribute__((visibility("hidden"))) void dual_start() {
     const char msg[] = "dual: 作为可执行文件跑起来了\n";
-    // write(1, msg, len): syscall number 1. No stdio: the entry's stack is
-    // bare, __libc_start_main never ran, so we make just two system calls
-    // and gamble on nothing else
+    // write(1, msg, len):syscall 号 1。不碰 stdio:入口的栈是裸的,
+    // __libc_start_main 没跑过,咱们只做两条系统调用,别的什么都不赌
     asm volatile("syscall" : : "a"(1L), "D"(1L), "S"(msg), "d"(sizeof(msg) - 1) : "rcx", "r11", "memory");
-    // exit_group(0): syscall number 231. Not 60 (exit): 60 reaps only the
-    // current thread; 231 reaps the whole process, and a proper exit takes it
+    // exit_group(0):syscall 号 231。不用 60(exit):60 只收当前线程,
+    // 231 才收整个进程,正经收场走的都是它
     asm volatile("syscall" : : "a"(231L), "D"(0L) : "rcx", "r11", "memory");
-    __builtin_unreachable();  // exit_group never returns
+    __builtin_unreachable();  // exit_group 一去不回
 }
 ```
 
@@ -253,15 +250,13 @@ We hand this build to CMake; the template is short enough to take in at a glance
 cmake_minimum_required(VERSION 3.16)
 project(dual_run CXX)
 add_library(dual SHARED dual.cpp)
-# Visibility: narrow globally, open the interface at a single point (add in
-# dual.cpp carries the default attribute)
+# 可见性:全局收窄,接口单点放开(dual.cpp 里 add 挂着 default 属性)
 set_target_properties(dual PROPERTIES CXX_VISIBILITY_PRESET hidden)
-# The entry's stack is bare; switch off the stack-protector canary prologue
+# 入口的栈是裸的,禁掉栈保护的 canary 序言
 target_compile_options(dual PRIVATE -fno-stack-protector)
-# -Wl,-e,dual_start: point the process entry at our own dual_start
+# -Wl,-e,dual_start:把进程入口指到咱们自己的 dual_start
 target_link_options(dual PRIVATE "-Wl,-e,dual_start")
-# Execute-bit fallback (the local ld grants it by default); run the artifact
-# directly as a smoke test while we're at it
+# 执行位兜底(本机 ld 默认就给),顺手直接跑一把当冒烟
 add_custom_command(TARGET dual POST_BUILD
     COMMAND /usr/bin/chmod +x $<TARGET_FILE:dual>
     COMMAND $<TARGET_FILE:dual>)

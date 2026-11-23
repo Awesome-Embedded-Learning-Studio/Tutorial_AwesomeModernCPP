@@ -24,9 +24,9 @@ title: Inheritance or Composition
 translation:
   source: documents/vol1-fundamentals/ch08/01-inheritance-vs-composition.md
   source_hash: 2bcec7bc0b72d0adbe2d2253c1756ca140e0ce6019fea46c0d7ee13b51ea165a
-  translated_at: '2026-09-25T11:28:37+00:00'
-  engine: anthropic
-  token_count: 2400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4443
 ---
 # Inheritance or Composition: Settle the Relationship Before Writing the Class
 
@@ -71,9 +71,9 @@ Composition's coupling is naturally low. `Robot` uses `Motor` only through its p
 Now let's look at another kind of relationship. A student is a kind of person, a sedan is a kind of vehicle—"is a kind of", that is, is-a. C++ expresses it with inheritance:
 
 ```cpp
-class Person { /* name, age ... */ };
+class Person { /* 姓名、年龄…… */ };
 
-class Student : public Person { /* student ID, school ... */ };
+class Student : public Person { /* 学号、学校…… */ };
 ```
 
 The line `class Student : public Person` means: `Student` is a kind of `Person`. The syntax details (construction order, access control, object slicing) open up in the next article; here we keep our eyes locked on the semantics—what inheritance buys is not "a few lines of code saved", it is a **type hierarchy**: a `Student` object can be used as a `Person`, and anywhere that accepts a `Person` can take in a `Student`. The polymorphism later on is built on exactly this, and it is the most essential difference between inheritance and composition: what composition reuses is an **implementation**; what inheritance declares is **substitutability**.
@@ -87,13 +87,13 @@ You might feel the criterion is already clear: is-a means inheritance, has-a mea
 ```cpp
 class Ellipse {
 public:
-    void set_axes(double width, double height);  // the two axes adjust independently
-    // ...
+    void set_axes(double width, double height);  // 两根轴独立可调
+    // ……
 };
 
-class Circle : public Ellipse {  // "a circle is a kind of ellipse"?
+class Circle : public Ellipse {  // "圆是一种椭圆"？
 public:
-    // set_axes is inherited as-is
+    // set_axes 原封不动地继承了过来
 };
 ```
 
@@ -113,12 +113,12 @@ public:
     void print(const std::string& text);
 };
 
-// inheriting just to "reuse" print
+// 为了"复用" print 而继承
 class TicketMachine : public Printer {
 public:
     void issue(const std::string& content)
     {
-        print("ticket: " + content);  // uses the base class's implementation directly
+        print("ticket: " + content);  // 直接用上了基类的实现
     }
 };
 ```
@@ -129,7 +129,7 @@ The same need, written with composition, looks like this:
 
 ```cpp
 class TicketMachine {
-    Printer printer_;  // has a printer, not "is a kind of" printer
+    Printer printer_;  // 有一台打印机，而不是"是一种"打印机
 
 public:
     void issue(const std::string& content)
@@ -182,6 +182,6 @@ public:
 class TemperatureSensor : public UartDriver {
 public:
     double read();
-    // read's implementation calls send directly to fire off a request frame
+    // read 的实现里直接调用 send，把请求帧发出去
 };
 ```

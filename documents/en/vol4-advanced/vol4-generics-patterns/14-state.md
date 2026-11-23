@@ -18,9 +18,9 @@ related:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/14-state.md
   source_hash: e54e87b48e485cdb3b74fcca7018afddf105bed9edabccc91f856e2fa30aa2cc
-  translated_at: '2026-09-26T05:46:30+00:00'
-  engine: anthropic
-  token_count: 12000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 18806
 ---
 
 # State Machine Pattern: From a Mess of if/else to Type-Safe State Objects
@@ -43,7 +43,7 @@ public:
                 state_ = PlayerState::Playing;
                 break;
             case PlayerState::Playing:
-                std::cout << "already playing\n";  // no-op
+                std::cout << "already playing\n";  // 空操作
                 break;
             case PlayerState::Paused:
                 std::cout << "resume\n";
@@ -51,8 +51,8 @@ public:
                 break;
         }
     }
-    void pause() { /* another switch, copying the above all over again */ }
-    void stop()  { /* and copy it yet again */ }
+    void pause() { /* 又一个 switch,把上面再抄一遍 */ }
+    void stop()  { /* 再抄一遍 */ }
 
 private:
     PlayerState state_ = PlayerState::Stopped;
@@ -149,14 +149,14 @@ Let's flip the approach: since each state responds to events differently, make "
 There is a chicken-and-egg problem to settle first: `State`'s method signatures must accept a `MediaPlayer&` so they can switch states inside their responses, while `MediaPlayer` in turn must hold a `State`. Mutually dependent. The standard C++ solution is a **forward declaration** — declare the name `MediaPlayer` up front, and that's all `State` needs to refer to it by reference/pointer (references and pointers both need only a forward declaration, not a complete type):
 
 ```cpp
-class MediaPlayer;  // forward declaration so State can use MediaPlayer&
+class MediaPlayer;  // 前向声明,让 State 能用 MediaPlayer&
 
 struct State {
     virtual ~State() = default;
     virtual void play(MediaPlayer& ctx) = 0;
     virtual void pause(MediaPlayer& ctx) = 0;
     virtual void stop(MediaPlayer& ctx) = 0;
-    virtual std::string name() const = 0;  // just for logging
+    virtual std::string name() const = 0;  // 只是为了打日志
 };
 ```
 
@@ -187,7 +187,7 @@ Next, the three concrete states. We first write out the declarations and the "no
 
 ```cpp
 struct StoppedState : State {
-    void play(MediaPlayer& ctx) override;   // switch to Playing, implemented below
+    void play(MediaPlayer& ctx) override;   // 切到 Playing,实现在下面
     void pause(MediaPlayer& /*ctx*/) override {
         std::cout << "[Stopped] pause() ignored\n";
     }
@@ -201,17 +201,17 @@ struct PlayingState : State {
     void play(MediaPlayer& /*ctx*/) override {
         std::cout << "[Playing] play() already playing\n";
     }
-    void pause(MediaPlayer& ctx) override;  // switch to Paused, implemented below
-    void stop(MediaPlayer& ctx) override;   // switch to Stopped, implemented below
+    void pause(MediaPlayer& ctx) override;  // 切到 Paused,实现在下面
+    void stop(MediaPlayer& ctx) override;   // 切到 Stopped,实现在下面
     std::string name() const override { return "Playing"; }
 };
 
 struct PausedState : State {
-    void play(MediaPlayer& ctx) override;   // switch to Playing, implemented below
+    void play(MediaPlayer& ctx) override;   // 切到 Playing,实现在下面
     void pause(MediaPlayer& /*ctx*/) override {
         std::cout << "[Paused] pause() already paused\n";
     }
-    void stop(MediaPlayer& ctx) override;   // switch to Stopped, implemented below
+    void stop(MediaPlayer& ctx) override;   // 切到 Stopped,实现在下面
     std::string name() const override { return "Paused"; }
 };
 ```
@@ -384,8 +384,8 @@ First we define the data structure of one transition: it has `from` (current sta
 struct Transition {
     State from;
     Event on;
-    std::function<bool()> guard;   // optional; if it returns false, this rule doesn't apply
-    std::function<void()> action;  // optional; executed on transition
+    std::function<bool()> guard;   // 可选,返回 false 则这条规则不生效
+    std::function<void()> action;  // 可选,转换时执行
     State to;
 };
 ```

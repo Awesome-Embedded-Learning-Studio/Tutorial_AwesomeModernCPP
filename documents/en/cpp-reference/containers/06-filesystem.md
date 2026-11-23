@@ -16,9 +16,9 @@ title: std::filesystem
 translation:
   source: documents/cpp-reference/containers/06-filesystem.md
   source_hash: 960df19ca6d36993f7dc7087f364040828ba75522435f758c80dba5171c9183d
-  translated_at: '2026-09-26T17:15:59+00:00'
-  engine: anthropic
-  token_count: 650
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2550
 ---
 <!--
 Reference Card Template
@@ -71,13 +71,13 @@ namespace fs = std::filesystem;
 
 int main() {
     fs::path p = fs::current_path() / "test.txt";
-    std::cout << p << "\n";                      // full path
+    std::cout << p << "\n";                      // 完整路径
     std::cout << p.filename() << "\n";           // test.txt
     std::cout << p.extension() << "\n";          // .txt
 
-    fs::create_directories("a/b/c");             // recursive creation
+    fs::create_directories("a/b/c");             // 递归创建
     std::cout << fs::exists("a/b") << "\n";      // true
-    fs::remove_all("a");                         // recursive deletion
+    fs::remove_all("a");                         // 递归删除
 }
 ```
 

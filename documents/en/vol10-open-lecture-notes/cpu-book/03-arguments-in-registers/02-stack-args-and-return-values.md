@@ -10,9 +10,10 @@ description: "Measured live: how the 7th integer argument lands on the stack and
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/03-arguments-in-registers/02-stack-args-and-return-values.md
-  source_hash: ebd9daf8c6007433f3b1e5de25c1b825a1d62c9b0a947f226aef2818c6291384
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: e807aa588473aa92293d6f178fb871c95f87e339062b22b0cc0c54bfd37d2e19
+  translated_at: '2026-11-22T16:45:40Z'
+  engine: glm-5.3-refresh
+  token_count: 10217
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -56,7 +57,7 @@ _Z4sum7iiiiiii:
 	movl	%ecx, -16(%rbp)
 	movl	%r8d, -20(%rbp)
 	movl	%r9d, -24(%rbp)
-	... (first six arguments read back and summed, omitted)
+	...（前六项的读回累加，略）
 	movl	16(%rbp), %eax
 	addl	%edx, %eax
 	popq	%rbp
@@ -76,7 +77,7 @@ main:
 	call	_Z4sum7iiiiiii
 	addq	$8, %rsp
 	movl	%eax, -4(%rbp)
-	... (store into sink, omitted)
+	...（写回 sink，略）
 	leave
 	ret
 ```
@@ -187,16 +188,16 @@ The core of the callee and of main is one line each; straight to the instruction
 
 ```asm
 _Z6answerv:
-	... (prologue, omitted)
+	...（序言，略）
 	movl	$42, %eax
 	popq	%rbp
 	ret
 
 main:
-	... (prologue and subq, omitted)
+	...（序言与 subq，略）
 	call	_Z6answerv
 	movl	%eax, -4(%rbp)
-	... (store into sink, omitted)
+	...（写回 sink，略）
 ```
 
 `movl $42, %eax` puts the return value into eax, and after ret main's `movl %eax, -4(%rbp)` picks it up immediately. The route is the low 32 bits of rax, the same idea as arguments traveling in edi. Where it gets interesting is once the return value grows, so let's keep going.
@@ -309,8 +310,10 @@ Read the session: at the entry rdi is 0x7fffffffd0a0, rsi holds 10, rax at the p
    contain the address that has been passed in by the caller in %rdi.
 ```
 
-Translated: when the type has class MEMORY, the caller provides space for the return value and passes the address of that space in rdi, treated exactly like the first argument to the function; in effect it becomes a hidden first argument. On return, what rax holds is the very address the caller passed in through rdi. What the document states in writing is what we just verified item by item in the assembly and in gdb. As for which return values fall into class MEMORY and under what conditions a value travels in registers, those rules get their own expansion in the next piece on structs. The stack-argument part also moved into the executor. The scene below puts sum7 and sum8 on the same stage: single-step past the `pushq $7` instruction and watch the stack window gain one slot on top, that is the 7th argument's berth. Inside the callee, watch it read the value back from 16(%rbp), a position just past the return address and the saved rbp. sum8's 8th argument pushes one more slot, and the caller's cleanup addq doubles its byte count. Walk both rounds and you will have seen the arguments' full journey through the stack window.
+Translated: when the type has class MEMORY, the caller provides space for the return value and passes the address of that space in rdi, treated exactly like the first argument to the function; in effect it becomes a hidden first argument. On return, what rax holds is the very address the caller passed in through rdi. What the document states in writing is what we just verified item by item in the assembly and in gdb.
+
+The stack-argument part also moved into the executor. The scene below puts sum7 and sum8 on the same stage: single-step past the `pushq $7` instruction and watch the stack window gain one slot on top, that is the 7th argument's berth. Inside the callee, watch it read the value back from 16(%rbp), a position just past the return address and the saved rbp. sum8's 8th argument pushes one more slot, and the caller's cleanup addq doubles its byte count. Walk both rounds and you will have seen the arguments' full journey through the stack window.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/stack_args_8.json" />
 
-Right now you already hold the two opposite samples for comparison: a small return value (int) puts the data itself in rax, while a large one (over 16 bytes) uses rax to hand back only the address, with the data traveling through memory. This is where we leave integer arguments and return values; the next piece belongs to double and structs.
+As for which return values fall into class MEMORY and under what conditions a value travels in registers, those rules get their own expansion in the next piece on structs. Right now you already hold the two opposite samples for comparison: a small return value (int) puts the data itself in rax, while a large one (over 16 bytes) uses rax to hand back only the address, with the data traveling through memory. This is where we leave integer arguments and return values; the next piece belongs to double and structs.

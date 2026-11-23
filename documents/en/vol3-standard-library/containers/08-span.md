@@ -24,9 +24,9 @@ title: 'span: A Non-owning Contiguous View'
 translation:
   source: documents/vol3-standard-library/containers/08-span.md
   source_hash: a47d4d2cce1ffad567eddb40f82d56fb2ee0c7a8fc99c9681b3bf988f7f99a3b
-  translated_at: '2026-09-26T02:30:34+00:00'
-  engine: anthropic
-  token_count: 4000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5743
 ---
 # span: A Non-owning Contiguous View
 
@@ -36,7 +36,7 @@ translation:
 
 ```cpp
 std::vector<int> v = {1, 2, 3, 4};
-std::span<int> s(v);       // s points to v's data, but does not own it
+std::span<int> s(v);       // s 指向 v 的数据，但不拥有
 s.size();                  // 4
 s[0];                      // 1
 s.data() == v.data();      // true
@@ -49,12 +49,12 @@ Its core value is parameter passing: when a function wants to accept "a run of T
 In C/C++, the old way to hand "a chunk of memory" to a function is `void f(T* ptr, std::size_t n)`. It runs, but the ailments pile up: whether the length `n` counts elements or bytes, you have to learn from a comment or guess; whether the function modifies the data hinges on `T*` versus `const T*`, which is easy to miss; a caller passing the wrong length gets no compile-time protection whatsoever; and the two parameters have to be passed as a pair and remembered as a pair. span packs the pointer and the length into one object; the type (`span<const T>` vs `span<T>`) states the read-only/read-write intent directly, and the length travels with the object — it cannot get lost.
 
 ```cpp
-// The old way: the length unit and read-only-ness live in comments
+// 老办法：长度单位、只读与否全靠注释
 void process_old(const uint8_t* buf, std::size_t n);
 
-// The span way: the type is the semantics
-void process(std::span<const uint8_t> buf);   // clear: read-only, length built in
-void mutate(std::span<uint8_t> buf);          // clear: will modify, length built in
+// span 办法：类型即语义
+void process(std::span<const uint8_t> buf);   // 明确：只读，长度内建
+void mutate(std::span<uint8_t> buf);          // 明确：会改，长度内建
 ```
 
 This is also less hassle than writing `template<class C> void process(const C& c)` — no per-container instantiation, so no compile-time bloat.
@@ -67,8 +67,8 @@ This difference shows up directly in `sizeof` — we'll run and see in a moment.
 
 ```cpp
 int arr[4];
-std::span<int, 4> s_fixed(arr);     // can only bind data of length 4
-std::span<int>    s_dyn(arr);       // any length, remembers 4 at run time
+std::span<int, 4> s_fixed(arr);     // 只能绑长度 4 的数据
+std::span<int>    s_dyn(arr);       // 任意长度，运行时记 4
 ```
 
 ## Accepting Any Contiguous Source: array / vector / C Array / Pointer Plus Length
@@ -83,10 +83,10 @@ std::array<int, 3> a = {1, 2, 3};
 std::vector<int>   v = {4, 5, 6, 7};
 int* p = v.data();
 
-print(buf);                 // C array (N deduced automatically)
+print(buf);                 // C 数组（自动推 N）
 print(a);                   // std::array
 print(v);                   // std::vector
-print({p, 2});              // pointer + length
+print({p, 2});              // 指针 + 长度
 ```
 
 The caller copies no data, and inside the function you need neither per-container overloads nor templates. Note that `span<const T>` means a read-only view — if the function is going to modify the data, use `span<T>` (non-const).
@@ -101,13 +101,13 @@ void recv_packet(std::span<uint8_t> buffer)
     if (buffer.size() < 4) {
         return;
     }
-    auto header  = buffer.first(4);          // view of the first 4 bytes
+    auto header  = buffer.first(4);          // 前 4 字节视图
     uint16_t len = static_cast<uint16_t>(header[2] | (header[3] << 8));
     if (buffer.size() < 4 + len) {
         return;
     }
-    auto payload = buffer.subspan(4, len);   // skip the header, take a payload view
-    // payload is still a non-owning view, zero copies
+    auto payload = buffer.subspan(4, len);   // 跳过 header 取 payload 视图
+    // payload 仍是非拥有视图，零拷贝
 }
 ```
 
@@ -119,7 +119,7 @@ When handling binary data, you often want to look at a `span<T>` as raw bytes. `
 
 ```cpp
 std::span<int> data = /* ... */;
-auto bytes = std::as_bytes(data);          // span<const std::byte>, read-only bytes
+auto bytes = std::as_bytes(data);          // span<const std::byte>，只读字节
 // crc(bytes.data(), bytes.size());
 ```
 
@@ -133,7 +133,7 @@ span's biggest trap, and the inevitable price of its non-owning nature: **it doe
 std::span<int> bad()
 {
     std::vector<int> v = {1, 2, 3};
-    return v;   // v is destroyed when the function ends; the returned span dangles immediately
+    return v;   // v 在函数结束时销毁，返回的 span 立刻悬垂
 }
 ```
 
@@ -150,8 +150,8 @@ We said dynamic extent stores two words and static extent only the pointer — l
 int main()
 {
     int arr[4] = {};
-    std::span<int>        dyn;            // dynamic extent: default-constructible (empty span)
-    std::span<int, 4>     fixed(arr);     // static extent: must bind to data
+    std::span<int>        dyn;            // 动态 extent：可默认构造（空 span）
+    std::span<int, 4>     fixed(arr);     // 静态 extent：必须绑定数据
     std::cout << "sizeof(span<int>)    = " << sizeof(dyn) << '\n';
     std::cout << "sizeof(span<int,4>)  = " << sizeof(fixed) << '\n';
     std::cout << "sizeof(void*)        = " << sizeof(void*) << '\n';

@@ -20,9 +20,9 @@ tags:
 translation:
   source: documents/vol8-domains/networking/lab0-mini-reactor.md
   source_hash: 205e7c5ec9a62878e542347f9537cc469095b015603de9a2da5f892c8bec3bc6
-  translated_at: '2026-09-26T04:45:24+00:00'
-  engine: anthropic
-  token_count: 6000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6840
 ---
 
 # Lab 0: mini Reactor echo server — from epoll to a concurrency-ready event loop
@@ -52,11 +52,11 @@ The point: **every milestone's acceptance is adversarial** — not "echo runs", 
 `code/volumn_codes/vol8-labs/lab0-mini-reactor/` hands you a buildable project:
 
 ```text
-include/net/reactor.hpp     # the Reactor interface (what you implement)
-include/net/unique_fd.hpp   # reuse 01's RAII fd
-src/reactor.cpp             # ★reference implementation (the answer) — your job is to rewrite it here against the interface
-tests/lab0_tests.cpp        # Catch2 adversarial acceptance for MS1-4
-CMakeLists.txt              # Catch2 (FetchContent) + two targets: normal tests and TSan tests
+include/net/reactor.hpp     # Reactor 的接口(你要实现的)
+include/net/unique_fd.hpp   # 复用 01 的 RAII fd
+src/reactor.cpp             # ★参考实现(答案)——你的任务是在这里对照接口重写一遍
+tests/lab0_tests.cpp        # MS1-4 的 Catch2 对抗性验收
+CMakeLists.txt              # Catch2(FetchContent)+ 普通测试 + TSan 测试两套目标
 ```
 
 **How to work**: read the interface in `reactor.hpp`, write your own implementation in `src/reactor.cpp`, then `cmake --build`, run the tests, and watch the 4 milestones' tests go green one by one. What sits in `src/reactor.cpp` right now is the **reference answer** — it's there so you can compare approaches; if you're actually doing the Lab, clear it out first, keep only the interface, and write from scratch. This is called dogfooding: the interface and the tests are the "problem" I hand you, and the implementation is the "homework" you hand back.

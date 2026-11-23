@@ -10,9 +10,10 @@ description: "Sets up the environment and the basics of reading assembly, then c
 reading_time_minutes: 7
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/01-prefix-vs-postfix-increment/01-int-instructions.md
-  source_hash: 6ed01bbe454ff9588bd34c7230571298b0a079e61a332e16e31e41b3b4d6c735
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 367eecdba6f238291fde1e93d5a62a69bc08c7d523732e42af97b324ad15f992
+  translated_at: '2026-11-22T16:42:56Z'
+  engine: glm-5.3-refresh
+  token_count: 6999
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -22,8 +23,8 @@ current_status:
 # i++ vs ++i: Comparing int Assembly at -O0
 
 ```cpp
-int a = i++;  // a gets the old value, from before the increment
-int b = ++i;  // b gets the new value, from after the increment
+int a = i++;  // a 拿到自增前的旧值
+int b = ++i;  // b 拿到自增后的新值
 ```
 
 You have written these two lines countless times. The semantic difference between prefix and postfix, and the undefined behavior of things like `i = i++`, are covered in vol1's [Operator Basics: Making Data Move](../../../vol1-fundamentals/c_tutorials/03A-operators-basics.md); here we only review it in one sentence: postfix hands the expression the value from before the increment, prefix hands over the value from after it.

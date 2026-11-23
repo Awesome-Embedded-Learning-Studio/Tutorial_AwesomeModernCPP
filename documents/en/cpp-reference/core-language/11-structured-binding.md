@@ -16,10 +16,10 @@ tags:
 title: Structured Bindings
 translation:
   source: documents/cpp-reference/core-language/11-structured-binding.md
-  source_hash: 1621cf676a413f714b056e1b86e30afb79840e22ed5ac6ce7ac8a10ac5cd9287
-  translated_at: '2026-09-27T01:45:09+00:00'
-  engine: anthropic
-  token_count: 850
+  source_hash: 2314cef3e6ea89a53ceac35230a89062a14d3ade18eb851e41fcbeaad2b72810
+  translated_at: '2026-11-22T16:41:57.286681+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2198
 ---
 <!--
 Reference Card Template
@@ -67,18 +67,18 @@ None (language feature)
 struct Point { double x, y; };
 
 int main() {
-    // Struct destructuring
+    // struct 解构
     Point p{1.0, 2.0};
     auto [px, py] = p;
     std::cout << px << ", " << py << "\n"; // 1, 2
 
-    // Pair destructuring (map iteration)
+    // pair 解构（map 迭代）
     std::map<int, const char*> m{{1, "one"}, {2, "two"}};
     for (const auto& [key, val] : m) {
         std::cout << key << ": " << val << "\n";
     }
 
-    // Tuple destructuring
+    // tuple 解构
     auto [a, b, c] = std::make_tuple(10, 20, 30);
     std::cout << a + b + c << "\n"; // 60
 }

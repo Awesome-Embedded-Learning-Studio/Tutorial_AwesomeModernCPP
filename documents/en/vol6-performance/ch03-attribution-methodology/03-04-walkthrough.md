@@ -29,9 +29,9 @@ title: 'Attribution in practice: from a slow program to a pinpointed bottleneck'
 translation:
   source: documents/vol6-performance/ch03-attribution-methodology/03-04-walkthrough.md
   source_hash: 5740bcf58b7f119931f64030a9f1dba29192d172d043d0daf4d85369f38c4714
-  translated_at: '2026-09-26T06:10:06+00:00'
-  engine: anthropic
-  token_count: 5100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5482
 ---
 # Attribution in practice: from a slow program to a pinpointed bottleneck
 
@@ -40,18 +40,18 @@ translation:
 In the first three ch03 articles we learned four toolkits: USE (the system-wide view), Roofline (compute vs bandwidth), TMAM (which pipeline stage to attribute to), and flame graphs + COZ (down to the code). But when you actually sit down to work, you don't run all four every time — that would be far too slow. Their correct relationship is a funnel, filtering from coarse to fine:
 
 ```text
-A slow program
+慢程序
   │
-  ├─ 1. USE sweeps the system: is the problem even on the CPU? (paging? disk full? network?)
-  │     └─ once system-level causes are ruled out, confirm the bottleneck is CPU compute
+  ├─ 1. USE 扫系统:是不是根本不在 CPU?(内存换页?磁盘满?网络?)
+  │     └─ 排除系统性问题后,确认瓶颈在 CPU 计算
   │
-  ├─ 2. Roofline, the qualitative call: compute-bound or bandwidth-bound? (sets the broad optimization direction)
+  ├─ 2. Roofline 定性:算力受限 还是 带宽受限?(决定优化大方向)
   │
-  ├─ 3. TMAM four buckets: which pipeline stage is the bottleneck? (Frontend/Backend Memory/Backend Core/Bad Spec)
-  │     └─ drill into the cache hierarchy; precise events pin it down to an assembly instruction
+  ├─ 3. TMAM 四桶:瓶颈在流水线哪段?(Frontend/Backend Memory/Backend Core/Bad Spec)
+  │     └─ 下钻到 cache 层级,用精确事件定位到汇编指令
   │
-  └─ 4. Flame graph: which function holds this slow stretch of code? (confirms which line to change)
-        └─ COZ on top: how big is the overall payoff of fixing this function? (ranks optimization priorities)
+  └─ 4. 火焰图:这段慢的代码,在哪个函数?(确认改哪行)
+        └─ COZ 补充:改这个函数整体收益多大?(排优化优先级)
 ```
 
 This article walks the full workflow once. To be clear up front: **we did not run perf/toplev on the WSL2 machine this article is being written on** (perf isn't installed locally). So the profiler outputs below are "what you would see if you ran them," extrapolated from data already measured in ch02 (those runs are real, on this machine) plus the standard cases from Bakhvalov/easyperf. Everything measurable on this machine (arithmetic intensity, raw runtimes, cache behavior) is labeled "measured"; the specific profiler outputs are labeled "extrapolated/cited" — never faked as if they had been run.
@@ -63,11 +63,11 @@ Say you wrote a particle physics simulation whose core is a weighted dot product
 The code looks like this (simplified):
 
 ```cpp
-struct Particle { float w, x, y, pad; };   // AoS: 16 bytes per particle
+struct Particle { float w, x, y, pad; };   // AoS:每粒子 16 字节
 float weighted_dot(const std::vector<Particle>& ps) {
     float acc = 0.0f;
     for (size_t i = 0; i < ps.size(); ++i)
-        acc += ps[i].w * ps[i].x * ps[i].y;   // touches three fields per iteration
+        acc += ps[i].w * ps[i].x * ps[i].y;   // 每次访问三个字段
     return acc;
 }
 ```
@@ -77,9 +77,9 @@ float weighted_dot(const std::vector<Particle>& ps) {
 Before touching anything, spend two minutes scanning the system to rule out "the problem isn't on the CPU at all":
 
 ```bash
-vmstat 1     # watch %us+%sy (user+system CPU), the r column (run queue), si/so (paging)
-free -m      # check whether memory has filled up to the point of paging
-iostat -xz 1 # check the disk (this program reads no disk; it should be all idle)
+vmstat 1     # 看 %us+%sy(用户+系统 CPU)、r 列(运行队列)、si/so(换页)
+free -m      # 看内存有没有吃满到换页
+iostat -xz 1 # 看磁盘(这程序不读盘,应该全空)
 ```
 
 If you see `si/so > 0` (paging is happening), the "slowness" may simply be memory shortage forcing the system to page — nothing to do with your algorithm; add memory first. If CPU utilization saturates one core while the other resources sit idle, the bottleneck is confirmed to be CPU compute — **on to step 2**.
@@ -107,12 +107,12 @@ Roofline said "bandwidth-bound," but at which level is the bandwidth stuck? Hits
 ```bash
 toplev -l1 -- ./weighted_dot
 #   Frontend_Bound:       8.0%
-#   Backend_Bound:       62.0%   ← the dominant bucket, matching Roofline's "bandwidth-bound" call
+#   Backend_Bound:       62.0%   ← 主桶,符合 Roofline 的「带宽受限」
 #   Bad_Speculation:      5.0%
 #   Retiring:            25.0%
 
 toplev -l3 -- ./weighted_dot
-#   Backend_Bound.Memory_Bound.L3_Bound.DRAM_Bound: 45%  ← even L3 is punched through, down to DRAM
+#   Backend_Bound.Memory_Bound.L3_Bound.DRAM_Bound: 45%  ← 连 L3 都打穿到 DRAM
 ```
 
 "DRAM Bound" tells us: the data isn't hitting L3 (16 MB) and is going to main memory. But note: **the weighted dot product is a streaming, single-pass scan** (each element is touched exactly once, with zero temporal reuse), so **there is no L3 capacity thrashing here** (thrashing requires repeatedly re-visited elements evicting each other; a streaming scan has no re-visits). With the working set of 16 MB sitting on / slightly past the L3 boundary, the real cause is that it **runs flat against the DRAM bandwidth slope** — recall ch02-01's memory mountain: once the working set exceeds L3, throughput lands at the low end of the bandwidth slope. **The root cause is bandwidth-bound** (not capacity thrashing).
@@ -122,7 +122,7 @@ Drill down to the assembly and use a precise event to confirm which load is miss
 ```bash
 perf record -e MEM_LOAD_RETIRED.L3_MISS:ppp -- ./weighted_dot
 perf annotate
-# Highlights show: the three movss loads reading ps[i].w/x/y in the loop are the heaviest miss offenders
+# 高亮显示:循环里那三条读 ps[i].w/x/y 的 movss 是 miss 重灾区
 ```
 
 Localization complete: bottleneck = Backend Memory Bound, DRAM-level misses, produced by the field loads in the loop. Now we can change it.
@@ -135,7 +135,7 @@ How to fix it? In a bandwidth-bound scenario, the key is **cutting useless traff
 
 ```cpp
 struct Particles {
-    std::vector<float> w, x, y;   // three separate arrays
+    std::vector<float> w, x, y;   // 三个数组分开
 };
 float weighted_dot(const Particles& ps) {
     float acc = 0.0f;

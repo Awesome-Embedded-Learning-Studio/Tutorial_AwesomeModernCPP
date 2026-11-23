@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/07-templates-inline-odr.md
   source_hash: 8bbd67f24197955ac2420aa0544d5993c7e63be5c86b20dcc3872d8bea4ca1ed
-  translated_at: '2026-10-13T04:04:40+00:00'
-  engine: anthropic
-  token_count: 5234
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12164
 ---
 
 # Templates, inline, and ODR: Ten Translation Units, One Entity
@@ -71,7 +71,7 @@ The link broke on the spot. So the tuck-it-into-one-.cpp route costs a frighteni
 What makes the linker recognize the ten copies of `bigger<int>` in ten translation units as the same entity? An identity stamp. You have seen this identity in the linking article: the weak symbol, the `W` in `nm` output. Let's move `bigger` from the compiler article into a header unchanged, plus ten identical translation units:
 
 ```cpp
-// bigger.h (wrapped in the include guard from the preprocessing article)
+// bigger.h(外面包着预处理那篇讲过的头文件守卫)
 template <typename T>
 T bigger(T a, T b) { return a > b ? a : b; }
 ```
@@ -164,7 +164,7 @@ The call in `from_b` lands on the first relocation, aimed at the symbol `_Z6answ
 Let's state this precisely: what the experiment demonstrates is what happens after a violation, and the answer is that nothing happens — the silence throughout is real. We showed you the violation, but its illegal status has not changed: the standard rules such a program undefined behavior, and every number it printed today owes us no explanation. Change the optimization level, change the linker, change the link order once more, and its behavior may put on a completely different face. When this bites in real projects, the person writing the code rarely planned it; the root of the trouble is the same header file being trimmed into two faces. The header itself is fine — two compile commands carrying different macros produce this:
 
 ```cpp
-// flavor.h (wrapped in an include guard)
+// flavor.h(外面包着头文件守卫)
 #include <cstdio>
 #ifdef NEW_STATS
 inline int bucket_count() { return 16; }
@@ -193,10 +193,10 @@ The other half left over from the preprocessing article, we settle today too: wh
 The second thing is inlining in the literal sense: it gives a suggestion, and the suggestion is to rewrite the call into the function body itself. Let's verify with a trio:
 
 ```cpp
-// inl.h (wrapped in an include guard)
+// inl.h(外面包着头文件守卫)
 inline int twice(int x) { return x * 2; }
 constexpr int triple(int x) { return x * 3; }
-struct Box { int v; int get() const { return v; } };  // defined in-class, implicitly inline
+struct Box { int v; int get() const { return v; } };  // 类内定义,隐式 inline
 ```
 
 We compile once at `-O0`, and all three definitions dutifully land symbols:

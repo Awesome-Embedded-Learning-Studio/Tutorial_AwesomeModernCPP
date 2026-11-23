@@ -23,10 +23,10 @@ tags:
 title: 'std::variant: A Type-Safe Union'
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/03-variant.md
-  source_hash: fa65c716dd6d6157920d05ff87fe3d0a0b4fc442788340ae40cd17db65c07654
-  translated_at: '2026-09-25T15:31:55+00:00'
-  engine: anthropic
-  token_count: 2400
+  source_hash: ccbeeaccc19a798d1aaec7307b8d7fe8c83f0d92b9a9c779431e2bf7039d6bd7
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12421
 ---
 # std::variant: A Type-Safe Union
 
@@ -45,8 +45,8 @@ union Data {
 
 Data d;
 d.i = 42;
-// Now what is d.f? Nobody knows — the union doesn't remember which member you last wrote
-std::cout << d.f << "\n";  // UB (undefined behavior): reading the int's bit pattern as a float
+// 现在 d.f 是什么？没人知道——因为 union 不知道你上次写的是哪个成员
+std::cout << d.f << "\n";  // UB（未定义行为）：把 int 的位模式当 float 读
 ```
 
 The problem with this code is that a `union` itself **does not record** which member it currently holds. The programmer has to maintain a separate "tag" to track the active member. If you forget to update the tag, or the tag drifts out of sync with the actual state, you get undefined behavior.
@@ -55,14 +55,16 @@ Worse still, a `union` **does not support types with non-trivial constructors/de
 
 ```cpp
 union BadUnion {
+    BadUnion() : i(0) {}   // 默认构造被隐式删除，得自己动手写
+    ~BadUnion() {}         // 析构也一样被隐式删除
     int i;
-    std::string s;  // compiles (allowed since C++11), but you must manage the lifetime by hand
+    std::string s;         // C++11 起允许放进 union，但生命周期全归您管
 };
 
 BadUnion u;
-// u.s = "hello";  // UB! s was never constructed
+// u.s = "hello";  // UB！没有先构造 s
 new (&u.s) std::string("hello");  // placement new
-// ... once you're done with it, you must destroy it manually
+// ... 用完后必须手动析构
 u.s.~basic_string();
 ```
 
@@ -81,15 +83,15 @@ A `std::variant<Types...>` can hold a value of **exactly one** of the `Types...`
 
 int main()
 {
-    // Default construction: holds int (the first alternative), value 0
+    // 默认构造：持有 int（第一个备选），值为 0
     std::variant<int, double, std::string> v;
 
-    // Assignment: automatically switches to the corresponding type
-    v = 42;                        // holds int
-    v = 3.14;                      // holds double
-    v = std::string("hello");      // holds std::string
+    // 赋值：自动切换到对应类型
+    v = 42;                        // 持有 int
+    v = 3.14;                      // 持有 double
+    v = std::string("hello");      // 持有 std::string
 
-    // Specify the type directly at construction
+    // 构造时直接指定
     std::variant<int, std::string> v2 = std::string("world");
 }
 ```
@@ -103,16 +105,16 @@ There are three main ways to access the value inside a `variant`:
 ```cpp
 std::variant<int, double, std::string> v = 3.14;
 
-// Option 1: std::get<T> — throws std::bad_variant_access on a type mismatch
+// 方式一：std::get<T> —— 类型不匹配时抛出 std::bad_variant_access
 double d = std::get<double>(v);   // OK
-// int bad = std::get<int>(v);    // throws!
+// int bad = std::get<int>(v);    // 抛出异常！
 
-// Option 2: std::get_if<T> — no exceptions, returns a pointer
+// 方式二：std::get_if<T> —— 不抛异常，返回指针
 if (auto* ptr = std::get_if<double>(&v)) {
     std::cout << "double: " << *ptr << "\n";
 }
 
-// Option 3: std::holds_alternative<T> — only checks the type
+// 方式三：std::holds_alternative<T> —— 只检查类型
 if (std::holds_alternative<double>(v)) {
     std::cout << "it's a double\n";
 }
@@ -141,13 +143,13 @@ Here `auto&&` is a forwarding reference, and `visit` instantiates this lambda fo
 The more common scenario is that different types need different handling logic. What we want then is an "overload set" — a callable that has a matching overload for every alternative type. C++17 has a classic trick for building one:
 
 ```cpp
-// Overload set utility (a C++17 idiom)
+// 重载集合工具（C++17 惯用法）
 template <class... Ts>
 struct Overloaded : Ts... {
     using Ts::operator()...;
 };
 
-// C++17 deduction guide
+// C++17 推导指引
 template <class... Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
 ```
@@ -168,7 +170,9 @@ The loading and dispatching process is animated below: you can play and pause it
 
 <Anim id="variant-visit" />
 
-The compiler checks whether your `Overloaded` covers all of the `variant`'s alternatives. If you leave out the handling for some type, the compiler errors out directly — this is compile-time type safety in action. In C++20, you don't even need to hand-write `Overloaded` — the standard library supports the multiple-lambda visit pattern directly (though the officially supported form is still evolving).
+The compiler checks whether your `Overloaded` covers all of the `variant`'s alternatives. Leave one out and the build fails: the error lands right on the `visit` call line, pointing at the call that couldn't be matched.
+
+> Don't count on the standard library adopting this spelling for us: ever since `std::visit` was finalized in C++17, its signature has been one visitor plus any number of `variant`s—it has never accepted the multiple-callable-object form. The `std::overload` proposal (P0051R3) was not adopted, so hand-writing `Overloaded` remains the mainstream to this day. The real news in the visit family is C++26 giving `variant` a member form, `variant::visit`—which has nothing to do with multi-lambda; just knowing it exists is enough.
 
 ### A visit That Returns a Value
 
@@ -196,7 +200,7 @@ One important use of `variant` is replacing polymorphism built on virtual functi
 #include <memory>
 #include <vector>
 
-// ---- Option 1: traditional virtual-function polymorphism ----
+// ---- 方式一：传统虚函数多态 ----
 struct ShapeBase {
     virtual ~ShapeBase() = default;
     virtual double area() const = 0;
@@ -214,7 +218,7 @@ struct RectangleV : ShapeBase {
     double area() const override { return width * height; }
 };
 
-// ---- Option 2: variant + visit ----
+// ---- 方式二：variant + visit ----
 struct Circle {
     double radius;
     explicit Circle(double r) : radius(r) {}
@@ -239,7 +243,7 @@ double area(const Shape& s)
 Usage comparison:
 
 ```cpp
-// Virtual-function approach: needs pointers/references, needs heap allocation
+// 虚函数方式：需要指针/引用，需要堆分配
 std::vector<std::unique_ptr<ShapeBase>> shapes_v;
 shapes_v.push_back(std::make_unique<CircleV>(5.0));
 shapes_v.push_back(std::make_unique<RectangleV>(3.0, 4.0));
@@ -248,7 +252,7 @@ for (const auto& s : shapes_v) {
     std::cout << s->area() << "\n";
 }
 
-// variant approach: value semantics, stored on the stack
+// variant 方式：值语义，栈上存储
 std::vector<Shape> shapes;
 shapes.push_back(Circle(5.0));
 shapes.push_back(Rectangle(3.0, 4.0));
@@ -265,18 +269,24 @@ The advantages of the `variant` approach: value semantics (no `new`/`delete`), c
 `variant` has a rather special state called `valueless_by_exception`. When the `variant` is in the middle of switching types (say, during assignment or `emplace`), and the new type's constructor throws while the old value has already been destroyed, the `variant` enters this "no value" state.
 
 ```cpp
-struct ThrowingType {
-    ThrowingType() { throw std::runtime_error("construction failed"); }
+struct ThrowCopy {
+    ThrowCopy() = default;
+    ThrowCopy(const ThrowCopy&) { throw std::runtime_error("boom"); }
 };
 
-std::variant<int, ThrowingType> v = 42;
+std::variant<int, ThrowCopy> v = 42;
 try {
-    v = ThrowingType();  // the old value (42) is destroyed, then the new value's construction throws
+    ThrowCopy tc;
+    v = tc;  // 切换到 ThrowCopy：拷贝构造抛异常，切换没走完
 } catch (const std::runtime_error&) {
-    // v is now in the valueless_by_exception state
-    std::cout << "valueless: " << v.valueless_by_exception() << "\n";  // true
+    // v 现在是 valueless_by_exception 状态
+    std::cout << "valueless: " << v.valueless_by_exception() << "\n";  // 1（true）
 }
 ```
+
+The output of the code above was measured by the author on this machine: the printed valueless is 1. Out of curiosity I also probed `index()`—at that moment it hands back `variant_npos` as well (-1 viewed as a signed value).
+
+Interestingly, the other end of the same libstdc++ tells the same story: for small, trivially copyable types, `emplace` constructs the new value in a temporary `variant` first and moves it in only after construction succeeds—if an exception is thrown midway, the old value in our hands stays exactly where it was. The criteria are libstdc++'s own (the type must be trivially copyable and not too large); the word "possibly" in the standard is precisely the leeway left for these implementation differences.
 
 In this state, `std::visit` throws `std::bad_variant_access`, and `std::get` throws as well. So if a `variant` in your code could run into this situation, it's best to check before accessing it.
 
@@ -294,7 +304,7 @@ One of the scenarios `variant` fits best is message-passing systems. In event-dr
 #include <iostream>
 #include <queue>
 
-// Message type definitions
+// 消息类型定义
 struct Heartbeat {
     uint32_t source_id;
 };
@@ -316,7 +326,7 @@ struct Disconnect {
 
 using Message = std::variant<Heartbeat, TextMessage, DataPacket, Disconnect>;
 
-// Message handler
+// 消息处理器
 class MessageHandler {
 public:
     void on_message(const Message& msg)
@@ -377,28 +387,28 @@ struct ConfigEntry {
     ConfigValue value;
 };
 
-// Reading a config value
+// 读取配置
 ConfigValue parse_value(const std::string& s)
 {
-    // Try to parse as int
+    // 尝试解析为 int
     try {
         std::size_t pos;
         int i = std::stoi(s, &pos);
         if (pos == s.size()) return i;
     } catch (...) {}
 
-    // Try to parse as double
+    // 尝试解析为 double
     try {
         std::size_t pos;
         double d = std::stod(s, &pos);
         if (pos == s.size()) return d;
     } catch (...) {}
 
-    // Try to parse as bool
+    // 尝试解析为 bool
     if (s == "true")  return true;
     if (s == "false") return false;
 
-    // Fall back to treating it as a string
+    // 默认作为字符串
     return s;
 }
 ```
@@ -441,9 +451,9 @@ A `variant`'s size equals "the size of the largest alternative" plus a small met
 ```cpp
 std::cout << "sizeof(variant<int, double, string>): "
           << sizeof(std::variant<int, double, std::string>) << "\n";
-// Typical output: 40 (on a 64-bit platform: string takes 32 bytes, int 4 bytes, double 8 bytes)
+// 典型输出：40（64 位平台上，string 占 32 字节，int 占 4 字节，double 占 8 字节）
 std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
-// Typical output: 32
+// 典型输出：32
 ```
 
 > A quick aside on the size of int: you can read the details on [cppreference: Fundamental types](https://en.cppreference.com/cpp/language/types). The short version: int is required to be at least 16 bits, that is, 2 bytes; on every other platform it is 4 bytes. Of course, don't memorize this as rote trivia.

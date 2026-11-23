@@ -26,9 +26,9 @@ title: std::function, std::invoke, and Callable Objects
 translation:
   source: documents/vol2-modern-features/ch03-lambda/04-std-function.md
   source_hash: 7230f370ae0f8f022de4cd5d442fe90234ac1a77eeb09aa492656de81f9c0a20
-  translated_at: '2026-09-27T10:30:15+00:00'
-  engine: anthropic
-  token_count: 7600
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13723
 ---
 # std::function, std::invoke, and Callable Objects
 
@@ -64,18 +64,18 @@ struct Multiplier {
 void demo_std_function() {
     std::function<int(int, int)> func;
 
-    // Store a plain function
+    // 存储普通函数
     func = add;
     std::cout << func(3, 4) << "\n";   // 7
 
-    // Store a lambda
+    // 存储 lambda
     func = [](int a, int b) { return a * b; };
     std::cout << func(3, 4) << "\n";   // 12
 
-    // Store a functor
+    // 存储仿函数
     func = Multiplier{5};
-    std::cout << func(10) << "\n";     // Compile error: signature mismatch
-    // Multiplier's operator() takes only one argument, but func's signature is int(int,int)
+    std::cout << func(10) << "\n";     // 编译错误：签名不匹配
+    // Multiplier 的 operator() 只接受一个参数，但 func 签名是 int(int,int)
 }
 ```
 
@@ -89,20 +89,20 @@ We can simulate the whole process in code:
 #include <memory>
 #include <utility>
 
-// A simplified sketch of how std::function works
+// 简化版 std::function 原理示意
 template<typename Signature>
 class SimpleFunction;
 
 template<typename R, typename... Args>
 class SimpleFunction<R(Args...)> {
-    // Abstract interface
+    // 抽象接口
     struct ICallable {
         virtual ~ICallable() = default;
         virtual R invoke(Args... args) = 0;
         virtual ICallable* clone() const = 0;
     };
 
-    // Concrete implementation: a templated derived class stores the real callable
+    // 具体实现：模板化的派生类存储真正的可调用对象
     template<typename T>
     struct CallableImpl : ICallable {
         T callable;
@@ -153,26 +153,26 @@ The simplified version above has one glaring flaw, and you probably spotted it a
 #include <array>
 
 void demo_sbo_size() {
-    // A small lambda: usually fits in the SBO buffer
+    // 小 lambda：通常能放进 SBO 缓冲区
     auto small = [x = 42]() { return x * 2; };
     std::function<int()> f1 = small;
     std::cout << "sizeof(std::function<int()>): "
               << sizeof(f1) << " bytes\n";
-    // Usually 32-64 bytes (implementation-dependent)
+    // 通常 32-64 字节（取决于实现）
 
-    // A large lambda: exceeds the SBO buffer and triggers a heap allocation
+    // 大 lambda：超出 SBO 缓冲区，触发堆分配
     auto large = [data = std::array<int, 100>{}]() {
         return data.size();
     };
     std::function<std::size_t()> f2 = large;
     std::cout << "sizeof(std::function<size_t()>): "
               << sizeof(f2) << " bytes\n";
-    // Same size, but a heap allocation happened internally
+    // 同样大小，但内部有堆分配
 
-    // For comparison: the size of a function pointer
+    // 对比：函数指针的大小
     std::cout << "sizeof(void(*)()): "
               << sizeof(void(*)()) << " bytes\n";
-    // Usually 8 bytes (on 64-bit systems)
+    // 通常 8 字节（64 位系统）
 }
 ```
 
@@ -197,10 +197,10 @@ Let's set `std::function` aside and look back at the function pointer, handed do
 > **Verification code**: the script we ran is at `code/volumn_codes/vol2/ch03-lambda/test_function_performance.cpp`.
 
 ```cpp
-// Declaring and assigning a function pointer
+// 函数指针的声明和赋值
 int (*func_ptr)(int, int) = [](int a, int b) { return a + b; };
 
-// Simplifying the type name with using
+// 用 using 简化类型名
 using BinaryOp = int(*)(int, int);
 BinaryOp op = [](int a, int b) { return a + b; };
 int result = op(3, 4);   // 7
@@ -209,12 +209,12 @@ int result = op(3, 4);   // 7
 The biggest limitation of function pointers is that they cannot carry context: apart from captureless lambdas, the things they can point at are plain functions and static member functions, and that's it. A lambda with any capture has no way to convert to a function pointer. The day you need to hand a `this` pointer or some state to a callback, the function pointer can't help you.
 
 ```cpp
-// A captureless lambda can convert to a function pointer
+// 无捕获 lambda 可以转换为函数指针
 int (*fp1)(int, int) = [](int a, int b) { return a + b; };  // OK
 
-// A lambda with captures cannot convert
+// 有捕获 lambda 不能转换
 int x = 42;
-int (*fp2)(int, int) = [x](int a, int b) { return a + b + x; };  // Compile error
+int (*fp2)(int, int) = [x](int a, int b) { return a + b + x; };  // 编译错误
 ```
 
 | Feature | Function pointer | std::function |
@@ -252,16 +252,16 @@ void free_func(int x) {
 void demo_invoke() {
     Widget w;
 
-    // A plain function
+    // 普通函数
     std::invoke(free_func, 42);
 
-    // A functor / lambda
+    // 仿函数 / lambda
     std::invoke([](int x) { std::cout << "lambda: " << x << "\n"; }, 99);
 
-    // A member function pointer + object
+    // 成员函数指针 + 对象
     std::invoke(&Widget::greet, w, "hello");
 
-    // A member data pointer + object (can be read and written)
+    // 成员变量指针 + 对象（可以读取和修改）
     int val = std::invoke(&Widget::data, w);
     std::invoke(&Widget::data, w) = 100;
 }
@@ -322,7 +322,7 @@ No, we don't. The simplest zero-overhead scheme is to pass the lambda directly a
 #include <vector>
 #include <iostream>
 
-// Two template parameters, each taking a callable — zero overhead
+// 两个模板参数各自接收一个可调用对象，零开销
 template<typename Pred, typename Action>
 void for_each_if(std::vector<int>& data, Pred pred, Action action) {
     for (auto& elem : data) {
@@ -338,14 +338,14 @@ void demo_template_callback() {
     int threshold = 5;
     int sum = 0;
 
-    // Lambdas passed straight to template parameters, fully inlined
+    // lambda 直接传给模板参数，完全内联
     for_each_if(data,
-        [threshold](int x) { return x > threshold; },   // predicate
-        [&sum](int& x) { sum += x; }                     // action
+        [threshold](int x) { return x > threshold; },   // 谓词
+        [&sum](int& x) { sum += x; }                     // 操作
     );
 
     std::cout << "Sum of elements > " << threshold << ": " << sum << "\n";
-    // Output: Sum of elements > 5: 21
+    // 输出: Sum of elements > 5: 21
 }
 ```
 
@@ -366,14 +366,14 @@ class LightCallback;
 
 template<typename R, typename... Args, std::size_t BufSize>
 class LightCallback<R(Args...), BufSize> {
-    // Operation table: function pointers instead of virtual functions
+    // 操作表：用函数指针代替虚函数
     struct VTable {
         void (*move)(void* dst, void* src);
         void (*destroy)(void* obj);
         R (*invoke)(void* obj, Args... args);
     };
 
-    // A dedicated VTable generated for each callable type
+    // 为每种可调用类型生成专属的 VTable
     template<typename T>
     struct VTableFor {
         static void do_move(void* dst, void* src) {

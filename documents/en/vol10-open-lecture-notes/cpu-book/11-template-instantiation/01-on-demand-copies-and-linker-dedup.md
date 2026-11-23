@@ -10,9 +10,10 @@ description: "One max template, and int and double each get their own machine co
 reading_time_minutes: 11
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/11-template-instantiation/01-on-demand-copies-and-linker-dedup.md
-  source_hash: 7fa9b64a1d436a403fc3d73bb7b3e4be0b815b5fb497288b70f30eab9a3dee6d
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 0029ecdfab9661e77b2132f0b81a6684eeb356becd891c12825ad2a44905bf1f
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 10602
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -53,7 +54,7 @@ One more condition deserves a plain statement: every compile command in this pie
 The material is a minimal template: `max` takes two references of the same type and hands back the larger one. In `main` we call it once with `int` and once with `double`:
 
 ```cpp
-// m1.cpp -- one template, called once for each of two types
+// m1.cpp —— 一份模板，两种类型各调一次
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
@@ -63,8 +64,8 @@ int main() {
     int    xi = 1,  yi = 2;
     double xd = 1.5, yd = 2.5;
 
-    int    r1 = max(xi, yi);   // instantiates max<int>
-    double r2 = max(xd, yd);   // instantiates max<double>
+    int    r1 = max(xi, yi);   // 实例化 max<int>
+    double r2 = max(xd, yd);   // 实例化 max<double>
 
     return r1 + static_cast<int>(r2);
 }
@@ -163,14 +164,14 @@ In the source, `a < b ? b : a` was written exactly once, and the compiler, worki
 The first property of copying is that it runs on demand. Let's set up the cheapest comparison available: the template definition stays exactly as it was, and `main` makes no call at all:
 
 ```cpp
-// m2.cpp -- the template definition is present, but never called
+// m2.cpp —— 模板定义在场，但一次也没调用
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
 }
 
 int main() {
-    return 0;   // the definition is here, but never called
+    return 0;   // 模板定义在,但一次也没调用
 }
 ```
 
@@ -183,7 +184,7 @@ $ nm m2.o
 The object file is down to a lone `main`. A template's definition is only a master that prints nothing; where nothing calls it, the compiler emits no machine code at all. Now we add exactly one call line and change nothing else:
 
 ```cpp
-// m3.cpp -- m2 plus exactly one call line
+// m3.cpp —— 在 m2 的基础上只加了一行调用
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
@@ -191,7 +192,7 @@ T max(T& a, T& b) {
 
 int main() {
     int x = 1, y = 2;
-    return max(x, y);   // the one call line we added
+    return max(x, y);   // 就加了这一行调用
 }
 ```
 
@@ -231,7 +232,7 @@ In plain words again: a function template by itself is neither a type nor a func
 On-demand copying carries one consequence you can't route around. A template's definition has to live in a header, something you probably filed away as convention back in volume one, and the reason sits inside the compilation pipeline: each .cpp together with the headers it includes is one independent compilation pass, whose jargon name is translation unit, and the TU written in the code comments below names the same thing. For instance, when `a.cpp` needs to instantiate `max<int>`, the compiler must see the template's full text within that pass, and where the full text can't be seen, there's no copying to talk about. So what happens when two translation units both use `max<int>`, each prints a copy, and the names collide at link time? Let's run it:
 
 ```cpp
-// m4.hpp -- the template definition goes into a header
+// m4.hpp —— 模板定义进头文件
 #ifndef M4_HPP
 #define M4_HPP
 
@@ -244,24 +245,24 @@ T max(T& a, T& b) {
 ```
 
 ```cpp
-// m4_a.cpp -- this translation unit instantiates max<int>
+// m4_a.cpp —— 这个编译单元实例化 max<int>
 #include "m4.hpp"
 
 int side_a() {
     int x = 10, y = 20;
-    return max(x, y);   // this TU instantiates max<int>
+    return max(x, y);   // 这个 TU 实例化 max<int>
 }
 ```
 
 ```cpp
-// m4_b.cpp -- this translation unit also instantiates max<int>
+// m4_b.cpp —— 这个编译单元也实例化 max<int>
 #include "m4.hpp"
 
 int side_a();
 
 int main() {
     int x = 1, y = 2;
-    return max(x, y) - side_a();   // this TU also instantiates max<int>
+    return max(x, y) - side_a();   // 这个 TU 也实例化 max<int>
 }
 ```
 

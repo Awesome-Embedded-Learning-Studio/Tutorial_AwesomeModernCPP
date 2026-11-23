@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Pointer Basics
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #207)"
+      en: "Contributed exercise solutions and article revisions (PR #207)"
 translation:
   source: documents/vol1-fundamentals/ch04/01-pointer-basics.md
-  source_hash: 2ad6b3ac70d1db4251e588b0764e44c992ff79c5efaef4dba57b6d42cab881d8
-  translated_at: '2026-09-25T10:40:13+00:00'
-  engine: anthropic
-  token_count: 3000
+  source_hash: 3fcb0b23095379def0ac139dc9f43145a74f78276a809663424426973d57af8f
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10210
 ---
 # What Is a Pointer: A Variable Holding the Address of Another Variable
 
@@ -71,7 +82,7 @@ Since an address is just a number, we can naturally store it in a variable. That
 
 ```cpp
 int x = 42;
-int* p = &x;   // p stores x's address
+int* p = &x;   // p 存储 x 的地址
 ```
 
 The `*` in a declaration says "this is a pointer", and `int*` reads as "pointer to int". `p` itself is a variable occupying memory of its own; the value it stores is the address `&x`, and following that address, what we fetch is x's value, 42.
@@ -84,8 +95,8 @@ int* p = &x;
 
 std::cout << "x 的值:   " << x << std::endl;   // 42
 std::cout << "&x 的值:  " << &x << std::endl;   // 0x7ffd...
-std::cout << "p 的值:   " << p << std::endl;     // same as &x
-std::cout << "&p 的值:  " << &p << std::endl;    // a different address
+std::cout << "p 的值:   " << p << std::endl;     // 和 &x 一样
+std::cout << "&p 的值:  " << &p << std::endl;    // 不同的地址
 ```
 
 We see that p's value is exactly `&x`—it really does store x's address. And `p` has an address of its own (`&p`), because a pointer is itself a variable and needs its own memory.
@@ -100,8 +111,8 @@ In a declaration, `*` means "this is a pointer"; in an expression, it means "fol
 int x = 42;
 int* p = &x;
 
-std::cout << *p << std::endl;  // 42, read
-*p = 100;                       // modify x through the pointer
+std::cout << *p << std::endl;  // 42，读取
+*p = 100;                       // 通过指针修改 x
 std::cout << x << std::endl;   // 100
 ```
 
@@ -141,9 +152,9 @@ Two conclusions come out of this: dereferencing pointers of different types yiel
 Sometimes we need a pointer but don't yet know where it should point, or a function's lookup has failed and we need to return a "not found" signal. That calls for the **null pointer**: a pointer that explicitly states "I point at nothing". In C++98 and C we used `NULL`—friends who have flipped through `stdlib.h` know that in C it is `(void*)0`, while in C++98 it is the integer `0`, and both forms left the door open to ambiguity. `nullptr`, introduced in C++11, is the one correct way to express a null pointer in modern C++:
 
 ```cpp
-int* p = nullptr;  // points to no valid address
+int* p = nullptr;  // 不指向任何有效地址
 
-if (p != nullptr) { // Some folks prefer if(p); that's a habit—the author only writes it this way when he really needs to stress that this is not a null pointer.
+if (p != nullptr) { // 也有朋友喜欢if(p)，这个是习惯，笔者只有在非常需要强调兄弟们这不是空指针的时候这样写。
     std::cout << *p << std::endl;
 } else {
     std::cout << "p 是空指针，不能解引用" << std::endl;
@@ -163,8 +174,8 @@ In earlier chapters we covered the three combinations of `const` and pointers; h
 ```cpp
 int x = 10, y = 20;
 const int* p = &x;
-// *p = 100;  // compile error
-p = &y;       // fine
+// *p = 100;  // 编译错误
+p = &y;       // 没问题
 ```
 
 `int* const p`: a constant pointer—we cannot change where it points, but we can modify the data.
@@ -172,8 +183,8 @@ p = &y;       // fine
 ```cpp
 int x = 10;
 int* const p = &x;
-*p = 100;      // fine
-// p = &y;     // compile error
+*p = 100;      // 没问题
+// p = &y;     // 编译错误
 ```
 
 `const int* const p`: double const—neither can change. When reading it, go from right to left: `const int* const p` reads as "p is a const pointer, pointing to a const int".
@@ -195,10 +206,10 @@ These three pitfalls share one root: pointers give us the power to manipulate me
 Let's string everything together:
 
 ```cpp
-// pointers.cpp — a comprehensive demo of basic pointer operations
+// pointers.cpp —— 指针基础操作综合演示
 #include <iostream>
 
-/// @brief Swap the values of two variables through pointers
+/// @brief 通过指针交换两个变量的值
 void swap_by_pointer(int* a, int* b)
 {
     if (a == nullptr || b == nullptr) {
@@ -209,7 +220,7 @@ void swap_by_pointer(int* a, int* b)
     *b = temp;
 }
 
-/// @brief Safely print the value a pointer points to
+/// @brief 安全打印指针指向的值
 void safe_print(const char* label, const int* p)
 {
     std::cout << label;
@@ -223,26 +234,26 @@ void safe_print(const char* label, const int* p)
 
 int main()
 {
-    // address-of and dereference
+    // 取地址与解引用
     int x = 42;
     int* p = &x;
     std::cout << "=== 取地址与解引用 ===" << std::endl;
     std::cout << "x = " << x << ", &x = " << &x << std::endl;
     std::cout << "p = " << p << ", *p = " << *p << std::endl;
 
-    // modify through the pointer
+    // 通过指针修改
     *p = 100;
     std::cout << "\n=== *p = 100 后 ===" << std::endl;
     std::cout << "x = " << x << std::endl;
 
-    // pointer swap
+    // 指针 swap
     int a = 10, b = 20;
     std::cout << "\n=== swap ===" << std::endl;
     std::cout << "交换前: a=" << a << ", b=" << b << std::endl;
     swap_by_pointer(&a, &b);
     std::cout << "交换后: a=" << a << ", b=" << b << std::endl;
 
-    // null pointer check
+    // 空指针检查
     std::cout << "\n=== 空指针 ===" << std::endl;
     int value = 99;
     safe_print("有效指针: ", &value);
@@ -381,8 +392,8 @@ int main()
     int x = 10, y = 20;
     int* p = &x;
     int* q = &y;
-    *p = *q;   // assign the value q points to, into the spot p points to
-    p = q;     // make p and q point to the same place
+    *p = *q;   // 把 q 指向的值赋给 p 指向的位置
+    p = q;     // 让 p 和 q 指向同一个地方
     *p = 30;
     std::cout << "x = " << x << std::endl;
     std::cout << "y = " << y << std::endl;

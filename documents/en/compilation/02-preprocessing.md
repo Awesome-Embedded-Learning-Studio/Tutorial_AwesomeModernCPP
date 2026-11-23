@@ -15,9 +15,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/02-preprocessing.md
   source_hash: 4bd0d2d209e7e41f90f47ebf389939f2b9a02273c56c9b9bece3eee2845364c5
-  translated_at: '2026-10-13T03:50:54+00:00'
-  engine: anthropic
-  token_count: 4272
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7769
 ---
 
 # Preprocessing: How a Translation Unit Comes to Be
@@ -74,7 +74,7 @@ Let's follow the preprocessor through its working, two passes. When the first pa
 
 ```text
 $ g++ -c use_twice_ok.cpp
-(no output = compilation succeeded)
+(无输出 = 编译成功)
 ```
 
 This time the terminal settles into silence; we get no output at all, and the compile simply goes through. There is no magic in the guard: it just arranges for the second paste to come up empty-handed.
@@ -170,9 +170,9 @@ With these macros in hand, we can write platform branches:
 
 ```cpp
 #ifdef __linux__
-// the implementation on the Linux side
+// Linux 这边的实现
 #else
-// the implementation on other platforms
+// 其他平台的实现
 #endif
 ```
 
@@ -180,7 +180,7 @@ By the same reasoning, we can branch on the standard version:
 
 ```cpp
 #if __cplusplus >= 202002L
-// a path only open from C++20 onward
+// C++20 起才能走的路子
 #endif
 ```
 

@@ -11,9 +11,9 @@ tags:
 translation:
   source: documents/community/dev/03-contribution-cookbook.md
   source_hash: a98ea8c7e5a0baa68344f7fd645ebcb154f3f210e6722fc9d58f65aaf6cf20f1
-  translated_at: '2026-09-25T09:22:23+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5804
 ---
 
 # Contribution Cookbook
@@ -31,28 +31,28 @@ With those three out of the way, most PRs merge smoothly. The rest of this handb
 The shortest path — type it verbatim and it runs:
 
 ```bash
-# 1. Clone your fork to your machine
-git clone <your fork URL>
+# 1. fork 后拉到本地
+git clone <您的 fork 地址>
 cd Tutorial_AwesomeModernCPP
 
-# 2. Install dependencies and the pre-commit gates (see Section 2)
-# For pnpm, just look it up online; installing it requires nodejs first
-# How to check:
+# 2. 装依赖和提交前门禁(见第二节)
+# pnpm 百度一下就好，安装需要提前安装 nodejs
+# 检查办法：
 # node -v
 # npm -v
-# Then install pnpm; afterwards open a new terminal and verify with pnpm -v
+# 然后安装pnpm, 完事后新开一个终端pnpm -v检查
 pnpm install
 pnpm hooks:install
 
-# 3. Branch off the latest main
-git switch main && git pull # remember to pull, or the PR comes with a mile-long commit list and your mouse wheel takes off
+# 3. 基于最新 main 开分支
+git switch main && git pull # 记得拉代码，要不然PR一长串，鼠标起飞了
 git switch -c feat/your-feature
 
-# 4. Make your changes, commit
+# 4. 改东西,提交
 git add -A
-git commit -m "feat: describe what you changed in one line"
+git commit -m "feat: 一句话说清改了什么"
 
-# 5. Push and open a PR on GitHub
+# 5. 推上去,去 GitHub 开 PR
 git push -u origin feat/your-feature
 ```
 
@@ -82,8 +82,8 @@ Counting on CI to catch your problems is workable, but every round trip to GitHu
 ### Installing the Local Gates
 
 ```bash
-pnpm install        # install frontend dependencies (VitePress etc.)
-pnpm hooks:install  # install the pre-commit hooks, equivalent to scripts/setup_precommit.sh
+pnpm install        # 装前端依赖(VitePress 等)
+pnpm hooks:install  # 装 pre-commit 钩子,等价于 scripts/setup_precommit.sh
 ```
 
 The gates depend on three local tools: `pre-commit`, `python3`, and `clang-format`. Whichever one is missing, `pnpm hooks:install` will tell you. `pre-commit` is usually installed with `pipx install pre-commit`.
@@ -159,9 +159,9 @@ The repo still has an old `code/examples/` directory holding loose single `.cpp`
 ### Compile Locally Once Before Pushing
 
 ```bash
-# No python3? Run python -V yourself and check it's a 3.x version
-python3 scripts/build_examples.py --host    # build all host examples
-python3 scripts/build_examples.py --stm32   # build the STM32 examples (needs the arm-none-eabi toolchain)
+# 没python3, 自己 python -V 瞄一眼是不是python 3.x版本
+python3 scripts/build_examples.py --host    # 编所有 host 示例
+python3 scripts/build_examples.py --stm32   # 编 STM32 示例(需 arm-none-eabi 工具链)
 ```
 
 After adding an example, run `--host` locally once to confirm it compiles — far faster than waiting for CI to go red and fixing it after the fact.

@@ -20,9 +20,9 @@ title: Directory Traversal and Search
 translation:
   source: documents/vol2-modern-features/ch09-filesystem/03-directory-iteration.md
   source_hash: bced9a015615d7a372159667284def1377bd35bf9a1854ef8412e0e5ea2a3b9b
-  translated_at: '2026-09-27T05:19:47+00:00'
-  engine: anthropic
-  token_count: 6800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12382
 ---
 # Directory Traversal and Search: Recursively Sweeping the Whole Directory Tree
 
@@ -147,7 +147,7 @@ void list_with_depth_limit(const fs::path& dir, int max_depth) {
     for (auto it = fs::recursive_directory_iterator(dir);
          it != fs::recursive_directory_iterator(); ++it) {
         if (it.depth() > max_depth) {
-            it.disable_recursion_pending();  // skip this subdirectory
+            it.disable_recursion_pending();  // 跳过该子目录
             continue;
         }
         std::cout << std::string(it.depth() * 2, ' ')
@@ -178,10 +178,10 @@ When constructing a `recursive_directory_iterator`, you can pass `directory_opti
 `fs::directory_options::follow_directory_symlink`—when it meets a symbolic link pointing to a directory, it follows the link and recurses into it. By default it does not follow (because that can lead to infinite loops).
 
 ```cpp
-// Safe recursive traversal: skip directories we lack permission for
+// 安全的递归遍历：跳过无权限的目录
 for (const auto& entry : fs::recursive_directory_iterator(
          dir, fs::directory_options::skip_permission_denied)) {
-    // process entry...
+    // 处理 entry...
 }
 ```
 
@@ -197,11 +197,11 @@ A `directory_entry` may cache file status information (type, size, and so on) to
 
 ```cpp
 for (const auto& entry : fs::directory_iterator(dir)) {
-    // These calls use cached values and trigger no extra system calls
+    // 这些调用使用缓存值，不触发额外的系统调用
     auto name = entry.path().filename().string();
     auto is_file = entry.is_regular_file();
     auto is_dir = entry.is_directory();
-    auto size = entry.file_size();  // only valid for regular files
+    auto size = entry.file_size();  // 仅对普通文件有效
 
     std::cout << name << " "
               << (is_file ? "file" : "dir")
@@ -225,10 +225,10 @@ Let's combine what we've covered so far and write a file-search function that su
 namespace fs = std::filesystem;
 
 struct SearchFilter {
-    std::string extension;                // target extension; empty means no filtering
-    std::uintmax_t min_size = 0;          // minimum file size
-    std::uintmax_t max_size = UINTMAX_MAX; // maximum file size
-    int max_depth = -1;                   // maximum recursion depth; -1 means unlimited
+    std::string extension;                // 目标扩展名，空表示不过滤
+    std::uintmax_t min_size = 0;          // 最小文件大小
+    std::uintmax_t max_size = UINTMAX_MAX; // 最大文件大小
+    int max_depth = -1;                   // 最大递归深度，-1 表示不限
 };
 
 std::vector<fs::path> search_files(const fs::path& root,
@@ -247,7 +247,7 @@ std::vector<fs::path> search_files(const fs::path& root,
             continue;
         }
 
-        // depth filter
+        // 深度过滤
         if (filter.max_depth >= 0 &&
             it.depth() > filter.max_depth) {
             it.disable_recursion_pending();
@@ -256,19 +256,19 @@ std::vector<fs::path> search_files(const fs::path& root,
 
         const auto& entry = *it;
 
-        // only process regular files
+        // 只处理普通文件
         if (!entry.is_regular_file()) {
             continue;
         }
 
-        // extension filter
+        // 扩展名过滤
         if (!filter.extension.empty()) {
             if (entry.path().extension() != filter.extension) {
                 continue;
             }
         }
 
-        // file size filter
+        // 文件大小过滤
         auto size = entry.file_size();
         if (size < filter.min_size || size > filter.max_size) {
             continue;
@@ -288,8 +288,8 @@ Usage example:
 int main() {
     SearchFilter filter;
     filter.extension = ".cpp";
-    filter.min_size = 100;      // at least 100 bytes
-    filter.max_size = 1000000;  // no more than 1MB
+    filter.min_size = 100;      // 至少 100 字节
+    filter.max_size = 1000000;  // 不超过 1MB
 
     auto files = search_files("/home/user/project", filter);
     std::cout << "找到 " << files.size() << " 个文件:\n";
@@ -338,9 +338,9 @@ struct FileStats {
     int total_lines = 0;
 };
 
-/// @brief Count the lines in a single file
-/// @param path File path
-/// @return Line count (0 on failure)
+/// @brief 统计单个文件的行数
+/// @param path 文件路径
+/// @return 行数（失败返回 0）
 int count_lines(const fs::path& path) {
     std::ifstream file(path);
     if (!file) return 0;
@@ -353,8 +353,8 @@ int count_lines(const fs::path& path) {
     return lines;
 }
 
-/// @brief Gather code-file statistics under a directory
-/// @param root Root directory
+/// @brief 统计目录下的代码文件
+/// @param root 根目录
 void code_stats(const fs::path& root) {
     std::unordered_map<std::string, FileStats> stats;
     std::error_code ec;
@@ -371,31 +371,31 @@ void code_stats(const fs::path& root) {
         if (!entry.is_regular_file()) continue;
 
         auto ext = entry.path().extension().string();
-        // Only count common source file types
+        // 只统计常见源代码文件
         if (ext != ".cpp" && ext != ".h" && ext != ".hpp" &&
             ext != ".c" && ext != ".py" && ext != ".java" &&
             ext != ".rs" && ext != ".go") {
             continue;
         }
 
-        // Skip hidden directories and build directories
+        // 跳过隐藏目录和 build 目录
         bool skip = false;
         for (const auto& component : entry.path()) {
             auto s = component.string();
             if (s == ".git" || s == "build" || s == "cmake-build-*"
                 || (s.size() > 1 && s[0] == '.')) {
-                // simple skip logic
+                // 简单的跳过逻辑
             }
         }
-        // The full version should handle this with disable_recursion_pending()
-        // simplified here
+        // 完整版本应该用 disable_recursion_pending() 处理
+        // 这里简化处理
 
         auto lines = count_lines(entry.path());
         stats[ext].file_count++;
         stats[ext].total_lines += lines;
     }
 
-    // Print the results
+    // 输出结果
     int total_files = 0;
     int total_lines = 0;
 

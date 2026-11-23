@@ -23,9 +23,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/zeros/00-why-rtos/02-bringup-and-linker-bans.md
   source_hash: b908a01499043e7a352002744df1fc4ff9da921565923af839aaf1618c3f3632
-  translated_at: '2026-09-25T08:04:44+00:00'
-  engine: anthropic
-  token_count: 16000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19973
 ---
 
 # Project Bring-up: From an Empty Repo to the First Line of Renode Output
@@ -39,21 +39,21 @@ Done typing? It spits out that the repo has been initialized by git — so now, 
 STMicroelectronics maintains a dependency for the STM32 on GitHub. If you came over from ALIENTEK or Puzhong style boards and still cannot bear source-code management without the zip-archive technology, now is the time to adapt —
 
 ```shell
-cd ~/ZerOS      # the one you just mkdir'ed, the name is up to you
-git init        # initializing the repo, just did that
+cd ~/ZerOS      # 就是刚才 mkdir 的那个，名字随您
+git init        # 初始化仓库刚刚做了
 git submodule add https://github.com/STMicroelectronics/STM32CubeF1.git third_party/STM32CubeF1
 ```
 
 Welcome back. The third line means — add STM32's standard library as a submodule of our project. Your author checked the size: 131 MB, so hopefully your proxy is in decent shape. If it isn't, no matter — standing up for a stretch and having some tea is a fine thing too. Once it is done, you can run the following commands:
 
 ```shell
-# The line below means — click, our submodule is now pinned at bb2016e
-# The effect is equivalent to the zip archive from the mystery vendor: it prevents the
-# problem of upstream having moved on while our code takes off and roars with laughter
+# 下面这一行的意思是——把咱们的子模块咔哒盯住在bb2016e
+# 效果等价于神秘厂商提供的压缩包一样，防止上游已更新
+# 我们代码起飞爆笑如雷的问题
 git -C third_party/STM32CubeF1 checkout bb2016e
 
-# Then add this child node to our Git hosting — we now manage the dependency,
-# in a distinctly special way
+# 然后把这个子节点，加入到我们的Git托管商，我们现在把依赖管理起来了
+# 用一种独特的方式
 git add third_party/STM32CubeF1
 ```
 
@@ -80,38 +80,34 @@ CMake nails the compiler into its cache on the very first configure — this mus
 Let's create `cmake/arch/arm-none-eabi.cmake`; the full contents are below, type them along:
 
 ```cmake
-# What system are we? The diplomatic answer is Generic; the blunt answer is "unimportant, don't worry about it"
+# 咱们是啥系统，高情商是Generic，低情商就是不重要你别管
 set(CMAKE_SYSTEM_NAME Generic)
-# What's our processor architecture? ARM, obviously
+# 咱们的处理器架构是啥，ARM呗
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-# Here we designate our special-issue compilers — nothing else, the
-# arm-none-eabi- family we set up ourselves
+# 这里是指定一下我们特供的编译器，不是别的，就是我们自己搞的
+# arm-none-eabi- 簇编译器
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
 
-# Bare-metal targets have no main(), so the compiler self-check builds only a static library
+# 裸机目标没有 main(),编译器自检只编静态库
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# The next three lines govern what find_xxx() searches: once you cross-compile,
-# you must first declare which world a search belongs to
-# Finding programs: tools that run on your machine at build time — search the host
-# as usual, don't go digging through ARM directories
+# 下面三行管 find_xxx() 的搜索范围:交叉编译之后,搜什么得先说清认哪个世界
+# 找程序:构建期要在您电脑上跑的工具,照常搜主机,别往 ARM 目录里翻
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-# Finding libraries and headers: only the toolchain side counts; the host's
-# /usr/lib and /usr/include are shut out entirely
-# This guards against the day some dependency uses find_library/find_path and
-# smuggles x86 stuff into a Cortex-M firmware
+# 找库、找头文件:只认工具链这一侧,主机的 /usr/lib、/usr/include 一律挡在门外
+# 防的是哪天某个依赖用 find_library/find_path,把 x86 的东西混进 Cortex-M 的固件
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-# Target-side compilation baseline
-# Use the Thumb instruction set, because the code comes out small and adorable
-# -Os optimizes for size
-# -g stays — it's for us to see what's going on when debugging
-# The rest disables RTTI and exceptions; since C files take part too, we wrap
-# them in $<COMPILE_LANGUAGE:CXX>:
+# 目标侧编译基线
+# 使用Thumb指令集，因为这样代码出来小巧可爱
+# -Os是做体积上的优化
+# -g留着，这是调试的时候给咱们看情况用的
+# 剩下的就是禁用RTTI和异常，因为我们也会有C语言文件参加，所以的话套一层
+# $<COMPILE_LANGUAGE:CXX>:
 add_compile_options(
     -mcpu=cortex-m3
     -mthumb
@@ -151,7 +147,7 @@ cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arch/arm-none-eabi.cmake
 No heap, no exceptions, no RTTI. That is what your author's promotional banner says. But verbal agreements are worthless — C says you should trust the programmer, yet as a rule people slip up. So, let's invite the tooling to stand guard. For instance, we have the linker script, our `link.ld`, open with these four lines:
 
 ```ld
-/* Link-time countermeasure: whoever pulls in these symbols gets a link error */
+/* 链接期反制:谁引入这些符号谁链接报错 */
 PROVIDE(__cxa_atexit = ASSERT(0, "global destructors banned"));
 PROVIDE(_Znwj = ASSERT(0, "heap new banned"));
 PROVIDE(_Znwm = ASSERT(0, "heap new banned"));
@@ -180,11 +176,9 @@ The error we get is exactly that sentence — no stack trace, no line number, bu
 Beyond the bans, the body of `link.ld` manages the memory layout: the 64K Flash / 20K SRAM boundaries go into `MEMORY`; how each section is arranged, where symbols like `_sidata` and `_estack` come from — all inside `SECTIONS`. The whole file is pasted below, type it along; what each part does will line up one by one when we discuss the startup code below:
 
 ```ld
-/* stm32f103_bluepill linker script — C8T6: 64K Flash / 20K SRAM
- * Memory constraints are real-hardware constraints (the Renode model sim/renode/bluepill.repl
- * is the same size; out-of-bounds reports immediately).
- * P1: linker script symbols must be compared as integer addresses in code;
- * pointer comparison is forbidden. */
+/* stm32f103_bluepill 链接脚本 —— C8T6: 64K Flash / 20K SRAM
+ * 内存约束即真机约束(Renode 模型 sim/renode/bluepill.repl 同尺寸,越界即报)。
+ * P1:链接脚本符号在代码里必须按整数地址比较,禁止指针比较。 */
 
 ENTRY(reset_handler)
 
@@ -194,7 +188,7 @@ MEMORY
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
-/* Link-time countermeasure: whoever pulls in these symbols gets a link error */
+/* 链接期反制:谁引入这些符号谁链接报错 */
 PROVIDE(__cxa_atexit = ASSERT(0, "global destructors banned"));
 PROVIDE(_Znwj = ASSERT(0, "heap new banned"));
 PROVIDE(_Znwm = ASSERT(0, "heap new banned"));
@@ -219,7 +213,7 @@ SECTIONS
         *(.ARM.exidx*)
     } > FLASH
 
-    /* Initialized data: LMA in Flash, copied to RAM at startup */
+    /* 初始化数据:LMA 在 Flash,启动时拷贝到 RAM */
     .data :
     {
         . = ALIGN(4);
@@ -256,28 +250,28 @@ By convention this step calls for a `startup.s`; ZerOS flat-out refuses — the 
 ```cpp
 using Isr = void (*)();
 
-// (section(".isr_vector"), used) is a little trick that tells the compiler:
-// big brother, please place the global array below into the .isr_vector
-// section, because ld needs it. Also, since it is never referenced directly,
-// add used, so the linker doesn't kick our reset vector dead at link time.
+// (section(".isr_vector"), used) 是一个小trick，告诉编译器
+// 大哥您请把下面的全局数组，放到.isr_vector段，因为ld要用
+// 此外，因为他是没有被直接引用的，所以，放一个used，防止链接的时候
+// 一脚踹死我们的复位向量。
 __attribute__((section(".isr_vector"), used))
 const Isr vectors[] = {
-    reinterpret_cast<Isr>(&_estack),             // 0  initial SP
+    reinterpret_cast<Isr>(&_estack),             // 0  初始 SP
     &reset_handler,                              // 1  Reset
     &fault_handler,                              // 2  NMI
     &fault_handler,                              // 3  HardFault
     &fault_handler,                              // 4  MemManage
     &fault_handler,                              // 5  BusFault
     &fault_handler,                              // 6  UsageFault
-    nullptr,                                     // 7-10 reserved
+    nullptr,                                     // 7-10 保留
     nullptr,
     nullptr,
     nullptr,
-    nullptr,                                     // 11-14 (SVC/PendSV belong to the kernel port)
+    nullptr,                                     // 11-14 (SVC/PendSV 归内核 port)
     nullptr,
     nullptr,
     nullptr,
-    &SysTick_Handler,                            // 15 SysTick (application-defined)
+    &SysTick_Handler,                            // 15 SysTick(应用定义)
 };
 ```
 
@@ -291,13 +285,13 @@ Beyond the vector table, don't miss the skeleton of the startup file: three incl
 
 ```cpp
 extern "C" {
-// Linker script symbols (P1: compare as integer addresses only, pointer comparison forbidden)
+// 链接脚本符号(P1:只按整数地址比较,禁止指针比较)
 extern std::uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _estack;
 
 int main();
 void SysTick_Handler();
 
-// Minimal fallback: print one line then halt; full context capture belongs to the kernel HardFault module (roadmap 3.1)
+// 最小兜底:打印一行后停机;完整现场捕获属内核 HardFault 模块(roadmap 3.1)
 void fault_handler() {
     ZerOS::board::print("\r\n[FAULT] halted\r\n");
     for (;;) {
@@ -313,8 +307,8 @@ Whether this table is laid out right is for the machine to say. When we run Reno
 
 ```cpp
 void reset_handler() {
-    // Why uintptr_t? Because uint32_t tells the compiler this variable
-    // is a number, and it then makes some runaway optimizations
+    // 为什么是uintptr_t？因为uint32_t告诉编译器这个变量是数字
+    // 会做出一些失控的优化
     auto src = reinterpret_cast<std::uintptr_t>(&_sidata);
     auto dst = reinterpret_cast<std::uintptr_t>(&_sdata);
     const auto dend = reinterpret_cast<std::uintptr_t>(&_edata);
@@ -327,7 +321,7 @@ void reset_handler() {
         *reinterpret_cast<std::uint32_t*>(b) = 0;
     }
 
-    SystemCoreClock = 72'000'000; // board main clock; to be replaced by real clock-tree init
+    SystemCoreClock = 72'000'000; // 板上主频;待真时钟树初始化取代
     main();
     for (;;) {
         __WFI();
@@ -374,7 +368,7 @@ Here are the initialization and whole-line printing as well; add the `#pragma on
 
 ```cpp
 inline void uart1_init() {
-    // RCC is a fake value in Renode (ready bits always 1); this line mainly serves real hardware
+    // RCC 在 Renode 为假值(就绪位恒 1),此行主要服务真机
     RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_IOPAEN;
     USART1->CR1 = USART_CR1_UE | USART_CR1_TE;
 }
@@ -395,30 +389,25 @@ Three files live under `sim/renode/`; let's look at them one by one — they tur
 `bluepill.repl` is the platform model, derived from Renode's built-in `stm32f103.repl` (a high-density superset) and trimmed to the C8T6's actual configuration. At this point, a thank-you to AI: your author honestly never quite mastered Renode's arcane script syntax, and it left behind the following AI slop for me —
 
 ```text
-// Trimmed to the C8T6's actual configuration so the simulator enforces real-hardware
-// constraints (out-of-bounds reports immediately, no longer relying on the linker
-// script's good behavior):
-//   Flash 64K @ 0x08000000 (upstream is a 512M superset window starting at 0x0, cut)
-//   SRAM  20K @ 0x20000000 (upstream declares 256M, cut)
-//   D-G are ghost ports: the upstream STM32F1AFIO constructor hard-requires exactly
-//   7 ports (source-verified: gpioPorts[3..6] are indexed directly); give it fewer
-//   and it crashes. The real C8T6 does not have these four ports — firmware that
-//   touches them BusFaults on real hardware but silently succeeds in this model;
-//   a known fidelity divergence.
-//   RCC has no model; Tag fake value 0x0A020083 (ready bits always 1); timer
-//   frequency follows upstream at 10MHz;
-//   DMA has no model (not shipped with the 1.16.1 platform; the real C8T6 only has DMA1).
+// 按 C8T6 实际配置裁剪,让模拟器强制真机约束(越界即报,不再靠链接脚本自觉):
+//   Flash 64K @ 0x08000000(上游是 0x0 起 512M 超集窗口,已砍)
+//   SRAM  20K @ 0x20000000(上游声明 256M,已砍)
+//   D-G 为幽灵口:上游 STM32F1AFIO 构造函数硬性要求恰好 7 个口(源码实证
+//   gpioPorts[3..6] 直接索引),不给就崩。真机 C8T6 没有这四个口——
+//   固件若访问它们,真机会 BusFault,本模型会静默成功,属已知失真。
+//   RCC 无模型,Tag 假值 0x0A020083(就绪位恒 1);定时器频率按上游取 10MHz;
+//   DMA 无模型(1.16.1 平台未带;真机 C8T6 只有 DMA1)。
 ```
 
 `bluepill.resc` is the run script — 22 lines, pasted in full:
 
 ```text
-# Blue Pill @ Renode run script
-# Usage (headless, log to disk):
+# Blue Pill @ Renode 运行脚本
+# 用法(无头,日志落盘):
 #   renode --console --disable-xwt -e "logFile @run.log" \
 #     -e '$bin=@build/zeros-bluepill.elf' \
 #     -e "include @src/board/stm32f103_bluepill/sim/renode/bluepill.resc" -e "start" -e "sleep 5" -e "quit"
-# Setting $bin before the include overrides the default path; must be run from the repo root.
+# $bin 在 include 之前设置即可覆盖默认路径;须在仓库根目录下运行。
 
 using sysbus
 
@@ -442,11 +431,10 @@ Two spots are worth a look: `$bin?=@build/zeros-bluepill.elf` with its question 
 `run-renode.cmake` is the launcher, and it exists because of a pitfall — let's lay out the scene: writing `-e "$bin=@..."` directly in an `add_custom_target`'s `COMMAND` gets `$b` eaten as a single-character variable by the Makefile generator, renode receives `in=@...` instead, and reports `No such command`. The workaround is to have the target call only `cmake -P`: `execute_process` arguments go straight to the process argv, bypassing any builder's shell. 17 lines, also pasted for you:
 
 ```cmake
-# Renode launcher: invoked with cmake -P by the board package's renode-bluepill target.
-# Arguments reach the process argv directly via execute_process, skipping the builder
-# shell — dodging $bin being eaten as a variable by make/ninja (see docs/simulation.md P12).
-# Usage parameters: -DRENODE_ROOT=<repo root> -DRENODE_ELF=<absolute ELF path>
-#                   -DRENODE_RESC=<resc path relative to repo root> -DRENODE_SECONDS=<seconds to run>
+# Renode 启动器:被板包的 renode-bluepill 目标以 cmake -P 调用。
+# 参数经 execute_process 直达进程 argv,不经构建器 shell——规避 $bin 被 make/ninja 当变量吃掉(见 docs/simulation.md P12)。
+# 用法参数:-DRENODE_ROOT=<仓库根> -DRENODE_ELF=<ELF 绝对路径>
+#          -DRENODE_RESC=<相对仓库根的 resc 路径> -DRENODE_SECONDS=<运行秒数>
 
 execute_process(
     COMMAND renode --console --disable-xwt
@@ -474,12 +462,10 @@ The project is built up; you open your editor, and `#include <cstdint>` is a wal
 
 ```json
 {
-    // For the arm-none-eabi target, clangd guesses a libc++ layout (c++/v1) by default,
-    // but the local toolchain is actually a libstdc++ layout (c++/<version>); without
-    // asking the real compiler it cannot find <cstdint> and other standard headers.
-    // --query-driver lets the arm gcc/g++ through (installed in /usr/sbin), letting
-    // clangd probe the real system header paths. It is a process flag — it cannot go
-    // into .clangd, so it has to live here.
+    // clangd 对 arm-none-eabi 目标默认猜 libc++ 布局(c++/v1),本机工具链
+    // 实为 libstdc++ 布局(c++/<版本>),不问真编译器就找不到 <cstdint>
+    // 等标准头。--query-driver 放行 arm gcc/g++(装在 /usr/sbin),让
+    // clangd 探测真实系统头路径。它是进程旗标,进不了 .clangd,只能放这。
     "clangd.arguments": [
         "--query-driver=**/arm-none-eabi-g*"
     ]
@@ -493,15 +479,14 @@ Once clangd gets a cross-compilation command, it guesses where the standard head
 All the source files are here; the one that glues them into the build is the board package's `src/board/stm32f103_bluepill/CMakeLists.txt` — 60 lines, type it along:
 
 ```cmake
-# Blue Pill board package (D14, one package per board): firmware target + Renode simulation target
-# Simulation assets live in sim/renode/ (bluepill.repl/.resc); relative paths resolve against the
-# launch cwd, so the repo root must be the cwd (P10)
+# Blue Pill 板包(D14 一板一包):固件目标 + Renode 仿真目标
+# 仿真资产在 sim/renode/(bluepill.repl/.resc);相对路径按启动 cwd 解析,须以仓库根为 cwd(P10)
 
 set(CMAKE_EXECUTABLE_SUFFIX .elf)
 
 set(CMSIS ${CMAKE_SOURCE_DIR}/third_party/STM32CubeF1/Drivers/CMSIS)
 
-# ---- Firmware target ----
+# ---- 固件目标 ----
 add_executable(
     zeros-bluepill
     ${CMAKE_SOURCE_DIR}/example/main.cpp
@@ -533,7 +518,7 @@ add_custom_command(
     COMMENT "size report (D12 预算:核心内核 flash<=6KB RAM<=1KB)"
 )
 
-# ---- Simulation target: cmake --build build --target renode-bluepill ----
+# ---- 仿真目标:cmake --build build --target renode-bluepill ----
 set(ZEROS_SIM_ELF "" CACHE STRING "覆盖仿真 ELF(空=本板默认产物)")
 set(ZEROS_SIM_SECONDS 5 CACHE STRING "仿真运行秒数")
 
@@ -559,7 +544,7 @@ add_custom_target(
 The last source file is the star of the acceptance, `example/main.cpp` — 27 lines, type it with your own hands:
 
 ```cpp
-// ZerOS baseline smoke test: banner + 1kHz SysTick — acceptance = both visible in Renode (bluepill.resc)
+// ZerOS 基线冒烟:banner + 1kHz SysTick —— 验收 = Renode(bluepill.resc)里两者可见
 #include <cstdint>
 
 #include "stm32f1xx.h"

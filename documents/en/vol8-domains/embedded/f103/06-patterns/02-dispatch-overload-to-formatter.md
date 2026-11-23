@@ -21,10 +21,10 @@ related:
   - "UART: interrupt-driven, ring buffer, expected"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/02-dispatch-overload-to-formatter.md
-  source_hash: 7f56dcf6fb1be75e45567cba0187e441708563e7bba2b826282b8d7858558448
-  translated_at: '2026-09-27T05:53:35+00:00'
-  engine: anthropic
-  token_count: 2700
+  source_hash: c2851743350376cd4c7c31cbf259759f60c8f248e92e782ad8914445659571aa
+  translated_at: '2026-11-22T16:43:34+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8761
 ---
 
 # From overload sets to Formatter specializations: choosing the dispatch mechanism for an embedded logger
@@ -55,7 +55,7 @@ void append(V&& value) {
     else if constexpr (std::same_as<U, bool>) { /* ... */ }
     else if constexpr (std::convertible_to<const U&, std::string_view>) { /* ... */ }
     else if constexpr (requires { typename U::is_log_hex; }) { /* ... */ }
-    // ...six or seven branches
+    // ...六七个分支
 }
 ```
 
@@ -67,21 +67,21 @@ Flatten the chain into an overload set, one `append` overload per type — the c
 
 ```cpp
 struct LineBuffer {
-    void append(char) = delete;                        // targeted rejection
+    void append(char) = delete;                        // 定向拒绝
     void append(bool b);
     void append(std::string_view view);
     void append(std::string_view s, std::size_t width);
 
-    template <TextSource T>          void append(T s);   // literals/string
+    template <TextSource T>          void append(T s);   // 字面量/string
     template <IsHex H>               void append(H h);
     template <std::integral T>       void append(T v);
 
     template <typename T>
         requires requires { std::declval<const T&>().append_to(std::declval<LineBuffer&>()); }
-    void append(T t) { t.append_to(*this); }            // extension point for user types
+    void append(T t) { t.append_to(*this); }            // 用户类型扩展点
 
-    template <std::floating_point T> void append(T) = delete;  // reject float
-    template <typename T>            void append(T) = delete;  // catch-all rejection
+    template <std::floating_point T> void append(T) = delete;  // float 拒绝
+    template <typename T>            void append(T) = delete;  // 兜底拒绝
 };
 ```
 
@@ -121,7 +121,7 @@ inline constexpr struct append_value_t {
     }
 } append_value;
 
-// user type: specialize tag_invoke as a hidden friend
+// 用户类型:hidden friend 特化 tag_invoke
 struct Foo {
     int x;
     friend void tag_invoke(append_value_t, auto& buffer, const Foo& foo) {
@@ -132,12 +132,12 @@ struct Foo {
 
 To be fair, this machinery solves real problems: one unified protocol, no occupation of global function names, constraints that can be probed (`is_tag_invocable`). But its cognitive price for the **embedded reader** is a three-piece bundle all at once: CPO function objects, hidden friends, and two-phase ADL lookup — an engineer writing microcontroller firmware who sees `tag_invoke(*this, buffer, value)` will most likely not react with "ah, a customization point" but with "what is this". And the community's criticisms of it are already on record: [Barry Revzin's classic critique](https://brevzin.github.io/2020/11/30/tag-invoke/) points out that `tag_invoke` itself becomes a globally reserved identifier (ironically, exactly the problem it meant to solve), that error messages get worse, and that customization is invisible at the call site; even the std::execution community, its heaviest user, is [seeking member customization points in the follow-up P2300 discussions](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p3281r0.html) to sidestep this layer of complexity. However elegant the protocol layer, the "readers get it at a glance" vote simply carries more weight in a tutorial library. **Turned down, and recorded as such.**
 
-## Form three: the Formatter<T> specialization — the final form
+## Form three: the Formatter\<T\> specialization — the final form
 
 The final landing spot is a shape everyone already knows — a replica of `std::formatter`. The library provides only a primary template, built-in types are implemented via (constrained) specializations, and user types specialize it the same way:
 
 ```cpp
-// primary template: unspecialized = unsupported, the message points the way
+// 主模板:未特化 = 不支持,文案指路
 template <typename T>
 struct Formatter {
     static void format(auto&, const T&) {
@@ -147,7 +147,7 @@ struct Formatter {
 };
 
 template <>           struct Formatter<bool>  { /* "true"/"false" */ };
-template <TextSource T> struct Formatter<T>   { /* convert to string_view */ };
+template <TextSource T> struct Formatter<T>   { /* 转 string_view */ };
 template <IsHex T>    struct Formatter<T>     { /* "0x" + to_chars 16 */ };
 template <typename T>
     requires std::integral<T> && (!std::same_as<T, char>) && (!std::same_as<T, bool>)
@@ -170,7 +170,7 @@ Meanwhile `LineBuffer` is split into a pure byte layer (clamped copies, `pad`, t
 ```cpp
 template <typename T>
 void append(const T& value) {
-    Formatter<std::remove_cvref_t<T>>::format(*this, value);   // a forward declaration of Formatter is enough
+    Formatter<std::remove_cvref_t<T>>::format(*this, value);   // Formatter 前置声明即可
 }
 ```
 

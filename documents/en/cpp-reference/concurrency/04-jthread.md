@@ -16,9 +16,9 @@ title: std::jthread
 translation:
   source: documents/cpp-reference/concurrency/04-jthread.md
   source_hash: 5ae176e38032d0427ba6a0a1278d7aaff51389a3ad5cf3afc08b7d37909a35d7
-  translated_at: '2026-09-26T17:08:22+00:00'
-  engine: anthropic
-  token_count: 850
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2118
 ---
 <!--
 Reference Card Template
@@ -71,9 +71,9 @@ void worker(std::stop_token st) {
 }
 
 int main() {
-    std::jthread t(worker); // stop_token is passed in automatically
-    // t's destructor automatically calls request_stop() + join()
-} // Output: working... stopped
+    std::jthread t(worker); // 自动传入 stop_token
+    // t 析构时自动 request_stop() + join()
+} // 输出: working... stopped
 ```
 
 ## Embedded Applicability: Medium

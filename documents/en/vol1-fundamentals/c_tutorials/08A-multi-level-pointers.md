@@ -20,10 +20,10 @@ tags:
 title: Multilevel Pointers and Reading Declarations
 translation:
   source: documents/vol1-fundamentals/c_tutorials/08A-multi-level-pointers.md
-  source_hash: 4d1618630161b296cd466f3faa861e114aefffc75170339842e2fb833b3a0234
-  translated_at: '2026-09-25T13:08:40+00:00'
-  engine: anthropic
-  token_count: 3800
+  source_hash: d54404671808440a95c62092ad98dfa0a7bf514a4ff08bf72651a31da2e69143
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8612
 ---
 # Multilevel Pointers and Reading Declarations
 
@@ -85,14 +85,14 @@ Truth be told, anything beyond two levels is rare in a sane project. The most co
 void allocate_buffer(int** out_ptr, int size)
 {
     *out_ptr = (int*)malloc(size * sizeof(int));
-    // What gets modified is the pointer variable that out_ptr points to
+    // 修改的是 out_ptr 指向的那个指针变量
 }
 
 int main(void)
 {
     int* buffer = NULL;
     allocate_buffer(&buffer, 100);
-    // buffer now points at the memory malloc handed out
+    // 现在 buffer 指向了 malloc 分配的内存
     free(buffer);
     return 0;
 }
@@ -108,7 +108,7 @@ The `argv` parameter of `main` is a `char**`:
 
 ```c
 int main(int argc, char *argv[]) { /* ... */ }
-int main(int argc, char **argv)    { /* ... */ }  // completely equivalent
+int main(int argc, char **argv)    { /* ... */ }  // 完全等价
 ```
 
 Inside a parameter list, `char *argv[]` decays to `char**`; the two spellings are identical. `argv` points at an array of `char*`, each element of which points at one command-line argument string, and the whole thing ends with a `NULL` sentinel:
@@ -164,9 +164,9 @@ int matrix[3][10] = {
     {20, 21, 22, 23, 24, 25, 26, 27, 28, 29}
 };
 
-int (*row_ptr)[10] = matrix;  // points at the first row
+int (*row_ptr)[10] = matrix;  // 指向第一行
 printf("%d\n", (*row_ptr)[2]);         // 2
-printf("%d\n", (*(row_ptr + 1))[2]);   // 12 — skips to the second row
+printf("%d\n", (*(row_ptr + 1))[2]);   // 12，跳到第二行
 ```
 
 `row_ptr + 1` skips an entire row (10 `int`s = 40 bytes) and lands on the next row.
@@ -211,9 +211,9 @@ The combinations of `const` with a single-level pointer were covered in the prev
 ### Review: Single-Level const Pointers
 
 ```c
-const int* p1;              // pointer to const int: the value can't be changed through p1, but p1 can be redirected
-int* const p2 = &v;         // const pointer: p2 can't be redirected, but the value can be changed through it
-const int* const p3 = &v;   // both locked down
+const int* p1;              // 指向 const int 的指针，不能通过 p1 改值，但 p1 可改方向
+int* const p2 = &v;         // const 指针，p2 不能改方向，但可通过它改值
+const int* const p3 = &v;   // 都锁死了
 ```
 
 ### Multilevel const Pointers
@@ -224,17 +224,17 @@ With `int**` in play, `const` can sit at different positions:
 int value = 42;
 int* ptr = &value;
 
-// Low-level const: the pointed-to pointer is read-only
+// 底层 const：指向的指针是只读的
 int* const* pp1 = &ptr;
-// pp1 can change, *pp1 cannot, **pp1 can
+// pp1 可以改，*pp1 不能改，**pp1 可以改
 
-// Top-level const: pp2 itself is read-only
+// 顶层 const：pp2 本身是只读的
 int** const pp2 = &ptr;
-// pp2 cannot change, *pp2 can, **pp2 can
+// pp2 不能改，*pp2 可以改，**pp2 可以改
 
-// Double const
+// 双重 const
 const int* const* pp3 = &ptr;
-// pp3 can change, *pp3 cannot, **pp3 cannot
+// pp3 可以改，*pp3 不能改，**pp3 不能改
 ```
 
 You still read these with the right-left rule, peeling off one layer at a time. Take `const int* const* p`: `p` is a pointer → to a `const` pointer → and that pointer points at a `const int`.
@@ -249,7 +249,7 @@ Every multilevel-pointer mechanism in C has a modern C++ counterpart, and unders
 
 ```cpp
 auto matrix = std::make_unique<int[]>(rows * cols);
-// Access it as matrix[i * cols + j]; it is freed automatically when it leaves scope
+// 用 matrix[i * cols + j] 访问，离开作用域自动释放
 ```
 
 Move semantics is, at its core, a transfer of pointers — instead of copying the data, you "steal" ownership of the resource and null out the source object. That is exactly what manually swapping pointers and nulling the old one in C does; C++ just standardized the pattern.
@@ -269,22 +269,22 @@ We'll go deep on all of these in the later C++ tutorials. For now, keep just the
 Use multilevel pointers to implement the allocation, filling, and freeing of a dynamic two-dimensional array. Implement the following three functions yourself:
 
 ```c
-/// @brief Allocate a dynamic rows x cols two-dimensional array
-/// @param rows the number of rows
-/// @param cols the number of columns
-/// @return a second-level pointer to the two-dimensional array, or NULL on failure
+/// @brief 分配 rows x cols 的动态二维数组
+/// @param rows 行数
+/// @param cols 列数
+/// @return 指向二维数组的二级指针，失败返回 NULL
 int** allocate_matrix(int rows, int cols);
 
-/// @brief Free the dynamic two-dimensional array
-/// @param matrix the second-level pointer
-/// @param rows the number of rows (used to free row by row)
+/// @brief 释放动态二维数组
+/// @param matrix 二级指针
+/// @param rows 行数（用于逐行释放）
 void free_matrix(int** matrix, int rows);
 
-/// @brief Fill every element of the two-dimensional array with the given value
-/// @param matrix the second-level pointer
-/// @param rows the number of rows
-/// @param cols the number of columns
-/// @param value the fill value
+/// @brief 将二维数组的所有元素填充为指定值
+/// @param matrix 二级指针
+/// @param rows 行数
+/// @param cols 列数
+/// @param value 填充值
 void fill_matrix(int** matrix, int rows, int cols, int value);
 ```
 
@@ -301,12 +301,12 @@ int** allocate_matrix(int rows, int cols) {
 
     int** matrix = malloc(sizeof(int*) * rows);
     if (matrix == NULL) {
-        return NULL;    // Guard against allocation failure. Unlikely... but just in case — what if the program runs on hardware from 1978? (laughs)
+        return NULL;    //防止内存分配失败，但这不太可能吧...以防万一，还是写上吧，如果程序在1978年的硬件上跑呢(笑)
     }
 
     for (int i = 0; i < rows; i++) {
         matrix[i] = malloc(sizeof(int) * cols);
-        if (matrix[i] == NULL) {    // Out of memory: cancel the allocation and free what we already got.
+        if (matrix[i] == NULL) {    //内存不够，取消分配，并释放内存。
             for (int j = 0; j < i; j++) {
                 free(matrix[j]);
             }
@@ -343,25 +343,25 @@ void fill_matrix(int** matrix, int rows, int cols, int value) {
 ```
 
 ```text
-Feeling inspired, so here comes a diagram awa
+兴致大发，来画个图示 awa
 
-matrix has type int**, so it takes two dereferences to actually reach an int:
+matrix 的类型是 int**，要解两次引用才摸到具体的 int：
 
   matrix  (int**)
     │
-    │   matrix[0]    matrix[1]    matrix[2]    ...    matrix[n]      ← 1st dereference: each one is an int*
+    │   matrix[0]    matrix[1]    matrix[2]    ...    matrix[n]      ← 第 1 次解引用，每个是 int*
     │      │            │            │                   │
     │      ▼            ▼            ▼                   ▼
     └─▶ ┌─┬─┬─┬─┐   ┌─┬─┬─┬─┐    ┌─┬─┬─┬─┐         ┌─┬─┐
-         │ │ │ │ │   │ │ │ │ │    │ │ │ │ │   ...   │ │ │   ← 2nd dereference: each one is an int
+         │ │ │ │ │   │ │ │ │ │    │ │ │ │ │   ...   │ │ │   ← 第 2 次解引用，每个是 int
          └─┴─┴─┴─┘   └─┴─┴─┴─┘    └─┴─┴─┴─┘         └─┴─┘
              ↑
-             matrix[0][1] is exactly this cell (the int in row 0, column 1)
+             matrix[0][1] 就是这一格（第 0 行、第 1 列的那个 int）
 
-  - matrix[i]     : int*, pointing at the start of row i (that block of cols ints)
-  - matrix[i][j]  : int, the concrete value in row i, column j
+  - matrix[i]     ：int*，指向第 i 行的开头（那块 cols 个 int）
+  - matrix[i][j]  ：int，第 i 行第 j 列的具体值
 
-Everything clear now OwO?
+这下应该清楚了吧 OwO？
 ```
 
 Hint: allocate the pointer array first (the dimension the `int**` points at), then `malloc` each row separately. Freeing reverses the order — release every row first, then the pointer array itself.

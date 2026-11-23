@@ -21,16 +21,16 @@ title: 'Designated Initializers'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/06-designated-initializers.md
   source_hash: fb210e41141f8b33a482785b6b773baa9ab8039970ef50fb540903eb620bd59d
-  translated_at: '2026-09-26T03:26:14+00:00'
-  engine: anthropic
-  token_count: 6200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5895
 ---
 # Designated Initializers
 
 Once a config struct grows long, positional initialization starts to get scary. Take a UART config with seven or eight fields, filled in one by one:
 
 ```cpp
-UartConfig cfg = {115200, 8, 0, 1, 0, 1, 1};   // who can remember which slot is which
+UartConfig cfg = {115200, 8, 0, 1, 0, 1, 1};   // 谁记得住第几个是啥
 ```
 
 We have all been bitten by this style: once the field count grows you end up counting positions against the declaration, inserting a new member in the middle forces every initializer to shift, and the compiler will not stop you—a mistake just surfaces later as weird runtime behavior. C99 offered a fix called the designated initializer, and C++20 brought it into the standard, letting us initialize with `.field = value`, by name. But the C++20 version differs from C99 in two key places, which we will cover as we go—and those two places happen to be the easiest traps to step into.
@@ -58,7 +58,7 @@ UartConfig cfg{
 Every value is labeled with a name instead of leaning on position—that is its biggest benefit. But C++20 has a hard rule here that differs from C99: **the designators must appear in the same order as the member declarations**. If, for the sake of convenience, you write `stop_bits` ahead of `baudrate`:
 
 ```cpp
-UartConfig bad{.stop_bits = 1, .baudrate = 115200};   // won't compile in C++20
+UartConfig bad{.stop_bits = 1, .baudrate = 115200};   // C++20 编不过
 ```
 
 GCC rejects it outright:
@@ -95,7 +95,7 @@ struct WithCtor {
     WithCtor(int, int) {}
 };
 
-WithCtor x{.a = 1, .b = 2};   // won't compile: not an aggregate
+WithCtor x{.a = 1, .b = 2};   // 编不过:不是聚合
 ```
 
 The error message is blunt:
@@ -168,13 +168,13 @@ union as float: 3.14
 This is the second easy trap to fall into, and the other difference from C99. C99 allows array designated initializers of the form `[index] = value`:
 
 ```c
-int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // legal C99
+int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // C99 合法
 ```
 
 C++20 **did not** adopt this. Feed the same syntax to a C++ compiler:
 
 ```cpp
-int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // won't compile in C++20
+int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // C++20 编不过
 ```
 
 GCC's wording is a bit coy—it reports `sorry, unimplemented: non-trivial designated initializers not supported`. It does not quite say "the standard forbids it", but the effect is the same: it will not compile. C++20's designated initializers cover only the `.field` form for aggregates; designators with array subscripts simply are not in the standard. To partially initialize an array, honestly use positional braces like `{1, 0, 5, 0, 12}` and be done with it.

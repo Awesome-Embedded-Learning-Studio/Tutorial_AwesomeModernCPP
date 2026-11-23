@@ -14,10 +14,10 @@ tags:
 title: std::flat_map
 translation:
   source: documents/cpp-reference/containers/08-flat-map.md
-  source_hash: 3c25b6b314501ba0464571012499d72ea13369ca9e8301928607d46a4096fcde
-  translated_at: '2026-09-27T02:03:24+00:00'
-  engine: anthropic
-  token_count: 1000
+  source_hash: 0ac175f510184fd43b425a45874f9d9663f9390392c7000606ab856af1cc0559
+  translated_at: '2026-11-22T16:41:57.150143+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2008
 ---
 <!--
 Reference Card Template
@@ -72,7 +72,7 @@ int main() {
     for (const auto& [k, v] : m) {
         std::cout << k << ": " << v << "\n";
     }
-    // 1: one  2: two  3: three  (sorted by key)
+    // 1: one  2: two  3: three  (按键序排列)
 
     std::cout << std::boolalpha << m.contains(2) << "\n"; // true
 }

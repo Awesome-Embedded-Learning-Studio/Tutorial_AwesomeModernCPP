@@ -24,9 +24,9 @@ title: "NoDestructor hands-on (III): when to use it, and when not to"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/04-3-no-destructor-when-to-use.md
   source_hash: 0ad21cce9d10742a16328bb872a233f6f89a65c725d95ba5a4eb3bd80d0c33db
-  translated_at: '2026-09-26T03:16:29+00:00'
-  engine: anthropic
-  token_count: 2600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5475
 ---
 # NoDestructor hands-on (III): when to use it, and when not to
 
@@ -38,7 +38,7 @@ The canonical usage looks like this, and we suggest you commit it to memory as t
 
 ```cpp
 const T& GetGlobal() {
-    static const base::NoDestructor<T> x(args...);   // ✓ function-local static
+    static const base::NoDestructor<T> x(args...);   // ✓ 函数局部静态
     return *x;
 }
 ```
@@ -53,8 +53,8 @@ The misuse scenarios are called out one by one in Chromium's comments. We have r
 
 ```cpp
 void f() {
-    base::NoDestructor<std::string> s("temp");   // ❌ real leak!
-    // after f returns, s never destructs; the string's heap allocation is never freed (until the program exits)
+    base::NoDestructor<std::string> s("temp");   // ❌ 真泄漏!
+    // f 返回后,s 不析构,string 的堆分配永远不释放(直到程序退出)
 }
 ```
 
@@ -63,13 +63,13 @@ The entire point of NoDestructor is "do not destruct", and that premise assumes 
 **One rung down: trivially-destructible T.** Here NoDestructor is pure redundancy; you never needed it at all:
 
 ```cpp
-static const base::NoDestructor<int> x(42);   // ❌ int is trivially destructible, no NoDestructor needed
+static const base::NoDestructor<int> x(42);   // ❌ int 平凡析构,不需要 NoDestructor
 ```
 
 With T trivially destructible (like `int`, `double`, or a POD struct), its function-local static never produces a global destructor in the first place; a bare static does the job. NoDestructor's `static_assert` will turn you away (the second assertion), but what matters more than the compile error is this: you never recognized in the first place that this thing had no work to do here. Write it clean instead:
 
 ```cpp
-static const int x = 42;   // ✓ trivially destructible, no global destructor
+static const int x = 42;   // ✓ 平凡析构,无全局析构器
 ```
 
 **A sneakier category: T that is both trivially constructible and trivially destructible.** For these, even a function-local static feels heavyweight; what you want is `constinit`:
@@ -82,17 +82,17 @@ Wrapping NoDestructor around something like `uint64_t`, which could be initializ
 
 ```cpp
 const uint64_t GetUnstableSessionSeed() {
-    static const uint64_t kSessionSeed = base::RandUint64();   // ✓ trivially destructible, no NoDestructor needed
+    static const uint64_t kSessionSeed = base::RandUint64();   // ✓ 平凡析构,无需 NoDestructor
     return kSessionSeed;
 }
-// or better: constinit uint64_t g_seed = constexpr_value;
+// 或更好:constinit uint64_t g_seed = constexpr_value;
 ```
 
 **The easiest to miss: rarely-used data — do not cache it behind NoDestructor.** The trap here is that it never errors and never leaks; it just quietly eats memory:
 
 ```cpp
 const BigTable& GetRareTable() {
-    static const base::NoDestructor<BigTable> t(BuildBigTable());   // ⚠ use with care
+    static const base::NoDestructor<BigTable> t(BuildBigTable());   // ⚠ 慎用
     return *t;
 }
 ```
@@ -100,8 +100,8 @@ const BigTable& GetRareTable() {
 If this table gets used once or twice across the whole program lifetime, caching it behind NoDestructor is a memory waste — the compiler reserves space for `BigTable` in the bss segment, and it stays occupied for the entire run, even if you touch it exactly once. The advice in the source comments (no_destructor.h:28-31) is blunt: create rarely used data on demand, do not cache it. Rewrite it like this, so it destructs the moment it is done being used and stops holding memory long term:
 
 ```cpp
-// create on demand (destructs after use, no long-term memory held)
-BigTable GetRareTable() { return BuildBigTable(); }   // return by value, transient use
+// 按需创建(用完即析构,不长期占内存)
+BigTable GetRareTable() { return BuildBigTable(); }   // 返回值,临时用
 ```
 
 ---
@@ -111,7 +111,7 @@ BigTable GetRareTable() { return BuildBigTable(); }   // return by value, transi
 NoDestructor's canonical usage is the function-local static. Could it be a global instead? The source comments (no_destructor.h:22-26) mention in passing that "a constinit-constructible T can be global, but it must be marked constinit" — we genuinely went and tried it at first, hit the wall, and **confirmed by experiment that it does not compile**:
 
 ```cpp
-constinit const base::NoDestructor<MyConstexprType> g_data(args...);   // ⚠ compile failure
+constinit const base::NoDestructor<MyConstexprType> g_data(args...);   // ⚠ 编译失败
 ```
 
 The reason hides in the constructor: NoDestructor internally has to call placement new (`new (storage_) T(...)`), and placement new is not `constexpr` at all, so NoDestructor's constructor is explicitly marked non-constexpr (the real header at no_destructor.h:95 spells it out in black and white: "Not constexpr"). `constinit` demands a constant-expression initializer; that check cannot pass, and the compiler throws you back a `constinit variable does not have a constant initializer`. We also flipped through Chromium's unittests while we were at it, and **there is not a single constinit global NoDestructor in there** — it is function-local statics across the board.
@@ -126,7 +126,7 @@ One thing needs saying outright: NoDestructor itself **does no locking**, and it
 
 ```cpp
 const T& GetGlobal() {
-    static const base::NoDestructor<T> x(args...);   // magic statics guarantees x is constructed once, thread-safely
+    static const base::NoDestructor<T> x(args...);   // magic statics 保 x 只构造一次,线程安全
     return *x;
 }
 ```

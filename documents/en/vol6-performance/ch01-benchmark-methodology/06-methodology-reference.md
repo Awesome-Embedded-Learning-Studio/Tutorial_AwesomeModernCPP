@@ -25,9 +25,9 @@ title: Benchmark methodology reference card
 translation:
   source: documents/vol6-performance/ch01-benchmark-methodology/06-methodology-reference.md
   source_hash: 0f7fcb6674e2c52d1d4cb29efbf97dd6b3e1fa4b6842147dcbc9f1c300a446ce
-  translated_at: '2026-09-26T05:46:19+00:00'
-  engine: anthropic
-  token_count: 2600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3435
 ---
 # Benchmark methodology reference card
 
@@ -93,17 +93,17 @@ Details in ch01-04.
 ## §6 perf cheat sheet
 
 ```bash
-# Basic counters (health check: watch IPC, cache misses, branch misses)
+# 基础计数(体检:看 IPC、cache miss、branch miss)
 perf stat -r 5 ./bench
 perf stat -e cycles,instructions,cache-misses,branch-misses ./bench
 
-# Sampling profile (find hotspots; make sure to use -fno-omit-frame-pointer or dwarf unwinding)
+# 采样 profile(找热点;务必 -fno-omit-frame-pointer 或用 dwarf 解栈)
 perf record -F 99 -g --call-graph dwarf -- ./bench
-perf report                      # browse interactively
-perf script | stackcollapse-perf.pl | flamegraph.pl > out.svg   # flame graph
+perf report                      # 交互式看
+perf script | stackcollapse-perf.pl | flamegraph.pl > out.svg   # 火焰图
 
-# Microarchitectural attribution (covered in depth in ch03)
-toplev -l3 taskset -c 0 ./bench  # TMAM four-bucket drill-down, needs pmu-tools
+# 微架构归因(ch03 详谈)
+toplev -l3 taskset -c 0 ./bench  # TMAM 四桶下钻,需 pmu-tools
 ```
 
 The full workflow for flame graphs, TMAM, and `toplev` belongs to ch03 (attribution methodology); here we only hand you the entry point.

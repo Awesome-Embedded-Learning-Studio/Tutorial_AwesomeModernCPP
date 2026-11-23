@@ -23,9 +23,9 @@ title: 'False sharing: one cacheline dragging many cores back to single-core'
 translation:
   source: documents/vol6-performance/ch05-multicore-performance/05-01-false-sharing.md
   source_hash: 2654b223c503fb37c157be4f33a5b46835fa269a121e4d81caccb19e2923adfd
-  translated_at: '2026-09-26T06:30:24+00:00'
-  engine: anthropic
-  token_count: 3300
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4089
 ---
 # False sharing: one cacheline dragging many cores back to single-core
 
@@ -55,9 +55,9 @@ The key point: **the granularity of coherence is the cacheline (64 bytes), not t
 The classic scenario: two threads, each with its own counter, each incrementing it 100 million times. Completely independent, logically.
 
 ```cpp
-// A. False sharing: two atomic<long> packed side by side, same cacheline
+// A. 伪共享:两个 atomic<long> 紧挨着,同一条 cacheline
 struct BadCounters { std::atomic<long> a{0}; std::atomic<long> b{0}; };  // sizeof = 16B
-// B. No false sharing: each alignas(64) owns its own cacheline
+// B. 无伪共享:每个 alignas(64) 独占 cacheline
 struct alignas(64) PaddedCounter { std::atomic<long> v{0}; };
 struct GoodCounters { PaddedCounter a; PaddedCounter b; };              // sizeof = 128B
 ```
@@ -77,10 +77,10 @@ The two threads each touch only their own counter (`a` and `b`), for the same nu
 That is the killing power of false sharing: **it can drag a program that "looks perfectly parallel" down to nearly single-threaded speed**. The more insidious part: a clean TSan/ASan run won't catch it (it's not a data race and not UB — the logic is correct); only a **performance-oriented profiler** can grab it:
 
 ```bash
-# perf's dedicated false-sharing tool (no perf on this WSL2 machine; command from KDAB/Brendan Gregg):
+# perf 的伪共享专用工具(本机 WSL2 无 perf,命令引自 KDAB/Brendan Gregg):
 perf c2c record -- ./your_app
 perf c2c report
-# Watch the HITM (Hit Modified) counts; wherever they run high is a false-sharing disaster zone
+# 看 HITM(Hit Modified)计数,高的地方就是伪共享重灾区
 ```
 
 ## The fix: alignas(64) gives hot variables their own cacheline

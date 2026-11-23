@@ -10,9 +10,10 @@ description: "The named local p is constructed straight into the sret slot, the 
 reading_time_minutes: 8
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/08-return-value-journey/03-nrvo-copy-elision.md
-  source_hash: 29c8563bf7c7d98d244c420f43d216ab385c10e52d4060d6a13b071c196cb4fa
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: eeb55e2c8a23d1811f92297b149bcbc2053bd13f829489de1d702e06571c328a
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8490
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -24,7 +25,7 @@ current_status:
 The previous two pieces verified the three physical routes and the criteria that decide which route a value takes; what comes next are the C++ language's own rules. The environment is the same one [the first piece](01-rax-family-and-register-pairs.md) used; if you want to rerun anything, follow its setup. Back in topic 01, when we compared i++ with ++i, one strange thing turned up on the postfix increment's return path: the textbook says a return should produce two copies, yet in the assembly we saw a single construction, and its target was the return slot itself. We hung the name NRVO on it at the time and moved on; this piece is where we give it a proper treatment. Here is the source: Point is a type with a copy counter, and make_point returns a local object p, the most typical situation named return value optimization (NRVO) applies to:
 
 ```cpp
-// NRVO's assembly evidence + copy-construction count (the default build and the no-elide build share this source)
+// NRVO 的汇编证据 + 拷贝构造计数(默认版与禁省略版共用这份源码)
 #include <cstdio>
 
 struct Point {
@@ -37,13 +38,13 @@ long Point::copies = 0;
 
 Point make_point(long seed) __attribute__((noinline));
 Point make_point(long seed) {
-    Point p{seed, seed * 2};   // local object
-    return p;                  // named return -> where NRVO applies
+    Point p{seed, seed * 2};   // 局部对象
+    return p;                  // 具名返回 -> NRVO 的用武之地
 }
 
 int main() {
     Point q = make_point(7);
-    volatile long sink = q.x + q.y;   // member reads only, triggers no copy
+    volatile long sink = q.x + q.y;   // 只读成员,不触发拷贝
     std::printf("copies = %ld, q = (%ld, %ld), sink = %ld\n",
                 Point::copies, q.x, q.y, sink);
     return 0;
@@ -59,17 +60,17 @@ _Z10make_pointl:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$16, %rsp
-	movq	%rdi, -8(%rbp)        ; spills the sret pointer
-	movq	%rsi, -16(%rbp)       ; spills seed
+	movq	%rdi, -8(%rbp)        ; 溢出 sret 指针
+	movq	%rsi, -16(%rbp)       ; 溢出 seed
 	movq	-16(%rbp), %rax
 	leaq	(%rax,%rax), %rdx     ; seed*2
 	movq	-16(%rbp), %rcx
 	movq	-8(%rbp), %rax
 	movq	%rcx, %rsi
-	movq	%rax, %rdi            ; this = the sret slot!
-	call	_ZN5PointC1Ell        ; Point::Point(long,long) constructs straight into the slot
+	movq	%rax, %rdi            ; this = sret 槽!
+	call	_ZN5PointC1Ell        ; Point::Point(long,long) 直接构造进槽
 	nop
-	movq	-8(%rbp), %rax        ; return p = hand the slot address back
+	movq	-8(%rbp), %rax        ; return p = 把槽地址还回去
 	leave
 	ret
 ```
@@ -81,7 +82,7 @@ Here is the call and the receiving segment on main's side as well:
 	movl	$7, %esi
 	movq	%rax, %rdi
 	call	_Z10make_pointl
-	movq	-32(%rbp), %rdx       ; reads q directly
+	movq	-32(%rbp), %rdx       ; 直接读 q
 	movq	-24(%rbp), %rax
 	addq	%rdx, %rax
 ```
@@ -142,19 +143,19 @@ g++ -std=c++14 -O2 -fno-elide-constructors r4_nrvo.cpp -o r5_cpp14_O2_noelide
 The output of the seven runs, verbatim:
 
 ```text
-== c++20 -O0 default  ==          (./r4_nrvo)
+== c++20 -O0 默认     ==          (./r4_nrvo)
 copies = 0, q = (7, 14), sink = 21
-== c++20 -O0 no-elide ==          (./r5_O0_noelide)
+== c++20 -O0 禁省略   ==          (./r5_O0_noelide)
 copies = 1, q = (7, 14), sink = 21
-== c++20 -O2 default  ==          (./r5_O2_default)
+== c++20 -O2 默认     ==          (./r5_O2_default)
 copies = 0, q = (7, 14), sink = 21
-== c++20 -O2 no-elide ==          (./r5_O2_noelide)
+== c++20 -O2 禁省略   ==          (./r5_O2_noelide)
 copies = 1, q = (7, 14), sink = 21
-== c++14 -O0 default  ==          (./r5_cpp14_O0_default)
+== c++14 -O0 默认     ==          (./r5_cpp14_O0_default)
 copies = 0, q = (7, 14), sink = 21
-== c++14 -O0 no-elide ==          (./r5_cpp14_O0_noelide)
+== c++14 -O0 禁省略   ==          (./r5_cpp14_O0_noelide)
 copies = 2, q = (7, 14), sink = 21
-== c++14 -O2 no-elide ==          (./r5_cpp14_O2_noelide)
+== c++14 -O2 禁省略   ==          (./r5_cpp14_O2_noelide)
 copies = 2, q = (7, 14), sink = 21
 ```
 
@@ -172,20 +173,20 @@ _Z10make_pointl:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$48, %rsp
-	movq	%rdi, -40(%rbp)       ; sret pointer
+	movq	%rdi, -40(%rbp)       ; sret 指针
 	movq	%rsi, -48(%rbp)       ; seed
 	movq	-48(%rbp), %rax
 	leaq	(%rax,%rax), %rdx
 	movq	-48(%rbp), %rcx
-	leaq	-32(%rbp), %rax       ; p now has a slot of its own (-32 in this frame)
+	leaq	-32(%rbp), %rax       ; p 现在有自己的槽(本帧 -32)
 	movq	%rcx, %rsi
 	movq	%rax, %rdi
-	call	_ZN5PointC1Ell        ; construct the local p in this frame first
+	call	_ZN5PointC1Ell        ; 先构造进本帧局部 p
 	leaq	-32(%rbp), %rdx
 	movq	-40(%rbp), %rax
 	movq	%rdx, %rsi
 	movq	%rax, %rdi
-	call	_ZN5PointC1ERKS_      ; then copy p -> the sret slot (this is that 1 copy)
+	call	_ZN5PointC1ERKS_      ; 再拷贝 p -> sret 槽(这就是那 1 次)
 	movq	-40(%rbp), %rax
 	leave
 	ret

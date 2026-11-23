@@ -22,9 +22,9 @@ video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/03-compiler-explorer-and-ai-assisted.md
   source_hash: 9cc96901e133c073a1f098e54439c4fc9d6b9fa74d3a11add4511e894206c08b
-  translated_at: '2026-09-26T15:33:34+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19812
 ---
 # Reading Assembly with Compiler Explorer: From "Gibberish" to "Getting It"
 
@@ -49,7 +49,7 @@ int square(int x) {
 Drop this code into godbolt. If you are just starting to learn reading assembly, check Directives, Labels, and Comments in the Filter options—that way you get more complete information. Under `-O0` you will see output like this:
 
 ```asm
-// GCC 16.1.1, -O0 -std=c++20 (AT&T syntax)
+// GCC 16.1.1, -O0 -std=c++20 (AT&T 语法)
 square(int):
         pushq   %rbp
         movq    %rsp, %rbp
@@ -118,7 +118,7 @@ Here's a simple piece of test code:
 
 bool check_length(std::string_view sv) {
     if (sv.size() == 16) {
-        // do something more complicated
+        // 做一些更复杂的事情
         return true;
     }
     return false;
@@ -136,8 +136,8 @@ The corresponding assembly output (GCC 16.1.1, `-O1 -std=c++20`, with `.cfi_*` d
 ```asm
 // GCC 16.1.1, -O1 -std=c++20
 check_length(std::string_view):
-    cmpq    $16, %rdi          ; compare size (in RDI) against 16
-    sete    %al                ; AL=1 if equal, AL=0 otherwise
+    cmpq    $16, %rdi          ; 比较 size（在 RDI 中）是否等于 16
+    sete    %al                ; 相等则 AL=1，否则 AL=0
     ret
 ```
 
@@ -165,8 +165,8 @@ The experiment uses Compiler Explorer (godbolt.org), GCC 16.1.1 as the compiler,
 #include <string>
 
 int find_non_hex(const std::string& s) {
-    // Find the first position that is not a hexadecimal character
-    // If all characters are valid hexadecimal, returns std::string::npos
+    // 找第一个不是十六进制字符的位置
+    // 如果全是合法十六进制字符，返回 std::string::npos
     return static_cast<int>(s.find_first_not_of("0123456789ABCDEF"));
 }
 ```
@@ -324,9 +324,9 @@ The core idea: to determine whether an ASCII character belongs to some valid cha
 #include <cstdint>
 #include <cstdio>
 
-// Build the lookup table by hand: only the bits for '0'-'9' are set
-// '0' has ASCII value 48, and '9' is 57
-// so we fill bits 48 through 57 with 1 and leave the rest 0
+// 手工构造一个查找表：只有 '0'-'9' 对应的位被置1
+// '0' 的 ASCII 值是 48，'9' 是 57
+// 所以我们在 bit 48 到 bit 57 这一段填 1，其余填 0
 constexpr uint64_t make_digit_table() {
     uint64_t table = 0;
     for (int i = '0'; i <= '9'; ++i) {
@@ -337,24 +337,24 @@ constexpr uint64_t make_digit_table() {
 
 constexpr uint64_t kDigitTable = make_digit_table();
 
-// Test whether a character is a digit: use the character value as the shift amount and check whether the bit is 1
+// 判断字符是否为数字：把字符值作为位移，看对应位是否为1
 bool is_digit_bitlookup(char c) {
-    // Note that c is a char, which may be signed — convert to unsigned first
+    // 注意 c 是 char，可能是有符号的，先转成 unsigned
     unsigned char uc = static_cast<unsigned char>(c);
-    // A shift amount >= 64 is undefined behavior (C++ standard [expr.shift])
-    // x86 hardware masks the shift count to 6 bits, so uc=112('p') actually shifts by 48
-    // landing exactly on bit 48 ('0') — a false positive: 'p'~'y' misjudged as digits
+    // 位移量 >= 64 是未定义行为（C++ 标准 [expr.shift]）
+    // x86 硬件会将移位量掩码为 6 位，导致 uc=112('p') 实际移位 48
+    // 恰好命中 bit 48（'0'），产生假阳性：'p'~'y' 被误判为数字
     if (uc >= 64) return false;
     return (kDigitTable >> uc) & 1;
 }
 
-// The traditional way to write it, for comparison
+// 传统写法，作为对照
 bool is_digit_naive(char c) {
     return c >= '0' && c <= '9';
 }
 
 int main() {
-    // Test all printable ASCII characters
+    // 测试所有可打印 ASCII 字符
     bool all_match = true;
     for (int i = 32; i < 127; ++i) {
         char c = static_cast<char>(i);
@@ -368,7 +368,7 @@ int main() {
         printf("All printable ASCII chars match!\n");
     }
 
-    // Test a few edge cases as well
+    // 再测几个边界情况
     printf("'5' is digit: %d\n", is_digit_bitlookup('5'));
     printf("'a' is digit: %d\n", is_digit_bitlookup('a'));
     printf("NUL is digit: %d\n", is_digit_bitlookup('\0'));

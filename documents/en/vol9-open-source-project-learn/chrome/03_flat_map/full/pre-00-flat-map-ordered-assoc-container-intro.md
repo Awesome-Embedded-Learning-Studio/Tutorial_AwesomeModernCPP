@@ -25,9 +25,9 @@ title: "flat_map prerequisite (0): ordered associative containers and std::map's
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-00-flat-map-ordered-assoc-container-intro.md
   source_hash: 242e32fde7eb5461223b35335366ca3a824b60988184434b28a5ba02322b7375
-  translated_at: '2026-09-26T02:46:39+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4832
 ---
 # flat_map prerequisite (0): ordered associative containers and std::map's red-black tree
 
@@ -47,11 +47,11 @@ Under the hood, `std::map` in all three major implementations (libstdc++, libc++
 
 ```text
 struct Node {
-    color      color_;       // 1 byte (red/black, for balancing)
-    Node*      left_;        // 8 bytes
-    Node*      right_;       // 8 bytes
-    Node*      parent_;      // 8 bytes
-    pair<K,V>  data_;        // your key + value
+    color      color_;       // 1 字节(红/黑,平衡用)
+    Node*      left_;        // 8 字节
+    Node*      right_;       // 8 字节
+    Node*      parent_;      // 8 字节
+    pair<K,V>  data_;        // 你的 key + value
 };
 ```
 
@@ -79,8 +79,8 @@ flat_map's core idea fits in one sentence: don't use a tree — use one contiguo
 
 ```text
 flat_map<int,std::string>:
-  data_:  [ (1,"a") | (3,"c") | (7,"g") | (9,"i") | ... ]   ← one contiguous sorted vector
-                    lookup via std::lower_bound (binary search, O(log n))
+  data_:  [ (1,"a") | (3,"c") | (7,"g") | (9,"i") | ... ]   ← 一段连续的有序 vector
+                    查找用 std::lower_bound(二分,O(log n))
 ```
 
 Lookup runs through `std::lower_bound`, a binary search over the sorted array, `O(log n)` — the same asymptotics as std::map, but far more cache-friendly because the data is contiguous. The price sits with insert and erase: wedge one into the middle and the whole tail has to shift back one slot, `O(n)`; that's against std::map's `O(log n)` insert. On the storage side there is just one vector, 0 extra node metadata, one contiguous allocation. That is the entire skeleton of flat_map, and it puts the classic "red-black tree vs sorted array" trade-off on the table exactly as it is: the tree trades spatial locality for `O(log n)` insert; the array trades insert complexity for spatial locality.

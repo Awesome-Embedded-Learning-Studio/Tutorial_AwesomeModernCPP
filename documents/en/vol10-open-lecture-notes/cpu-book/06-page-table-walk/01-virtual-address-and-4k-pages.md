@@ -10,9 +10,10 @@ description: "Starts from the same variable printing a different address on ever
 reading_time_minutes: 7
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/06-page-table-walk/01-virtual-address-and-4k-pages.md
-  source_hash: 2943df62607b2c69c2de2c90510ad548454fa818a4a480256ff6e4a695e7e7d9
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 48cf04c68cd6a11502db446c73b885a8c6d60110e797af25a0a48fb6459908d8
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 7196
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -62,7 +63,7 @@ $ grep -i 'address sizes' /proc/cpuinfo | sort | uniq -c
 ```
 
 ```text
-$ grep -o 'la57' /proc/cpuinfo | sort -u      # (no output)
+$ grep -o 'la57' /proc/cpuinfo | sort -u      # 输出为空
 $ grep -m1 'model name' /proc/cpuinfo
 model name	: AMD Ryzen 7 9700X 8-Core Processor
 ```
@@ -74,7 +75,7 @@ Let's translate them into plain words. `randomize_va_space` is 2, so address ran
 Let's start from the most familiar line of code there is: print the address of a local variable. The program also prints what malloc returned and the address of main itself, so the three addresses stand in for the stack, the heap, and the code segment:
 
 ```cpp
-// f1_aslr.cpp -- print the addresses of a stack local, malloc, and the code segment, to watch ASLR
+// f1_aslr.cpp —— 打印栈变量、malloc 与代码段的地址，观察 ASLR
 #include <cstdio>
 #include <cstdlib>
 
@@ -123,12 +124,12 @@ Six runs, and all three addresses changed every time. Each kind of address has i
 This mechanism of shifting addresses at random is called ASLR (address space layout randomization), and it exists for security's sake: if an attacker could know the exact addresses of the stack, the heap, and the code ahead of time, plenty of attack techniques could aim straight at fixed targets. When the addresses move on every run, a plan aimed at fixed addresses finds nothing to aim at. Here is the control group to prove it: this time randomization is turned off with `setarch -R`, six runs in a row:
 
 ```text
-$ setarch $(uname -m) -R ./f1_aslr   (x6, the output is identical every time)
+$ setarch $(uname -m) -R ./f1_aslr   (x6，每次输出一字不差)
 stack local : 0x7fffffffd0dc
 malloc      : 0x55555556b020
 code (main) : 0x555555555169
 ---
-(the next 5 runs match the above, word for word)
+(下 5 次同上，逐字相同)
 ---
 ```
 
@@ -148,7 +149,7 @@ $ getconf PAGESIZE
 The page is 4096 bytes, the 4 KiB we already know, which is 2 to the 12th power. Twelve low bits are exactly enough to enumerate any offset within a page, so the low 12 bits of a virtual address are the offset within the page. One observation backs this up: the kernel hands out addresses a whole page at a time, so the start of any new mapping has to be page-aligned, and the low 12 bits we see have to be all zeros. Let's write a program that mmaps eight times in a row, returning each page the moment it is done with it, and look at the addresses it gets back:
 
 ```cpp
-// f2_pagesize.cpp -- the page size and the 12-bit alignment of the addresses mmap returns
+// f2_pagesize.cpp —— 页大小与 mmap 返回地址的低 12 位对齐性
 #include <cstdio>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -184,11 +185,11 @@ mmap #7 -> 0x7ab12c6d8000   low 12 bits = 0x000   page-aligned: yes
 === run 2 ===
 sysconf(_SC_PAGESIZE) = 4096
 mmap #0 -> 0x77251c360000   low 12 bits = 0x000   page-aligned: yes
-(run 2's #1..#7 match #0, all 0x77251c360000, low 12 bits = 0x000)
+(run 2 的 #1..#7 与 #0 相同，均为 0x77251c360000，low 12 bits = 0x000)
 === run 3 ===
 sysconf(_SC_PAGESIZE) = 4096
 mmap #0 -> 0x7586296f9000   low 12 bits = 0x000   page-aligned: yes
-(run 3's #1..#7 match #0, all 0x7586296f9000, low 12 bits = 0x000)
+(run 3 的 #1..#7 与 #0 相同，均为 0x7586296f9000，low 12 bits = 0x000)
 ```
 
 Three runs, 24 mappings in total, and all 24 came back with zeros in the low 12 bits. The output also hides two small observations worth a look. Within one process, an address that was just handed back gets handed right out again: eight times we received the same address, because the kernel is reusing the hole that was just freed. And the base differs from run to run, which is ASLR at work again. Take the stack address `0x7fffffffd0dc` from the start of this piece: its low 12 bits are `0x0dc`. During translation the page number gets swapped for a physical page number, and the tail `0x0dc` is appended behind the physical page number exactly as it stands, without one bit being touched. The offset within the page needs no translation, because the layout inside a page is identical on the virtual and the physical side.

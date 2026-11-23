@@ -10,9 +10,10 @@ description: "Types go from 1 to 8 and text grows from 263 to 1108 bytes. Explic
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/11-template-instantiation/02-size-explicit-and-class-templates.md
-  source_hash: a332751c953ee8b905b0a43ab35d53f2e10efd35385eb7c80e839ed286cb07a7
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 8272595bfd83c91d8e24091026ba37d9c4603bc12c31e1bf9c5e61c58f681fda
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 10527
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,7 +29,7 @@ The environment, the tools, and how to read the listings are all the same as in 
 Copies are made per type, and every type gets its own piece of machine code, so as the types pile up the object file should grow piece by piece. We instantiated the same template for 1, 2, 4, and 8 types and measured the real numbers with `size`. The differences between the four variants are purely mechanical: the template part is word-for-word identical, and `main` holds variables and calls laid out in type order, with the variant numbered n stopping at the nth type. The types come in the order int, double, char, long, followed by float, short, unsigned, and finally long long. Here is the two-type version in full:
 
 ```cpp
-// m5_2.cpp -- the same template, instantiated for two types
+// m5_2.cpp —— 同一模板，实例化两个类型
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
@@ -46,7 +47,7 @@ int main() {
 The four-type and eight-type versions keep walking down the same list in the same order, adding variables and calls until all eight types are in. Here is the eight-type version in full:
 
 ```cpp
-// m5_8.cpp -- the same template, instantiated for eight types
+// m5_8.cpp —— 同一模板，实例化八个类型
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
@@ -121,27 +122,27 @@ One condition planted back in the environment section of the previous piece has 
 For when copying switches on and when it stops, C++ provides two manual switches. We set up two translation units, one carrying the explicit instantiation definition, one carrying the `extern template` declaration:
 
 ```cpp
-// m6_def.cpp -- the TU holding the explicit instantiation definition: max<int>'s machine code is generated here
+// m6_def.cpp —— 显式实例化定义所在 TU:max<int> 的机器码在这里生成
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
 }
 
-template int max<int>(int&, int&);   // explicit instantiation definition
+template int max<int>(int&, int&);   // 显式实例化定义
 ```
 
 ```cpp
-// m6_use.cpp -- the TU declaring extern template: nothing generated locally, the instance comes from elsewhere
+// m6_use.cpp —— 声明 extern template 的 TU:不在本地生成,用别处的实例
 template <typename T>
 T max(T& a, T& b) {
     return a < b ? b : a;
 }
 
-extern template int max<int>(int&, int&);   // explicit instantiation declaration
+extern template int max<int>(int&, int&);   // 显式实例化声明
 
 int main() {
     int x = 1, y = 2;
-    return max(x, y);   // the template definition is here and the call is here, but extern template suppresses local instantiation
+    return max(x, y);   // 有模板定义、也有调用,但 extern template 压住了本地实例化
 }
 ```
 
@@ -174,19 +175,19 @@ The manual switches earn their keep in compile time: the practice in large proje
 Copying a class template raises one question beyond function templates: a class comes with a pile of member functions, so does instantiation produce the whole class at once, or only whichever member gets used? We build a `Box` with two members and call only its `get()` from `main`:
 
 ```cpp
-// m7.cpp -- class template: only one member gets called
+// m7.cpp —— 类模板：只调用一个成员
 template <typename T>
 class Box {
     T v_;
 public:
-    Box(T v) : v_(v) {}          // the constructor
-    T get() const { return v_; } // the member main calls
-    T twice() const { return v_ + v_; }  // the member main never calls
+    Box(T v) : v_(v) {}          // 构造函数
+    T get() const { return v_; } // main 里调用的成员
+    T twice() const { return v_ + v_; }  // main 里一次也不调的成员
 };
 
 int main() {
-    Box<int> b(40);        // needs the type Box<int>
-    return b.get();        // only get() gets called
+    Box<int> b(40);        // 需要 Box<int> 这个类型
+    return b.get();        // 只调用了 get()
 }
 ```
 
@@ -267,21 +268,21 @@ public:
 ```
 
 ```cpp
-// m6c_def.cpp -- explicit instantiation definition of the class template: every member of Widget<int> is generated here
+// m6c_def.cpp —— 类模板的显式实例化定义:Widget<int> 的全部成员在这里生成
 #include "m6c.hpp"
 
-template class Widget<int>;   // explicitly instantiate the whole class
+template class Widget<int>;   // 显式实例化整个类
 ```
 
 ```cpp
-// m6c_use.cpp -- the TU with the extern template declaration: no members of Widget<int> generated locally
+// m6c_use.cpp —— extern template 声明的 TU:不在本地生成 Widget<int> 的成员
 #include "m6c.hpp"
 
-extern template class Widget<int>;   // explicit instantiation declaration (the whole class)
+extern template class Widget<int>;   // 显式实例化声明(整个类)
 
 int main() {
     Widget<int> w(21);
-    return w.value();   // an ordinary call, but no machine code generated locally
+    return w.value();   // 正常调用,但本地不生成机器码
 }
 ```
 

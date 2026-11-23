@@ -24,9 +24,9 @@ title: "if constexpr: Compile-Time Branching"
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/01-if-constexpr.md
   source_hash: 376f3302907c3e0024c41f600561e371ea3e4e5c535bfaff9c10389eeaf7beaa
-  translated_at: '2026-09-26T03:11:05+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6973
 ---
 # if constexpr: Compile-Time Branching
 
@@ -42,9 +42,9 @@ Let's start with a minimal example. I want to write a `double_it`: pass in an in
 template <typename T>
 auto double_it(T x) {
     if (std::is_integral_v<T>) {
-        return x + x;          // integers: addition
+        return x + x;          // 整数:加法
     } else {
-        return x + " world";   // strings: concatenation
+        return x + " world";   // 字符串:拼接
     }
 }
 ```
@@ -69,9 +69,9 @@ Swap the `if` for `if constexpr`, and the very same code compiles:
 template <typename T>
 auto double_it(T x) {
     if constexpr (std::is_integral_v<T>) {
-        return x + x;          // integers take addition, returns int
+        return x + x;          // 整数走加法,返回 int
     } else {
-        return x + " world";   // other types take concatenation, returns string
+        return x + " world";   // 别的类型走拼接,返回 string
     }
 }
 ```
@@ -98,7 +98,7 @@ The condition of `if constexpr` must be a constant expression. If you feed it a 
 
 ```cpp
 int main(int argc, char**) {
-    if constexpr (argc > 1) {   // argc is a runtime argument, not a constant expression
+    if constexpr (argc > 1) {   // argc 是运行时参数,不是常量表达式
         return 0;
     }
     return 1;
@@ -118,10 +118,10 @@ void inspect(T& x) {
     if constexpr (std::is_integral_v<T>) {
         std::cout << "整数:" << x << ",翻倍:" << (x + x) << "\n";
     } else if constexpr (std::is_same_v<T, std::string>) {
-        std::cout << "字符串长度:" << x.size() << "\n";   // only string has size
+        std::cout << "字符串长度:" << x.size() << "\n";   // 只有 string 才有 size
         x.append("!");
     } else {
-        x.foo();   // only types that land in the else branch need foo
+        x.foo();   // 只有走 else 分支的类型才需要 foo
     }
 }
 ```
@@ -154,7 +154,7 @@ Let's look at a contrast. In the following snippet, the condition `sizeof(T) > 1
 template <typename T>
 void f() {
     if constexpr (sizeof(T) > 100) {
-        T x = ;   // illegal syntax: nothing on the right of the equals sign
+        T x = ;   // 语法非法:等号右边什么都没有
     }
 }
 ```
@@ -187,7 +187,7 @@ The first is the form with an init-statement, same as on a plain `if`, available
 template <typename T>
 void first_kind(const T& container) {
     if constexpr (auto v = *container.begin(); std::is_integral_v<decltype(v)>) {
-        std::cout << "装的是整数,第一个:" << v << "\n";   // v is visible here
+        std::cout << "装的是整数,第一个:" << v << "\n";   // v 在这里可见
     } else {
         std::cout << "装的不是整数\n";
     }

@@ -21,9 +21,9 @@ tags:
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage1/05-shape-in-type.md
   source_hash: 631e5122deb9baaa0b3c44bbf3d0dce229b692b0d240b434f1b0e840057a1d5b
-  translated_at: '2026-09-26T03:56:53+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3148
 ---
 
 # Shape baked into the type — why dimensions are template parameters
@@ -54,7 +54,7 @@ Our version:
 template <std::size_t Rows, std::size_t Cols, typename StorageType = float>
 class Tensor {
     std::array<StorageType, Rows * Cols> internals_{};
-    // no rows_/cols_ members — they are the template parameters Rows and Cols themselves
+    // rows_/cols_ 不存在,它们就是模板参数 Rows、Cols 本身
 };
 ```
 

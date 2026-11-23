@@ -31,9 +31,9 @@ title: 'Template Specialization and Partial Specialization: The Art of Pattern M
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/04-specialization-partial.md
   source_hash: f17650b53679f4c070eaa8f9c9d52d02e8053af5f351ea28961d98a61ac2aeaa
-  translated_at: '2026-09-26T03:58:54+00:00'
-  engine: anthropic
-  token_count: 2100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6876
 ---
 # Template Specialization and Partial Specialization: The Art of Pattern Matching
 
@@ -44,16 +44,16 @@ The most powerful thing about templates is not "write one recipe that fits every
 Full specialization provides a dedicated implementation for one **fully determined** type. The syntax opens with `template<>`, and every template parameter is pinned down.
 
 ```cpp
-// primary template
+// 主模板
 template <typename T>
 struct TypeSize {
     static constexpr std::size_t value = sizeof(T);
 };
 
-// full specialization: a separate copy just for int
+// 全特化:针对 int 单独写一份
 template <>
 struct TypeSize<int> {
-    static constexpr std::size_t value = 4;   // assume a 32-bit platform where int is 4 bytes
+    static constexpr std::size_t value = 4;   // 假设 32 位平台 int 是 4 字节
 };
 ```
 
@@ -66,19 +66,19 @@ Two properties of full specialization are worth committing to memory. First, a f
 Partial specialization targets not a single concrete type but **a family of type patterns**. The most common patterns are "pointer types" and "reference types." The syntax opens with `template <typename T>` (note that this is still a template — there is still an unbound `T`), and the class name is then followed by a patterned argument such as `<T*>`.
 
 ```cpp
-// primary template
+// 主模板
 template <typename T>
 struct TypeKind {
     static const char* name() { return "generic (primary)"; }
 };
 
-// partial specialization: pointer types
+// 偏特化:指针类型
 template <typename T>
 struct TypeKind<T*> {
     static const char* name() { return "pointer (partial)"; }
 };
 
-// partial specialization: lvalue reference types
+// 偏特化:左值引用类型
 template <typename T>
 struct TypeKind<T&> {
     static const char* name() { return "lvalue reference (partial)"; }
@@ -114,7 +114,7 @@ double&     : lvalue reference (partial)
 The `int*` case we parked above deserves its own look. `int*` matches both the `T*` partial specialization (with `T=int`) and the following full specialization:
 
 ```cpp
-// full specialization: specifically for int*
+// 全特化:专门针对 int*
 template <>
 struct TypeKind<int*> {
     static const char* name() { return "int* (full, wins over partial)"; }
@@ -143,12 +143,12 @@ Combine these, and partial specialization can recognize almost any "type shape."
 The most famous partial specialization in the standard library is `std::vector<bool>`. It is not the ordinary version that falls out of instantiating `std::vector<T>` with `T=bool`; it is a partial specialization the library writes on purpose. The goal is to make one `bool` occupy a single bit instead of a full byte, to save memory.
 
 ```cpp
-// roughly what the standard library does inside (simplified sketch)
+// 标准库内部大致是这个意思(简化示意)
 template <typename T, typename Alloc = std::allocator<T>>
-class vector { /* ordinary implementation: one T per slot of storage */ };
+class vector { /* 普通实现,一个 T 一份存储 */ };
 
 template <typename Alloc>
-class vector<bool, Alloc> { /* partial specialization: bit packing, one bool per bit */ };
+class vector<bool, Alloc> { /* 偏特化:位压缩,一个 bool 一个 bit */ };
 ```
 
 The `vector<bool>` partial specialization has a side effect you can see with the naked eye: its `operator[]` does not return `bool&` but a **proxy object** named `std::vector<bool>::reference`. The reason: after bit packing you cannot return "a reference to one bit" (the smallest addressable unit of memory is a byte), so all it can do is return a temporary object that simulates the behavior of `bool&`. Run it and the difference is plain to see:
@@ -160,10 +160,10 @@ The `vector<bool>` partial specialization has a side effect you can see with the
 
 int main() {
     std::cout << std::boolalpha;
-    // vector<bool>'s reference is a proxy class, not bool&
+    // vector<bool> 的 reference 是代理类,不是 bool&
     std::cout << "vector<bool>::reference is bool&?   "
               << std::is_same_v<std::vector<bool>::reference, bool&> << "\n";
-    // an ordinary vector's reference is just a reference to the element
+    // 普通 vector 的 reference 就是元素引用
     std::cout << "vector<char>::reference is char&?  "
               << std::is_same_v<std::vector<char>::reference, char&> << "\n";
 }
@@ -182,13 +182,13 @@ This proxy `reference` has stirred up no small controversy for `vector<bool>`. I
 Under the hood, the queries in `<type_traits>` — `std::is_pointer`, `std::is_const`, `std::is_reference` — all run on the same playbook: "primary template answers false + a partial specialization that hits the pattern answers true." Hand-write an `is_pointer` ourselves and the trick is exposed:
 
 ```cpp
-// primary template: not a pointer by default
+// 主模板:默认不是指针
 template <typename T>
 struct is_pointer {
     static constexpr bool value = false;
 };
 
-// partial specialization: only pointer types hit this
+// 偏特化:指针类型才命中
 template <typename T>
 struct is_pointer<T*> {
     static constexpr bool value = true;

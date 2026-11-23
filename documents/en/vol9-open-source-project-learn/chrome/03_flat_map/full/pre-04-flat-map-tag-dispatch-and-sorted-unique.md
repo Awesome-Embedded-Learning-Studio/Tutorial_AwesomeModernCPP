@@ -24,9 +24,9 @@ title: "flat_map prerequisite (IV): tag dispatch and sorted_unique_t"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-04-flat-map-tag-dispatch-and-sorted-unique.md
   source_hash: dd2ae3ef75a16e2b774619767d20dcad564f03eec9260f38d6b92be963be2f54
-  translated_at: '2026-09-26T02:54:55+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5997
 ---
 # flat_map prerequisite (IV): tag dispatch and sorted_unique_t
 
@@ -41,8 +41,8 @@ flat_map's ordinary constructors — whether you pass a vector, an initializer_l
 But in real projects, "the data is already sorted" scenarios are everywhere. A config copied over from another ordered container; a point cloud already sorted by id by the upstream pipeline; a test fixture that is a hand-written sorted list. Forcing an `O(N log N)` sort in those cases is pure CPU burn:
 
 ```cpp
-std::vector<std::pair<int, Config>> raw = load_config();  // known to be sorted
-flat_map<int, Config> m(raw.begin(), raw.end());           // still sorts again!
+std::vector<std::pair<int, Config>> raw = load_config();  // 已知有序
+flat_map<int, Config> m(raw.begin(), raw.end());           // 还是会再排一次!
 ```
 
 `raw` is already sorted, yet flat_map still spends `O(N log N)` sorting it one more time. With a small dataset you won't care; once you get to the million-element scale, that logarithmic factor genuinely hurts.
@@ -70,8 +70,8 @@ inline constexpr sorted_unique_t sorted_unique;
 An empty struct (keeping only the default constructor), plus a `constexpr` instance `sorted_unique`. When constructing a flat_map, stuff `sorted_unique` in as the first argument, and overload resolution routes you to the constructor that "skips the sort":
 
 ```cpp
-std::vector<std::pair<int, Config>> raw = load_config();  // known to be sorted
-flat_map<int, Config> m(sorted_unique, raw.begin(), raw.end());  // skips the sort!
+std::vector<std::pair<int, Config>> raw = load_config();  // 已知有序
+flat_map<int, Config> m(sorted_unique, raw.begin(), raw.end());  // 跳过 sort!
 ```
 
 The first argument is the tag; the data comes after. The tag carries no payload — its entire reason for existing is to let the compiler say "ah, take the no-sorting path" during overload resolution.
@@ -83,16 +83,16 @@ The first argument is the tag; the data comes after. The tag carries no payload 
 flat_tree ships five constructor overloads for sorted_unique (flat_tree.h:606-646), one for each input shape: an InputIterator range, `from_range_t`, `const container_type&`, `container_type&&`, and `initializer_list`. They differ from the ordinary constructors by a single line: they don't call `sort_and_unique`.
 
 ```cpp
-// Ordinary constructor (around flat_tree.h:567): sort and de-duplicate
+// 普通构造(flat_tree.h:567 附近):排序去重
 flat_tree(InputIterator first, InputIterator last, ...) {
     insert(first, last);
-    sort_and_unique();   // the expensive sort
+    sort_and_unique();   // 花钱的排序
 }
 
-// sorted_unique constructor (around flat_tree.h:606): skip the sort
+// sorted_unique 构造(flat_tree.h:606 附近):跳过排序
 flat_tree(sorted_unique_t, InputIterator first, InputIterator last, ...) {
     insert(first, last);
-    DCHECK(is_sorted_and_unique(...));   // debug-only check, no sorting
+    DCHECK(is_sorted_and_unique(...));   // 只 debug 校验,不排序
 }
 ```
 
@@ -137,25 +137,25 @@ Let's build a minimal version of tag dispatch ourselves and get a hands-on feel 
 #include <iostream>
 #include <vector>
 
-struct sorted_unique_t {};                       // empty tag type
-inline constexpr sorted_unique_t sorted_unique{}; // constant instance
+struct sorted_unique_t {};                       // 空 tag 类型
+inline constexpr sorted_unique_t sorted_unique{}; // 常量实例
 
 class MiniMap {
 public:
-    // Ordinary constructor: assume unsorted data, sort internally
+    // 普通构造:假设数据无序,内部排序
     MiniMap(std::vector<int> data) : data_(std::move(data)) {
         std::sort(data_.begin(), data_.end());
         std::cout << "  [普通构造] 排序了\n";
     }
-    // sorted_unique constructor: trust the caller, skip the sort (an assert check can be added in debug)
+    // sorted_unique 构造:信任调用方,跳过排序(debug 下可加 assert 校验)
     MiniMap(sorted_unique_t, std::vector<int> data) : data_(std::move(data)) {
-        assert(is_sorted_unique());   // debug check
+        assert(is_sorted_unique());   // debug 校验
         std::cout << "  [sorted_unique 构造] 跳过排序\n";
     }
 private:
     bool is_sorted_unique() const {
         for (size_t i = 1; i < data_.size(); ++i)
-            if (!(data_[i - 1] < data_[i])) return false;   // must be strictly ascending
+            if (!(data_[i - 1] < data_[i])) return false;   // 必须严格升序
         return true;
     }
     std::vector<int> data_;
@@ -163,10 +163,10 @@ private:
 
 int main() {
     std::vector<int> a = {3, 1, 2};
-    MiniMap m1(a);                                   // ordinary constructor, sorts
+    MiniMap m1(a);                                   // 普通构造,会排序
 
-    std::vector<int> b = {1, 2, 3};                  // already sorted
-    MiniMap m2(sorted_unique, b);                    // skips the sort
+    std::vector<int> b = {1, 2, 3};                  // 已有序
+    MiniMap m2(sorted_unique, b);                    // 跳过排序
     return 0;
 }
 ```

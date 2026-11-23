@@ -23,9 +23,9 @@ title: 'scope_guard and defer: A General-Purpose Scope Guard'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/07-scope-guard.md
   source_hash: 44bf6ef73bdb875657166d758e6e712a2ab48fed5a3d1e2b1ec048e499b083a9
-  translated_at: '2026-09-27T04:51:06+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11948
 ---
 # scope_guard and defer: A General-Purpose Scope Guard
 
@@ -38,24 +38,24 @@ The scope_guard is the general-purpose tool built for exactly this family of nee
 Let's start with a real-world scenario: suppose you are writing a configuration-update function that temporarily switches the system's running mode and restores the original mode once the operation completes. If the function has a single return point, restoring by hand is fine. But if the function has multiple return paths, or if exceptions can be thrown along the way, manual restoration becomes fragile.
 
 ```cpp
-// Fragile code without a scope_guard
+// 没有 scope_guard 时的脆弱写法
 void update_config(Config& cfg) {
     Mode old_mode = get_current_mode();
-    set_current_mode(kMaintenance);  // Temporarily switch the mode
+    set_current_mode(kMaintenance);  // 临时切换模式
 
     if (!validate(cfg)) {
-        set_current_mode(old_mode);  // Restore point 1
+        set_current_mode(old_mode);  // 恢复点 1
         return;
     }
 
     if (!apply(cfg)) {
-        set_current_mode(old_mode);  // Restore point 2
+        set_current_mode(old_mode);  // 恢复点 2
         return;
     }
 
     notify_observers();
-    set_current_mode(old_mode);  // Restore point 3
-    // But what if notify_observers() throws? Forgot to restore!
+    set_current_mode(old_mode);  // 恢复点 3
+    // 如果 notify_observers() 抛异常呢？忘了恢复！
 }
 ```
 
@@ -68,15 +68,15 @@ void update_config_guarded(Config& cfg) {
     Mode old_mode = get_current_mode();
     set_current_mode(kMaintenance);
 
-    // Restored automatically on scope exit—no matter how we exit
+    // 作用域退出时自动恢复——不管怎么退出
     auto restore_mode = make_scope_guard([&]() noexcept {
         set_current_mode(old_mode);
     });
 
-    if (!validate(cfg)) return;  // Restored automatically
-    if (!apply(cfg)) return;     // Restored automatically
-    notify_observers();          // Restored automatically even if this throws
-}  // Restored automatically on normal exit too
+    if (!validate(cfg)) return;  // 自动恢复
+    if (!apply(cfg)) return;     // 自动恢复
+    notify_observers();          // 即使抛异常也自动恢复
+}  // 正常退出也自动恢复
 ```
 
 `restore_mode` is a RAII object—its destructor invokes that lambda when the scope exits. Whether you `return`, an exception propagates, or the function simply runs to the end, the restore action gets executed. You write the restore code exactly once, and never again worry about missing a spot.
@@ -114,17 +114,17 @@ public:
             try {
                 func_();
             } catch (...) {
-                // An exception must never be allowed to escape a destructor
-                // otherwise it would cause std::terminate during stack unwinding
+                // 析构函数中绝不能让异常逃逸
+                // 否则在栈展开过程中会导致 std::terminate
                 std::terminate();
             }
         }
     }
 
-    // Dismiss the guard: no cleanup needed after success
+    // 取消守卫：成功后不需要执行清理
     void dismiss() noexcept { active_ = false; }
 
-    // Copying is forbidden
+    // 禁止拷贝
     ScopeGuard(const ScopeGuard&) = delete;
     ScopeGuard& operator=(const ScopeGuard&) = delete;
 
@@ -150,17 +150,17 @@ The Go language has a `defer` keyword that postpones a function call until the c
 C++ has no language-level `defer`, but macros plus `ScopeGuard` can deliver an experience very close to it:
 
 ```cpp
-// Helper macros: generate a unique variable name automatically
+// 辅助宏：自动生成唯一变量名
 #define SCOPE_GUARD_CONCAT_IMPL(x, y) x##y
 #define SCOPE_GUARD_CONCAT(x, y) SCOPE_GUARD_CONCAT_IMPL(x, y)
 #define SCOPE_GUARD_VAR(counter) SCOPE_GUARD_CONCAT(_scope_guard_, counter)
 
-// __COUNTER__ guarantees a unique variable name every time
-// __COUNTER__ is an extension supported by GCC/Clang/MSVC alike
+// 使用 __COUNTER__ 保证每次生成唯一变量名
+// __COUNTER__ 是 GCC/Clang/MSVC 都支持的扩展
 #define DEFER(code) \
     auto SCOPE_GUARD_VAR(__COUNTER__) = make_scope_guard([&]() noexcept { code; })
 
-// Fallback: if the compiler does not support __COUNTER__, use __LINE__
+// 备选方案：如果编译器不支持 __COUNTER__，用 __LINE__
 #define DEFER_LINE(code) \
     auto SCOPE_GUARD_CONCAT(_scope_guard_, __LINE__) = \
         make_scope_guard([&]() noexcept { code; })
@@ -176,12 +176,12 @@ void process_with_defer() {
     auto* buffer = acquire_buffer();
     DEFER({ release_buffer(buffer); });
 
-    // All cleanup code sits right next to the acquisition code
-    // no need to pile up release calls at the end of the function
+    // 所有清理代码紧跟在获取代码后面
+    // 不需要在函数末尾写一堆 release 调用
     do_processing(region, buffer);
 
-    // On scope exit, buffer is released first (defined later, destroyed first)
-    // then region is released (defined first, destroyed last)
+    // 作用域退出时，buffer 先释放（后定义的先析构）
+    // 然后 region 释放（先定义的后析构）
 }
 ```
 
@@ -277,7 +277,7 @@ The most classic application of `scope_success` and `scope_fail` is transaction 
 #include <type_traits>
 #include <utility>
 
-// make_scope_fail: a helper that leaves deduction to the compiler, no need to hand-write the decltype template argument
+// make_scope_fail：辅助函数，让推导交给编译器，不用手写 decltype 模板参数
 template <typename F>
 ScopeFail<std::decay_t<F>> make_scope_fail(F&& func) noexcept {
     return ScopeFail<std::decay_t<F>>(std::forward<F>(func));
@@ -293,7 +293,7 @@ public:
 void transfer_money(DatabaseTransaction& tx, int from, int to, int amount) {
     tx.begin();
 
-    // Automatic rollback on failure: when an exception propagates, ScopeFail's destructor triggers rollback
+    // 失败时自动回滚：异常传播时 ScopeFail 的析构触发 rollback
     auto on_fail = make_scope_fail([&tx]() noexcept {
         tx.rollback();
     });
@@ -335,17 +335,17 @@ Consider an operation that “first modifies A, then modifies B”. If A's modif
 ```cpp
 void update_both(SubsystemA& a, SubsystemB& b, const Config& cfg) {
     StateA old_a = a.get_state();
-    a.update(cfg);  // May throw
+    a.update(cfg);  // 可能抛异常
 
-    // Set up a rollback guard for A
+    // 为 A 设置回滚守卫
     auto rollback_a = make_scope_guard([&]() noexcept {
-        a.restore(old_a);  // If a later operation fails, roll A back
+        a.restore(old_a);  // 如果后续操作失败，回滚 A
     });
 
     StateB old_b = b.get_state();
-    b.update(cfg);  // If this throws, rollback_a's destructor rolls A back
+    b.update(cfg);  // 如果这里抛异常，rollback_a 的析构会回滚 A
 
-    // B succeeded too, so cancel A's rollback (you could add a guard for B as well if needed)
+    // B 也成功了，取消 A 的回滚（如果需要也可以为 B 加守卫）
     rollback_a.dismiss();
 }
 ```

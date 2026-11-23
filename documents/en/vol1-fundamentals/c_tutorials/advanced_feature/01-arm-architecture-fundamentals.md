@@ -21,9 +21,9 @@ prerequisites:
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/01-arm-architecture-fundamentals.md
   source_hash: 8181c1a641ab20874cc37f35b10564b8fbc00ef4351c867993b8ff4d6ddc456e
-  translated_at: '2026-09-25T13:40:05+00:00'
-  engine: anthropic
-  token_count: 15000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13746
 ---
 # ARM Architecture and System Fundamentals
 
@@ -36,12 +36,12 @@ In this tutorial we take the ARM processor apart from an architectural point of 
 This installment leans theoretical but stays close to real hardware; every code example can be verified under an ARM toolchain.
 
 ```text
-Platform: ARM Cortex-M3/M4 (representative chips: STM32F1/F4 series)
-Toolchain: GCC ARM Embedded (arm-none-eabi-gcc) >= 10.x
-           or STM32CubeIDE / PlatformIO (the same toolchain underneath)
-Standards: -std=c11 (C parts) / -std=c++17 (C++ comparison parts)
-Hardware: no development board needed to follow along; having an STM32F103 or STM32F407 to cross-check is even better
-Reference architecture: ARMv7-M (Cortex-M3/M4), with ARMv7-A (Cortex-A series) comparisons along the way
+平台：ARM Cortex-M3/M4（代表芯片：STM32F1/F4 系列）
+工具链：GCC ARM Embedded（arm-none-eabi-gcc）>= 10.x
+       或 STM32CubeIDE / PlatformIO（底层同一套）
+标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
+硬件：阅读过程不需要开发板，有 STM32F103 或 STM32F407 可对照更佳
+参考架构：ARMv7-M（Cortex-M3/M4），穿插 ARMv7-A（Cortex-A 系列）对比
 ```
 
 ## Step 1 — Figure Out How the Processor Accesses Memory
@@ -89,15 +89,15 @@ The Cortex-M3/M4 use the **Thumb-2 instruction set**, a mixed encoding scheme: 1
 One point deserves special attention: **Cortex-M series processors support only the Thumb instruction set**, not the traditional 32-bit ARM instructions. So all the code you write on a Cortex-M, whether compiled from C or hand-written assembly, must be Thumb-encoded. The compiler defaults to Thumb mode, so most of the time you do not need to worry—but the moment you write inline assembly or a startup file by hand, this is something you must keep in mind, or you will be rewarded with a beautifully crisp Undefined Instruction exception.
 
 ```c
-/// @brief A simple example of a Thumb function
-/// On Cortex-M, all functions use Thumb encoding by default
+/// @brief 一个简单的 Thumb 函数示例
+/// Cortex-M 上所有函数默认使用 Thumb 编码
 int add_values(int a, int b)
 {
     return a + b;
 }
 
-/// @brief Inline assembly example — reading the Main Stack Pointer (MSP) in Thumb mode
-/// Note: in real projects, prefer the CMSIS macro __get_MSP()
+/// @brief 内嵌汇编示例——在 Thumb 模式下读取主栈指针（MSP）
+/// 注意：实际项目中推荐用 CMSIS 的 __get_MSP() 宏
 uint32_t read_msp(void)
 {
     uint32_t msp_value;
@@ -129,20 +129,20 @@ The ARMv7-M architecture defines sixteen 32-bit general-purpose registers, numbe
 **R15 (PC)** is the program counter, pointing at the currently executing instruction. On ARM, reading PC usually yields the current instruction's address plus 4 (a side effect of pipeline prefetch), and writing to PC amounts to performing a jump.
 
 ```c
-/// @brief Demonstrating how the AAPCS calling convention affects register usage
-/// The first 4 arguments are passed in R0-R3; the 5th argument has to go on the stack
+/// @brief 演示 AAPCS 调用约定对寄存器使用的影响
+/// 前 4 个参数通过 R0-R3 传递，第 5 个参数需要压栈
 
 int fast_path(int a, int b, int c, int d)
 {
     // a -> R0, b -> R1, c -> R2, d -> R3
-    // all passed through registers, no stack traffic
+    // 全部通过寄存器传递，无栈操作
     return a + b + c + d;
 }
 
 int slow_path(int a, int b, int c, int d, int e)
 {
     // a -> R0, b -> R1, c -> R2, d -> R3
-    // e -> passed on the stack, one extra memory read
+    // e -> 栈传递，多一次内存读操作
     return a + b + c + d + e;
 }
 ```
@@ -150,19 +150,19 @@ int slow_path(int a, int b, int c, int d, int e)
 Disassemble them with `arm-none-eabi-objdump -d` and compare:
 
 ```text
-; fast_path: everything completes in registers
+; fast_path: 全部在寄存器中完成
 fast_path:
     add   r0, r0, r1    ; a + b -> R0
     add   r0, r0, r2    ; + c
     add   r0, r0, r3    ; + d
-    bx    lr            ; return
+    bx    lr            ; 返回
 
-; slow_path: the 5th argument is read from the stack
+; slow_path: 第 5 个参数从栈上读取
 slow_path:
     add   r0, r0, r1
     add   r0, r0, r2
     add   r0, r0, r3
-    ldr   r3, [sp]      ; read the 5th argument from the stack
+    ldr   r3, [sp]      ; 从栈上读第 5 个参数
     add   r0, r0, r3
     bx    lr
 ```
@@ -182,13 +182,13 @@ The ARM processor's state information is kept in the program status registers. O
 **IPSR (Interrupt PSR)** holds the number of the exception currently being executed. In Thread mode IPSR reads 0; if an interrupt is being serviced, IPSR is that interrupt's number. It is especially useful when debugging HardFaults—read IPSR and you can confirm which exception context you are currently in.
 
 ```c
-/// @brief Understanding C comparisons through the xPSR condition flags
-/// The compiler turns conditional tests into checks of the N/Z/C/V flags
+/// @brief 通过 xPSR 的条件标志理解 C 代码的比较操作
+/// 编译器会将条件判断转换为对 N/Z/C/V 标志的检测
 int max_value(int a, int b)
 {
-    // after compiling: CMP R0, R1, then test the APSR flag bits
+    // 编译后：CMP R0, R1，然后检测 APSR 的标志位
     if (a > b) {
-        return a;  // GT condition: Z=0 and N=C
+        return a;  // GT 条件：Z=0 且 N=C
     }
     return b;
 }
@@ -223,23 +223,23 @@ When an exception occurs, the processor needs to know where the corresponding ha
 On Cortex-M, the vector table starts at address `0x00000000` by default (it can be relocated via the VTOR register). The first entry is not a function pointer but the initial stack pointer (MSP) value—an elegant design: on reset, the processor automatically loads this value into SP, with no extra initialization code needed. From the second entry onward sit the Reset Handler, NMI Handler, HardFault Handler, and so on.
 
 ```c
-/// @brief A sketch of the Cortex-M vector table structure
+/// @brief Cortex-M 向量表结构示意
 typedef void (*ExceptionHandler)(void);
 
-/// @brief Vector table layout (simplified; the real table includes more fault vectors)
+/// @brief 向量表布局（简化版，实际还包括更多 Fault 向量）
 typedef struct {
-    uint32_t         kInitialStackPointer;  // initial MSP value
-    ExceptionHandler reset_handler;         // reset
-    ExceptionHandler nmi_handler;           // non-maskable interrupt
-    ExceptionHandler hardfault_handler;     // hard fault
-    ExceptionHandler memmanage_handler;     // memory management fault
-    ExceptionHandler busfault_handler;      // bus fault
-    ExceptionHandler usagefault_handler;    // usage fault
-    // ... several reserved entries omitted ...
-    ExceptionHandler svcall_handler;        // system service call
-    ExceptionHandler pendsv_handler;        // pendable system service call
-    ExceptionHandler systick_handler;       // system tick timer
-    // external interrupt vectors start here ...
+    uint32_t         kInitialStackPointer;  // 初始 MSP 值
+    ExceptionHandler reset_handler;         // 复位
+    ExceptionHandler nmi_handler;           // 不可屏蔽中断
+    ExceptionHandler hardfault_handler;     // 硬件错误
+    ExceptionHandler memmanage_handler;     // 内存管理错误
+    ExceptionHandler busfault_handler;      // 总线错误
+    ExceptionHandler usagefault_handler;    // 用法错误
+    // ... 省略若干保留项 ...
+    ExceptionHandler svcall_handler;        // 系统服务调用
+    ExceptionHandler pendsv_handler;        // 可挂起的系统调用
+    ExceptionHandler systick_handler;       // 系统滴答定时器
+    // 外部中断向量从此开始 ...
 } VectorTable;
 ```
 
@@ -270,13 +270,13 @@ We mentioned earlier that the AAPCS mandates the first four arguments through R0
 In embedded programming the `volatile` keyword is practically everywhere—every memory-mapped pointer to a hardware register must carry `volatile`. The reason is that compiler optimization assumes memory values do not change "on their own", but a hardware register's value can be modified at any moment by external events (a DMA transfer completing, a peripheral's state changing). `volatile` tells the compiler "really read this address every single time; do not cache the value".
 
 ```c
-/// @brief The canonical memory-mapped register access pattern
-/// volatile guarantees that every access really reads/writes the hardware
+/// @brief 典型的寄存器映射访问模式
+/// volatile 保证每次访问都真正读写硬件
 #define GPIOA_ODR_ADDRESS ((volatile uint32_t*)0x40020014U)
 
 void set_gpio_pin(int pin)
 {
-    // without volatile, the compiler may consider consecutive writes to the same address redundant and optimize them away
+    // 没有 volatile，编译器可能认为连续写同一个地址是冗余操作并优化掉
     *GPIOA_ODR_ADDRESS |= (1U << pin);
 }
 ```
@@ -294,23 +294,23 @@ If you came here from the C++ part of this tutorial, the relationship between th
 ARM processors (especially the Cortex-A series) have multiple levels of cache. Understanding the size and behavior of cache lines (usually 32 or 64 bytes) directly affects C++ data structure design. Packing the fields a hot path touches frequently compactly at the front of the struct and leaving cold data at the back, or controlling alignment with `alignas`, can all significantly improve performance—at the C tutorial stage you only need to build the awareness; later C++ chapters will dig in deep.
 
 ```cpp
-// An unfriendly layout: hot and cold data interleaved
+// 不太友好的布局：热数据和冷数据交替排列
 struct BadSensorData {
-    uint32_t timestamp;   // hot
-    char name[32];        // cold — hogging the cache line
-    float value;          // hot
-    int calibration_id;   // cold
-    float raw_value;      // hot
+    uint32_t timestamp;   // 热
+    char name[32];        // 冷——挤占了缓存行
+    float value;          // 热
+    int calibration_id;   // 冷
+    float raw_value;      // 热
 };
 
-// A friendly layout: hot data concentrated in the first 16 bytes, one cache line and done
+// 友好的布局：热数据集中在前 16 字节，一个缓存行搞定
 struct GoodSensorData {
-    uint32_t timestamp;   // hot
-    float value;          // hot
-    float raw_value;      // hot
-    // --- the cache line boundary is roughly here ---
-    char name[32];        // cold
-    int calibration_id;   // cold
+    uint32_t timestamp;   // 热
+    float value;          // 热
+    float raw_value;      // 热
+    // --- 缓存行边界大概在这里 ---
+    char name[32];        // 冷
+    int calibration_id;   // 冷
 };
 ```
 

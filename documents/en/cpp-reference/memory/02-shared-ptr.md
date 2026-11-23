@@ -17,9 +17,9 @@ title: std::shared_ptr
 translation:
   source: documents/cpp-reference/memory/02-shared-ptr.md
   source_hash: 3252b3a305fa4aa9ed0a548616f96cae11805003b299ed0d20c374ebbcb7fb42
-  translated_at: '2026-09-27T02:13:20+00:00'
-  engine: anthropic
-  token_count: 500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1984
 ---
 <!--
 Reference Card Template
@@ -65,10 +65,10 @@ Multiple smart pointers can jointly own the same object; the object is released 
 struct Foo { Foo() { std::cout << "Foo()\n"; } ~Foo() { std::cout << "~Foo()\n"; } };
 int main() {
     std::shared_ptr<Foo> p1 = std::make_shared<Foo>();
-    std::shared_ptr<Foo> p2 = p1; // reference count becomes 2
+    std::shared_ptr<Foo> p2 = p1; // 引用计数变为 2
     std::cout << "count: " << p1.use_count() << "\n";
     p1.reset(); // count: 1
-    p2.reset(); // destroys Foo
+    p2.reset(); // 析构 Foo
 }
 ```
 

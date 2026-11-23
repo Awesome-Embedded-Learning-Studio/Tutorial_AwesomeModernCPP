@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Destructors and Resource Management
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #238)"
+      en: "Contributed exercise solutions and article revisions (PR #238)"
 translation:
   source: documents/vol1-fundamentals/ch06/03-destructors.md
-  source_hash: 1c3ac65ced06d62ce9c78e45ead54562cf1d66eeb703cfc60c3898d2be12f382
-  translated_at: '2026-09-25T11:04:39+00:00'
-  engine: anthropic
-  token_count: 2500
+  source_hash: 4155004d44dd9f4cb3ecfa2be12b772540b759c7e08e4a9ca30af1f089bb9845
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12686
 ---
 # Destructors: When the Object Leaves, It Takes Its Resources With It
 
@@ -78,7 +89,7 @@ Understanding the call timing is the precondition for using RAII correctly. **St
 void process() {
     FileWriter writer("log.txt", "w");
     writer.write("Processing started\n");
-}   // writer is destroyed here; the file closes automatically
+}   // writer 在这里析构，文件自动关闭
 ```
 
 **Heap objects** are destroyed only by an explicit `delete`, and this is one of the main sources of C++ resource leaks we run into:
@@ -87,7 +98,7 @@ void process() {
 void leaky() {
     FileWriter* writer = new FileWriter("log.txt", "w");
     writer->write("Oops\n");
-    // forgot delete — the destructor never runs, and the file never closes
+    // 忘了 delete —— 析构不调用，文件永远不会关闭
 }
 ```
 
@@ -188,7 +199,7 @@ void heavy_computation() {
     for (int i = 0; i < 1000000; ++i) {
         volatile int x = i * i;
     }
-}  // timer is destroyed here, printing the elapsed time automatically
+}  // timer 在这里析构，自动打印耗时
 ```
 
 We never need to remember to "stop the timer" at the end of the function—the destructor does it for us automatically. Multiple `return` paths, exceptions: on every single path the timer is destroyed correctly. That is the power of RAII: **it makes "no leaks" the default behavior, instead of a "remember to do it" chore kept alive by discipline**.
@@ -208,13 +219,13 @@ class NaiveBuffer {
 public:
     explicit NaiveBuffer(std::size_t n) : size_(n), data_(new int[n]()) {}
     ~NaiveBuffer() { delete[] data_; }
-    // No custom copy operations — the compiler-generated version does a shallow copy
+    // 没有自定义拷贝——编译器生成的版本做浅拷贝
 };
 
 void bug_demo() {
     NaiveBuffer a(10);
-    NaiveBuffer b = a;  // Shallow copy: b.data_ == a.data_
-    // Double free at the end of the scope — undefined behavior!
+    NaiveBuffer b = a;  // 浅拷贝：b.data_ == a.data_
+    // 作用域结束时 double free —— 未定义行为！
 }
 ```
 
@@ -241,7 +252,7 @@ If our class will be inherited from, and users manipulate derived-class objects 
 ```cpp
 class Base {
 public:
-    ~Base() { std::cout << "~Base" << std::endl; }  // Not virtual!
+    ~Base() { std::cout << "~Base" << std::endl; }  // 非 virtual！
 };
 
 class Derived : public Base {
@@ -253,7 +264,7 @@ public:
 
 void leak_demo() {
     Base* ptr = new Derived();
-    delete ptr;  // Only ~Base() runs; ~Derived() is skipped → memory leak
+    delete ptr;  // 只调用 ~Base()，~Derived() 被跳过 → 内存泄漏
 }
 ```
 
@@ -274,13 +285,13 @@ Now let's write a complete program that chains `ScopedTimer` and `FileWriter` to
 
 ```cpp
 // destructor.cpp
-// Build: g++ -std=c++17 -o destructor destructor.cpp
+// 编译：g++ -std=c++17 -o destructor destructor.cpp
 
 #include <chrono>
 #include <cstdio>
 #include <iostream>
 
-/// @brief Scoped timer
+/// @brief 作用域计时器
 class ScopedTimer {
     const char* label_;
     std::chrono::steady_clock::time_point start_;
@@ -299,7 +310,7 @@ public:
     ScopedTimer& operator=(const ScopedTimer&) = delete;
 };
 
-/// @brief A file writer that manages a FILE* automatically
+/// @brief 自动管理 FILE* 的文件写入器
 class FileWriter {
     FILE* handle_;
     const char* path_;
@@ -398,7 +409,7 @@ private:
     std::time_t start_time_;
 
 public:
-    // Constructor: record the start timestamp
+    // 构造：记录开始时间戳
     ScopedLogger()
     {
         start_time_ = std::time(nullptr);
@@ -411,7 +422,7 @@ public:
                   << std::endl;
     }
 
-    // Destructor: print the seconds elapsed from construction to destruction
+    // 析构：打印从构造到析构经过的秒数
     ~ScopedLogger()
     {
         std::cout << "elapsed "
@@ -420,7 +431,7 @@ public:
                   << std::endl;
     }
 
-    // Disallow copying
+    // 禁止拷贝
     ScopedLogger(const ScopedLogger&) = delete;
     ScopedLogger& operator=(const ScopedLogger&) = delete;
 };
@@ -429,7 +440,7 @@ int main()
 {
     ScopedLogger logger;
 
-    // Sleep 2 seconds to simulate a section of timed code
+    // 休眠 2 秒，模拟一段被计时的代码
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     return 0;
@@ -470,13 +481,13 @@ private:
     FILE *handle;
 
 public:
-    // Constructor: open the file
+    // 构造：打开文件
     FileHandle(const char *filename)
     {
         handle = fopen(filename, "r");
     }
 
-    // Destructor: close the file
+    // 析构：关闭文件
     ~FileHandle()
     {
         if (handle != nullptr)
@@ -485,7 +496,7 @@ public:
         }
     }
 
-    // Read one line
+    // 读取一行
     std::string read_line()
     {
         char buffer[256];
@@ -498,13 +509,13 @@ public:
         return {};
     }
 
-    // Check whether the file opened successfully
+    // 判断文件是否打开成功
     bool is_valid() const
     {
         return handle != nullptr;
     }
 
-    // Disallow copying
+    // 禁止拷贝
     FileHandle(const FileHandle &) = delete;
     FileHandle &operator=(const FileHandle &) = delete;
 };
@@ -513,17 +524,17 @@ int main()
 {
     FileHandle file("test.txt");
 
-    // Check whether the file opened successfully
+    // 判断文件是否打开成功
     if (!file.is_valid())
     {
         std::cout << "open file failed" << std::endl;
         return 1;
     }
 
-    // Read the first line
+    // 读取第一行
     std::cout << file.read_line();
 
-    // Read the second line
+    // 读取第二行
     std::cout << file.read_line();
 
     return 0;

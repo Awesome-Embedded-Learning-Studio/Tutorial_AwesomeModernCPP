@@ -21,9 +21,9 @@ title: Memory Alignment and Padding
 translation:
   source: documents/vol1-fundamentals/ch12/03-alignment-padding.md
   source_hash: 3ae8574b6433360f7c56753b5b1d8af21ad85bb31614dd9113544430a461abea
-  translated_at: '2026-09-27T04:15:12+00:00'
-  engine: anthropic
-  token_count: 4400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10930
 ---
 # Memory Alignment and Padding: Where Did the Extra Bytes Go
 
@@ -55,8 +55,8 @@ What does that mean? Simply put: the starting address of each member must be **a
 
 ```cpp
 struct Tiny {
-    char a;   // 1-byte alignment
-    int  b;   // 4-byte alignment
+    char a;   // 1 字节对齐
+    int  b;   // 4 字节对齐
 };
 ```
 
@@ -72,8 +72,8 @@ Members laid out—but we are not done yet! The struct's overall size **must als
 
 ```cpp
 struct Flip {
-    int  b;   // 4-byte alignment
-    char a;   // 1-byte alignment
+    int  b;   // 4 字节对齐
+    char a;   // 1 字节对齐
 };
 ```
 
@@ -91,8 +91,8 @@ Since the struct contains an `int` that must be aligned to 4, the whole struct c
 
 ```cpp
 struct Outer {
-    char tag;  // 1-byte alignment
-    Flip in;   // the Flip from the previous rule: 8 bytes, 4-byte aligned
+    char tag;  // 1 字节对齐
+    Flip in;   // 上一条那个 Flip：8 字节、4 字节对齐
 };
 ```
 
@@ -110,9 +110,9 @@ Here is a classic example—probably the kind you have seen in interview questio
 
 ```cpp
 struct BadLayout {
-    char a;   // 1 byte
-    int  b;   // 4 bytes
-    char c;   // 1 byte
+    char a;   // 1 字节
+    int  b;   // 4 字节
+    char c;   // 1 字节
 };
 ```
 
@@ -130,9 +130,9 @@ Now let's adjust the member order and put the big ones first:
 
 ```cpp
 struct GoodLayout {
-    int  b;   // 4 bytes
-    char a;   // 1 byte
-    char c;   // 1 byte
+    int  b;   // 4 字节
+    char a;   // 1 字节
+    char c;   // 1 字节
 };
 ```
 
@@ -151,12 +151,12 @@ The compiler's default alignment rules are good enough in the vast majority of c
 `alignas`, on the other hand, forcibly specifies alignment. It can be applied to variable declarations and to type definitions:
 
 ```cpp
-// Force a single variable to be 16-byte aligned
+// 强制单个变量按 16 字节对齐
 alignas(16) char buffer[1024];
 
-// Force a struct type to be 64-byte aligned (the size of one cache line)
+// 强制结构体类型按 64 字节对齐（一个缓存行的大小）
 struct alignas(64) CacheLine {
-    int data[14];  // 56 bytes + the compiler pads it up to 64
+    int data[14];  // 56 字节 + 编译器自动补齐到 64
 };
 ```
 
@@ -171,13 +171,13 @@ Let's also look at `std::aligned_storage` (introduced in C++17, deprecated since
 Sometimes we genuinely want no padding at all... Any folks doing network programming or binary security out there? Our representative examples are things like network protocol header structures, binary file formats, or structs that map one-to-one onto hardware registers. In such cases we can use `#pragma pack` to tell the compiler: no padding for me, thank you.
 
 ```cpp
-#pragma pack(push, 1)  // save the current alignment setting, then set 1-byte alignment
+#pragma pack(push, 1)  // 保存当前对齐设置，然后设为 1 字节对齐
 struct RawHeader {
-    uint8_t  version;   // offset 0
-    uint16_t length;    // offset 1 (no longer a multiple of 2!)
-    uint32_t checksum;  // offset 3 (no longer a multiple of 4!)
+    uint8_t  version;   // 偏移 0
+    uint16_t length;    // 偏移 1（不再是 2 的倍数！）
+    uint32_t checksum;  // 偏移 3（不再是 4 的倍数！）
 };
-#pragma pack(pop)       // restore the previous alignment setting
+#pragma pack(pop)       // 恢复之前的对齐设置
 ```
 
 Now `sizeof(RawHeader)` is `1 + 2 + 4 = 7`, with no padding whatsoever. Every member sits right up against the previous one; the memory layout is completely compact. This style is very common in network programming and binary file parsing.
@@ -194,13 +194,13 @@ Now let's pull the above knowledge together and write a complete program to veri
 
 ```cpp
 // alignment.cpp
-// Compile: g++ -std=c++17 -O0 alignment.cpp -o alignment && ./alignment
+// 编译: g++ -std=c++17 -O0 alignment.cpp -o alignment && ./alignment
 
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
 
-// --- Struct definitions ---
+// --- 结构体定义 ---
 
 struct BadLayout {
     char  a;
@@ -215,7 +215,7 @@ struct GoodLayout {
 };
 
 struct alignas(16) AlignedBuffer {
-    int data[3];  // 12 bytes, padded up to 16
+    int data[3];  // 12 字节，补齐到 16
 };
 
 #pragma pack(push, 1)
@@ -240,9 +240,9 @@ struct ReorderedMixed {
     char    flag;
 };
 
-// --- Helper functions ---
+// --- 工具函数 ---
 
-/// Print struct info and member offsets
+/// 打印结构体信息和成员偏移量
 template <typename T>
 void print_struct_info(const char* name)
 {

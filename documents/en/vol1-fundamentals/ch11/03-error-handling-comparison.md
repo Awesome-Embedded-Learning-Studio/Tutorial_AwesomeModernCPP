@@ -21,9 +21,9 @@ title: Comparing Error Handling Approaches
 translation:
   source: documents/vol1-fundamentals/ch11/03-error-handling-comparison.md
   source_hash: 522e4f1153a3e6511889778616ad5e3b60bb6fa80bc39cde66c7c23bd4b87c0f
-  translated_at: '2026-09-27T04:12:30+00:00'
-  engine: anthropic
-  token_count: 3500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10889
 ---
 # Comparing Error Handling Approaches: With This Many Tools, You'd Better Know How to Use Them
 
@@ -40,16 +40,16 @@ Error codes are a legacy of the C era, and the first error handling approach eve
 ```cpp
 int divide(int a, int b, int* result) {
     if (b == 0) {
-        return -1;  // Error code: division by zero
+        return -1;  // 错误码：除零
     }
     *result = a / b;
-    return 0;       // Success
+    return 0;       // 成功
 }
 
-// Caller
+// 调用
 int quotient = 0;
 if (divide(10, 3, &quotient) != 0) {
-    // Handle the error
+    // 处理错误
 }
 ```
 
@@ -71,7 +71,7 @@ int divide(int a, int b) {
     return a / b;
 }
 
-// The caller must handle it, or the exception keeps propagating
+// 调用者必须处理，否则异常会继续传播
 try {
     int result = divide(10, 0);
 } catch (const std::invalid_argument& e) {
@@ -100,12 +100,12 @@ C++17 introduced `std::optional<T>`, which expresses a very plain idea: this val
 
 std::optional<int> safe_divide(int a, int b) {
     if (b == 0) {
-        return std::nullopt;  // Division by zero, return empty
+        return std::nullopt;  // 除零，返回空
     }
     return a / b;
 }
 
-// Caller
+// 调用
 auto result = safe_divide(10, 0);
 if (result.has_value()) {
     std::cout << "Result: " << result.value() << "\n";
@@ -141,16 +141,16 @@ std::expected<int, DivideError> checked_divide(int a, int b) {
     if (b == 0) {
         return std::unexpected(DivideError::DivisionByZero);
     }
-    // Simplified: overflow not handled for now
+    // 简化：暂不处理溢出
     return a / b;
 }
 
-// Caller
+// 调用
 auto result = checked_divide(10, 0);
 if (result.has_value()) {
     std::cout << "Result: " << result.value() << "\n";
 } else {
-    // Different handling per error type becomes possible
+    // 可以根据错误类型做不同处理
     switch (result.error()) {
         case DivideError::DivisionByZero:
             std::cout << "Cannot divide by zero!\n";
@@ -198,14 +198,14 @@ Now let's use one complete example program to put the three "no exceptions" erro
 
 ```cpp
 // error_cmp.cpp
-// Comparing three error handling approaches: error codes, optional, expected
+// 对比三种错误处理方式：错误码、optional、expected
 
 #include <cstdio>
 #include <optional>
 #include <expected>
 #include <string>
 
-// ========== Approach 1: error codes ==========
+// ========== 方式一：错误码 ==========
 
 constexpr int kErrDivisionByZero = -1;
 constexpr int kErrSuccess = 0;
@@ -218,7 +218,7 @@ int divide_error_code(int a, int b, int* out) {
     return kErrSuccess;
 }
 
-// ========== Approach 2: std::optional ==========
+// ========== 方式二：std::optional ==========
 
 std::optional<int> divide_optional(int a, int b) {
     if (b == 0) {
@@ -227,7 +227,7 @@ std::optional<int> divide_optional(int a, int b) {
     return a / b;
 }
 
-// ========== Approach 3: std::expected ==========
+// ========== 方式三：std::expected ==========
 
 enum class MathError {
     DivisionByZero,
@@ -240,7 +240,7 @@ std::expected<int, MathError> divide_expected(int a, int b) {
     return a / b;
 }
 
-// ========== Test ==========
+// ========== 测试 ==========
 
 int main() {
     struct TestCase {
@@ -258,7 +258,7 @@ int main() {
     for (const auto& tc : cases) {
         std::printf("--- Test: %s ---\n", tc.label);
 
-        // Error code version
+        // 错误码版本
         int result_code = 0;
         int err = divide_error_code(tc.a, tc.b, &result_code);
         if (err == kErrSuccess) {
@@ -267,7 +267,7 @@ int main() {
             std::printf("  [ErrorCode]  error: division by zero\n");
         }
 
-        // optional version
+        // optional 版本
         auto result_opt = divide_optional(tc.a, tc.b);
         if (result_opt.has_value()) {
             std::printf("  [Optional]   result = %d\n", result_opt.value());
@@ -275,7 +275,7 @@ int main() {
             std::printf("  [Optional]   error: no value\n");
         }
 
-        // expected version
+        // expected 版本
         auto result_exp = divide_expected(tc.a, tc.b);
         if (result_exp.has_value()) {
             std::printf("  [Expected]   result = %d\n", result_exp.value());

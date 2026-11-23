@@ -30,9 +30,9 @@ title: 'Non-Type Template Parameters: From Integers to C++20 Floats and Class Ty
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/05-non-type-parameters.md
   source_hash: 7f78cd483f1485e9089c95cf956703baab62276135b25eb2c8ad196ed2ce2563
-  translated_at: '2026-09-26T04:14:13+00:00'
-  engine: anthropic
-  token_count: 1900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5951
 ---
 # Non-Type Template Parameters: From Integers to C++20 Floats and Class Types
 
@@ -45,7 +45,7 @@ A type parameter `typename T` stands in for a type; a non-type parameter stands 
 ```cpp
 template <typename T, std::size_t N>
 struct array {
-    T data[N];   // N is a size known at compile time
+    T data[N];   // N 是编译期就知道的大小
 };
 ```
 
@@ -64,10 +64,10 @@ struct Range {
     static constexpr int hi = Upper;
 };
 
-// the arguments must be compile-time constants
+// 实参必须是编译期常量
 constexpr int kMin = 10;
-Range<kMin, kMin + 100> r;   // OK: both arguments are constant expressions
-// Range<some_runtime_value, 100> r2;   // compile error: the argument is not a constant
+Range<kMin, kMin + 100> r;   // OK:实参都是常量表达式
+// Range<some_runtime_value, 100> r2;   // 编译报错:实参不是常量
 ```
 
 Pointers and references can serve as non-type parameters too, but the argument must be an object whose address is determinable at compile time — say, the address of a static variable or of a function:
@@ -79,7 +79,7 @@ struct PtrHolder {
 };
 
 int global_var = 42;
-PtrHolder<&global_var> ph;   // OK: the global variable's address is known at compile time
+PtrHolder<&global_var> ph;   // OK:全局变量地址编译期已知
 ```
 
 This requirement that "the argument must be a constant expression" is the most fundamental difference between a non-type parameter and an ordinary function parameter. An ordinary function parameter takes its value at runtime; a non-type parameter must be a definite value by compile time.
@@ -131,7 +131,7 @@ area(2.0) = 12.5664
 One point that is easily confused: a literal class and an aggregate are not the same thing. An aggregate forbids user-declared constructors; a literal class only requires a constexpr constructor (user-provided constructors are fine). What structural demands is a literal class, so **a class with a constexpr constructor (even one that is not an aggregate) can be a non-type parameter** — the fixed_string we meet just below survives on exactly this: it has a constexpr constructor copying a `char` array, is not an aggregate, yet qualifies as structural.
 
 ```cpp
-struct Point {      // structural: public, non-mutable, members all structural (int); also a literal class
+struct Point {      // structural:public、非 mutable、成员都是 structural(int);也是 literal class
     int x;
     int y;
 };

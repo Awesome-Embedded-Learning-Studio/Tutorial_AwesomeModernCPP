@@ -25,10 +25,10 @@ tags:
 title: 'Deep Dive into shared_ptr: Shared Ownership and Reference Counting'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/04-shared-ptr.md
-  source_hash: 22976b99ba622871dab185d440dfc152290c26976cae2f9316b23ab51e478eed
-  translated_at: '2026-09-27T04:54:20+00:00'
-  engine: anthropic
-  token_count: 4700
+  source_hash: 3825703dbd9fca65eaeaf5dc379a6e0e9cbb8b7a4717d353d1580e5c1d63a06b
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18404
 ---
 # Deep Dive into shared_ptr: Shared Ownership and Reference Counting
 
@@ -61,14 +61,14 @@ private:
 void demo_shared() {
     auto conn = std::make_shared<Connection>("192.168.1.1:8080");
     {
-        auto conn2 = conn;  // Reference count: 1 → 2
+        auto conn2 = conn;  // 引用计数: 1 → 2
         conn2->send("hello from conn2");
         std::cout << "use_count: " << conn.use_count() << "\n";  // 2
-    }   // conn2 leaves scope, reference count: 2 → 1
+    }   // conn2 离开作用域，引用计数: 2 → 1
 
     conn->send("hello from conn");
     std::cout << "use_count: " << conn.use_count() << "\n";  // 1
-}   // conn leaves scope, reference count: 1 → 0, Connection destroyed
+}   // conn 离开作用域，引用计数: 1 → 0，Connection 被销毁
 ```
 
 That demo program is right below — click "Try It Yourself" and run it directly:
@@ -108,25 +108,25 @@ Let's lay out how shared_ptr, weak_ptr, the control block, and the managed objec
 ```mermaid
 classDiagram
     class shared_ptr {
-        +T* ptr object pointer
-        +ctrl_block* ctrl control-block pointer
+        +T* ptr 对象指针
+        +ctrl_block* ctrl 控制块指针
     }
     class weak_ptr {
-        +ctrl_block* ctrl control-block pointer
+        +ctrl_block* ctrl 控制块指针
     }
     class ControlBlock {
-        +strong_count strong reference count
-        +weak_count weak reference count
-        +deleter custom deleter, optional
-        +allocator custom allocator, optional
+        +strong_count 强引用计数
+        +weak_count 弱引用计数
+        +deleter 自定义删除器，可选
+        +allocator 自定义分配器，可选
     }
-    class T["the managed object"]
-    shared_ptr "N" o-- "1" ControlBlock : holds a control-block pointer
-    weak_ptr "M" ..> "1" ControlBlock : weak reference, does not extend the object's lifetime
-    ControlBlock --> "1" T : stores a pointer to the object
-    shared_ptr --> "1" T : object pointer
+    class T["被管理对象"]
+    shared_ptr "N" o-- "1" ControlBlock : 持有控制块指针
+    weak_ptr "M" ..> "1" ControlBlock : 弱引用，不延长对象生命周期
+    ControlBlock --> "1" T : 存有对象指针
+    shared_ptr --> "1" T : 对象指针
 
-    note for ControlBlock "make_shared: object and control block in one allocation, adjacent\nshared_ptr(new T): two separate allocations"
+    note for ControlBlock "make_shared：对象与控制块同一次分配，紧挨在一起\nshared_ptr(new T)：对象与控制块两次独立分配"
 ```
 
 ## The Advantages of make_shared: One Allocation
@@ -140,13 +140,13 @@ Second, **better cache locality**. With the object and the control block in the 
 Third, **less memory fragmentation**. One allocation means one deallocation, rather than releasing memory at two separate locations.
 
 ```cpp
-// Recommended: single allocation
+// 推荐：单次分配
 auto p1 = std::make_shared<Connection>("10.0.0.1:9090");
 
-// Not recommended: two allocations, and less exception-safe than make_shared
+// 不推荐：两次分配，且不如 make_shared 异常安全
 auto p2 = std::shared_ptr<Connection>(new Connection("10.0.0.1:9090"));
 
-// Size comparison
+// 大小对比
 std::cout << "sizeof(shared_ptr): " << sizeof(p1) << "\n";  // 16 (64-bit)
 std::cout << "sizeof(unique_ptr): " << sizeof(std::unique_ptr<Connection>) << "\n";  // 8
 ```
@@ -170,19 +170,19 @@ std::cout << "sizeof(unique_ptr): " << sizeof(std::unique_ptr<Connection>) << "\
 void demo_thread_safety() {
     auto data = std::make_shared<int>(0);
 
-    // Multiple threads each hold their own copy of the shared_ptr — safe
+    // 多个线程各自持有 shared_ptr 的拷贝——安全
     std::vector<std::thread> threads;
     for (int i = 0; i < 8; ++i) {
-        threads.emplace_back([data]() {  // Copies the shared_ptr, atomically incrementing the reference count
-            // Reading *data is safe (read-only)
+        threads.emplace_back([data]() {  // 拷贝 shared_ptr，引用计数原子递增
+            // 读取 *data 是安全的（只读）
             std::cout << "value: " << *data << "\n";
 
-            // But multiple threads writing *data at the same time is a data race — locking required!
+            // 但如果多个线程同时写 *data，就是数据竞争——需要加锁！
         });
     }
 
     for (auto& t : threads) t.join();
-    std::cout << "final use_count: " << data.use_count() << "\n";  // should be 1
+    std::cout << "final use_count: " << data.use_count() << "\n";  // 应该是 1
 }
 ```
 
@@ -228,11 +228,11 @@ struct Config {
 
 auto config = std::make_shared<Config>();
 
-// Get a shared_ptr pointing to config->host
-// It shares config's reference count — as long as someone holds host_ptr, config won't be destroyed
+// 获取一个指向 config->host 的 shared_ptr
+// 它共享 config 的引用计数——只要有人持有 host_ptr，config 就不会被销毁
 std::shared_ptr<std::string> host_ptr(config, &config->host);
 
-// Use host_ptr in another component that doesn't need to know Config exists
+// 在另一个组件中使用 host_ptr，不需要知道 Config 的存在
 void connect(const std::shared_ptr<std::string>& host) {
     std::cout << "Connecting to " << *host << "\n";
 }
@@ -259,7 +259,7 @@ public:
     }
 
     void start_read() {
-        // Async reads usually need to hold a shared_ptr to self so the object isn't destroyed before the read completes
+        // 异步读取通常需要持有自身的 shared_ptr，防止在读完成前被销毁
         auto self = shared_from_this();
         // async_read(socket_, buffer_, [self](error_code ec, size_t n) {
         //     self->on_read_complete(ec, n);
@@ -272,7 +272,7 @@ private:
     int fd_;
 };
 
-// Correct usage: the object must be held via a shared_ptr
+// 正确用法：必须通过 shared_ptr 持有
 void session_demo() {
     auto session = std::make_shared<TcpSession>(3);
     session->start_read();
@@ -374,7 +374,7 @@ private:
 
 class TaskScheduler {
 public:
-    // The scheduler owns the tasks — unique_ptr is enough
+    // 调度器持有任务的所有权——用 unique_ptr 足够
     void submit(std::unique_ptr<Task> task) {
         std::cout << "提交任务: " << task->name() << "\n";
         tasks_.push_back(std::move(task));
@@ -391,7 +391,7 @@ private:
     std::vector<std::unique_ptr<Task>> tasks_;
 };
 
-// If tasks need to be shared by multiple schedulers — only now do we need shared_ptr
+// 如果任务需要被多个调度器共享——这时才需要 shared_ptr
 class SharedTaskScheduler {
 public:
     void submit(std::shared_ptr<Task> task) {

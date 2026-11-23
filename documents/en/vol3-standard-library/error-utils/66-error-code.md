@@ -26,9 +26,9 @@ title: 'error_code: The Error Code System and Custom Categories'
 translation:
   source: documents/vol3-standard-library/error-utils/66-error-code.md
   source_hash: be053c14613a614bd2ce72b824d0fa26c9136c87affa14f34120ebd978d3cda8
-  translated_at: '2026-09-26T01:07:07+00:00'
-  engine: anthropic
-  token_count: 4300
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 19510
 ---
 # error_code: The Error Code System and Custom Categories
 
@@ -62,10 +62,10 @@ First, what does an `error_code` look like? It holds exactly two things:
 
 ```cpp
 // Standard: C++11
-// Semantics of std::error_code (simplified)
+// std::error_code 的语义(简化)
 class error_code {
-    int value_;                  // the error number (an integer value)
-    const error_category* cat_;  // pointer to a category singleton
+    int value_;                  // 错误号(整数值)
+    const error_category* cat_;  // 指向某个 category 单例的指针
 };
 ```
 
@@ -94,8 +94,8 @@ int main()
 {
     auto* fp = std::fopen("/no/such/file/here", "r");
     if (fp == nullptr) {
-        int e = errno;                                   // the raw error number
-        std::error_code ec{e, std::system_category()};   // wrapped into an error_code
+        int e = errno;                                   // 原始错误号
+        std::error_code ec{e, std::system_category()};   // 包成 error_code
 
         std::cout << "value:    " << ec.value() << '\n';
         std::cout << "category: " << ec.category().name() << '\n';
@@ -152,10 +152,10 @@ The consequence is blunt: `std::error_code ec = std::errc::timed_out;` **does no
 
 ```cpp
 // Standard: C++11
-auto ec = std::make_error_code(std::errc::timed_out);  // built under generic_category
+auto ec = std::make_error_code(std::errc::timed_out);  // 造出来是 generic_category
 std::cout << "value=" << ec.value()
           << " cat=" << ec.category().name() << '\n';
-// value=110 cat=generic   (110 is POSIX's ETIMEDOUT)
+// value=110 cat=generic   (110 就是 POSIX 的 ETIMEDOUT)
 ```
 
 So if `errc` is a condition, where does it earn its keep? The answer is **comparison**. `error_code` overloads `==` so it can compare directly against an `errc`:
@@ -237,7 +237,7 @@ namespace fs = std::filesystem;
 int main()
 {
     std::error_code ec;
-    fs::file_size("/no/such/path", ec);   // non-throwing overload: the error lands in ec
+    fs::file_size("/no/such/path", ec);   // 不抛重载:错误塞进 ec
     if (ec) {
         std::cout << "file_size 失败: " << ec.message()
                   << " (cat=" << ec.category().name() << ")\n";
@@ -314,18 +314,18 @@ public:
         }
     }
 
-    // Map custom error numbers to generic error_conditions for cross-category equivalence
+    // 把自定义错误号映射到通用 error_condition,实现跨 category 等价
     std::error_condition default_error_condition(int ev) const noexcept override {
         switch (static_cast<MyErrc>(ev)) {
             case MyErrc::kTimeout:
                 return std::make_error_condition(std::errc::timed_out);
             default:
-                return {ev, *this};   // everything else stays in this category
+                return {ev, *this};   // 其他用本 category 自身
         }
     }
 };
 
-// Singleton factory: the single process-wide instance
+// 单例工厂:全进程唯一实例
 const std::error_category& my_category() {
     static MyCategory instance;
     return instance;
@@ -350,7 +350,7 @@ With those four steps in place, the custom error code system works. Now a functi
 ```cpp
 // Standard: C++11
 std::error_code login(bool network_ok, bool password_ok) {
-    if (!network_ok) return MyErrc::kNetworkDown;   // implicit conversion to error_code
+    if (!network_ok) return MyErrc::kNetworkDown;   // 隐式转 error_code
     if (!password_ok) return MyErrc::kAuthFailed;
     return MyErrc::kSuccess;
 }
@@ -434,7 +434,7 @@ std::expected<int, std::error_code> read_sensor(int id)
     if (id > 100) {
         return std::unexpected(std::make_error_code(std::errc::result_out_of_range));
     }
-    return id * 2;   // success: implicitly constructs the expected
+    return id * 2;   // 成功:隐式构 expected
 }
 
 int main()

@@ -19,9 +19,9 @@ tags:
 translation:
   source: documents/vol8-domains/ai/tiny_ml/stage1/02-tensor-in-neural-network.md
   source_hash: e3041b37544975e77933fc90521d18cf1c2b529b3c0d427c7e66938f79f28aa6
-  translated_at: '2026-09-26T03:50:07+00:00'
-  engine: anthropic
-  token_count: 4300
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3211
 ---
 
 # What a Tensor holds in a neural network — four kinds of data, one container
@@ -67,14 +67,14 @@ Zoom out to the whole pipeline and the "one container" intuition gets even clear
 
 ```mermaid
 flowchart LR
-    A(["Input Tensor 1×3"]) --> B["Dense"]
+    A(["输入 Tensor 1×3"]) --> B["Dense"]
     B --> C(["Tensor 1×4"])
     C --> D["ReLU"]
     D --> E(["Tensor 1×4"])
     E --> F["Dense"]
     F --> G(["Tensor 1×3"])
     G --> H["Argmax"]
-    H --> I(["Class<br/>Normal/Warning/Danger"])
+    H --> I(["类别<br/>正常/警告/危险"])
 ```
 
 Every stage's data is a Tensor. The first Dense takes in a 1×3 Tensor and puts out a 1×4 one; ReLU turns every negative in the Tensor into 0, shape unchanged; the second Dense turns the 1×4 into a 1×3; finally Argmax picks the largest of those 3 numbers, and its position (0/1/2) is the classification result — normal, warning, or danger.

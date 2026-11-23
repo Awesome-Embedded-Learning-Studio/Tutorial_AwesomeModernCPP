@@ -25,9 +25,9 @@ title: Move Construction and Move Assignment
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/02-move-semantics.md
   source_hash: fd8a095487d30611ebcfe3bf7f56d94acd9b3f03022548fdcdd4a320bdfbaea5
-  translated_at: '2026-09-27T04:31:21+00:00'
-  engine: anthropic
-  token_count: 7100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14345
 ---
 # Move Construction and Move Assignment
 
@@ -53,16 +53,16 @@ public:
     {
     }
 
-    // Copy constructor: deep copy
+    // 拷贝构造：深拷贝
     Buffer(const Buffer& other)
         : data_(new char[other.capacity_])
         , size_(other.size_)
         , capacity_(other.capacity_)
     {
-        std::memcpy(data_, other.data_, size_); // Just a plain, direct copy of the data
+        std::memcpy(data_, other.data_, size_); // 直接平凡的拷贝数据
     }
 
-    // Copy assignment: deep copy
+    // 拷贝赋值：深拷贝
     Buffer& operator=(const Buffer& other)
     {
         if (this != &other) {
@@ -109,7 +109,7 @@ int main()
     Buffer large(1024 * 1024);  // 1MB
     large.append("Hello, World!", 13);
 
-    Buffer result = process_buffer(large);  // A copy!
+    Buffer result = process_buffer(large);  // 拷贝！
     return 0;
 }
 ```
@@ -131,9 +131,9 @@ class Buffer {
     std::size_t capacity_;
 
 public:
-    // ... The constructors and the destructor from before stay unchanged ...
+    // ... 前面的构造函数和析构函数不变 ...
 
-    // The move constructor
+    // 移动构造函数
     Buffer(Buffer&& other) noexcept
         : data_(other.data_)
         , size_(other.size_)
@@ -154,9 +154,9 @@ Now let's trigger move construction with `std::move`:
 Buffer large(1024 * 1024);
 large.append("Hello, World!", 13);
 
-Buffer moved_to = std::move(large);  // Invokes the move constructor
-// large.data_ is now nullptr, yet large can still be destroyed safely
-// moved_to owns the original 1MB of memory
+Buffer moved_to = std::move(large);  // 调用移动构造函数
+// large.data_ 现在是 nullptr，但 large 仍然可以安全析构
+// moved_to 持有了原来那 1MB 的内存
 ```
 
 What happened over this whole trip? Let's count: carry `other`'s members over, null them out—a handful of pointer/integer assignments and we're done. No `new` allocation, no `memcpy` replication, no `delete` deallocation. An O(n) copy just became an O(1) pointer transfer. For a 1MB buffer, one side has to allocate 1MB of memory and then copy 1MB of data; the other side just shuffles a few registers. Quite a gap, wouldn't you say?
@@ -167,21 +167,21 @@ The move assignment operator carries one extra chore compared to the move constr
 
 ```cpp
 class Buffer {
-    // ... The code above stays unchanged ...
+    // ... 前面的代码不变 ...
 
-    // The move assignment operator
+    // 移动赋值运算符
     Buffer& operator=(Buffer&& other) noexcept
     {
         if (this != &other) {
-            // Step 1: release the resources we currently hold
+            // 第一步：释放当前持有的资源
             delete[] data_;
 
-            // Step 2: take over other's resources
+            // 第二步：接管 other 的资源
             data_ = other.data_;
             size_ = other.size_;
             capacity_ = other.capacity_;
 
-            // Step 3: null out other
+            // 第三步：置空 other
             other.data_ = nullptr;
             other.size_ = 0;
             other.capacity_ = 0;
@@ -202,10 +202,10 @@ a.append("Hello", 5);
 Buffer b(2048);
 b.append("World", 5);
 
-a = std::move(b);  // Move assignment
-// a's original 1KB buffer was released by delete[]
-// a took over b's 2KB buffer
-// b.data_ is now nullptr
+a = std::move(b);  // 移动赋值
+// a 原来的 1KB 缓冲区被 delete[] 释放
+// a 接管了 b 的 2KB 缓冲区
+// b.data_ 变为 nullptr
 ```
 
 The moved-from source object is left in a "valid but unspecified" state<RefLink :id="3" preview="cppreference std::move — Notes: moved-from standard-library objects are valid but unspecified" />. You can let it be destroyed safely, or go on assigning it new values—but don't read its value. For a moved-from standard-library type, a call like `size()` might give you 0 or might give you the original value, entirely depending on the library's implementation. My advice: after a move, either get the source object out of scope right away, or assign it a definite new value. Until it holds a definite new value, don't read it again.
@@ -217,11 +217,11 @@ You may have already noticed that both move operations wear `noexcept`. It's not
 The reason has to be hunted down in `std::vector`'s reallocation behavior. When capacity runs out, the `vector` has to transfer the existing elements into a new memory block. At that point it starts weighing the element's move constructor: if it's marked `noexcept`, the `vector` moves with confidence. And if the move constructor might throw? The `vector` retreats and uses the copy constructor instead<RefLink :id="4" preview="cppreference std::move_if_noexcept — how vector reallocation picks move vs copy" />. One moment of thought and the logic is obvious—an exception thrown midway through a move leaves a half-moved state that is very hard to recover. An exception thrown midway through a copy is a different story: the original data is still intact.
 
 ```cpp
-// A simplified version of vector's internal logic
+// vector 内部逻辑的简化版本
 if constexpr (std::is_nothrow_move_constructible_v<T>) {
-    // Use move construction—fast and safe
+    // 使用移动构造——快速且安全
 } else {
-    // Fall back to copy construction—slower but exception-safe
+    // 退化为拷贝构造——慢但异常安全
 }
 ```
 
@@ -237,7 +237,7 @@ static_assert(std::is_nothrow_move_assignable_v<Buffer>,
 All this reasoning is armchair strategy on its own—let's genuinely run an experiment and watch how `vector` actually chooses. Prepare two identically structured classes whose only difference is whether the move constructor carries `noexcept`, then make the `vector` grow. The cheapest way is a single template parameter `NoexceptMove` that toggles the `noexcept` marker, with all the remaining code completely identical:
 
 ```cpp
-// noexcept_vector_realloc.cpp -- noexcept move vs non-noexcept move: the difference when a vector reallocates
+// noexcept_vector_realloc.cpp -- noexcept 移动 vs 非 noexcept 移动 在 vector 扩容时的差异
 // Standard: C++17
 
 #include <iostream>
@@ -246,7 +246,7 @@ All this reasoning is armchair strategy on its own—let's genuinely run an expe
 #include <utility>
 #include <vector>
 
-// The template parameter NoexceptMove toggles whether the move constructor is marked noexcept; everything else is identical
+// 用模板参数 NoexceptMove 切换移动构造是否标 noexcept，其余代码完全相同
 template <bool NoexceptMove>
 class TrackedBuffer
 {
@@ -272,7 +272,7 @@ public:
         std::cout << "  [" << tag_ << "] 拷贝构造\n";
     }
 
-    // The only difference: the noexcept marker
+    // 唯一的区别：noexcept 标记
     TrackedBuffer(TrackedBuffer&& other) noexcept(NoexceptMove)
         : data_(other.data_)
         , capacity_(other.capacity_)
@@ -289,8 +289,8 @@ public:
 
 int main()
 {
-    using NB = TrackedBuffer<true>;   // The move constructor is marked noexcept
-    using TB = TrackedBuffer<false>;  // The move constructor is not marked noexcept
+    using NB = TrackedBuffer<true>;   // 移动构造标了 noexcept
+    using TB = TrackedBuffer<false>;  // 移动构造没标 noexcept
 
     static_assert(std::is_nothrow_move_constructible_v<NB>,
                   "NB 的移动构造是 noexcept");
@@ -300,10 +300,10 @@ int main()
     std::cout << "=== noexcept 移动 + vector 扩容 ===\n";
     {
         std::vector<NB> v;
-        v.reserve(1);                       // Reserve one slot up front
-        v.emplace_back(64, "Noexcept版");   // Occupy the only slot
+        v.reserve(1);                       // 先预留 1 个槽位
+        v.emplace_back(64, "Noexcept版");   // 占住唯一的槽位
         std::cout << "--- 触发扩容 ---\n";
-        v.emplace_back(64, "Noexcept版");   // Exceeds capacity—must grow and relocate
+        v.emplace_back(64, "Noexcept版");   // 超出容量，必须扩容搬运
     }
 
     std::cout << "\n=== 非 noexcept 移动 + vector 扩容 ===\n";
@@ -312,7 +312,7 @@ int main()
         v.reserve(1);
         v.emplace_back(64, "Throwing版");
         std::cout << "--- 触发扩容 ---\n";
-        v.emplace_back(64, "Throwing版");   // On growth the vector dares not move—falls back to copying
+        v.emplace_back(64, "Throwing版");   // 扩容时 vector 不敢用移动，退回拷贝
     }
 
     return 0;
@@ -336,7 +336,7 @@ Each of the two output sections prints exactly one line—let's set them side by
 Let's write a complete program that verifies every key behavior of move semantics.
 
 ```cpp
-// move_semantics_demo.cpp -- a demonstration of move construction and move assignment
+// move_semantics_demo.cpp -- 移动构造与移动赋值演示
 // Standard: C++17
 
 #include <cstring>
@@ -455,11 +455,11 @@ int main()
     std::vector<Buffer> buffers;
     buffers.reserve(4);
     std::cout << "  push_back 左值:\n";
-    buffers.push_back(c);             // Copy
+    buffers.push_back(c);             // 拷贝
     std::cout << "  push_back std::move:\n";
-    buffers.push_back(std::move(c));  // Move
+    buffers.push_back(std::move(c));  // 移动
     std::cout << "  emplace_back 原位构造:\n";
-    buffers.emplace_back(512);        // Constructed directly inside the vector
+    buffers.emplace_back(512);        // 直接在 vector 中构造
     std::cout << '\n';
 
     std::cout << "=== 6. 程序结束 ===\n";

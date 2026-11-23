@@ -25,9 +25,9 @@ tags:
 translation:
   source: documents/vol3-standard-library/strings/53-print.md
   source_hash: 97459e32ff8bc7f9723c65bea233c8acbd5b6b50d6c55099b0218f995b1a17ee
-  translated_at: '2026-09-26T00:01:26+00:00'
-  engine: anthropic
-  token_count: 6900
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14359
 ---
 # print: Direct Output in C++23 and Decoupling from iostream
 
@@ -46,20 +46,20 @@ This article focuses on the **output semantics** of `print` — what entitles it
 
 int main()
 {
-    // Overload (1): writes directly to stdout
+    // 重载 (1):直接写 stdout
     std::print("Hello, {}\n", "world");
-    std::print("{2} {1}{0}!\n", 23, "C++", "Hello");   // manual indexing, any order you like
+    std::print("{2} {1}{0}!\n", 23, "C++", "Hello");   // 手动索引,可以乱序
 
-    // println: appends the newline for you, no need to add \n yourself
+    // println:末尾自动加换行,不用自己补 \n
     std::println("一行带换行: {}", 42);
 
-    // A format string with format-specs (syntax details belong to the format article)
+    // 带 format-spec 的格式串(语法细节归 format 那篇)
     std::println("十六进制: {:x}  浮点: {:.3f}", 255, 3.14159265);
 
-    // Escaping braces
+    // 转义花括号
     std::println("字典字面量: {{key: {}}}", "value");
 
-    // print to stderr (stderr is unbuffered, the line won't sit around)
+    // print 到 stderr(stderr 无缓冲,行不会卡)
     std::println(stderr, "这条进 stderr");
     return 0;
 }
@@ -113,7 +113,7 @@ static void report(const char* name, std::chrono::steady_clock::time_point t0,
 
 void bench_cout_sync()
 {
-    std::ios::sync_with_stdio(true);   // the default
+    std::ios::sync_with_stdio(true);   // 默认
     auto t0 = std::chrono::steady_clock::now();
     for (int i = 0; i < kIterations; ++i) {
         std::cout << "i=" << i << " sq=" << i * 2 << '\n';
@@ -123,7 +123,7 @@ void bench_cout_sync()
 
 void bench_cout_nosync()
 {
-    std::ios::sync_with_stdio(false);  // the usual "speed up cout" move
+    std::ios::sync_with_stdio(false);  // 常见的"加速 cout"写法
     auto t0 = std::chrono::steady_clock::now();
     for (int i = 0; i < kIterations; ++i) {
         std::cout << "i=" << i << " sq=" << i * 2 << '\n';
@@ -151,7 +151,7 @@ void bench_print()
 
 int main()
 {
-    std::freopen("/dev/null", "w", stdout);   // exclude terminal I/O noise
+    std::freopen("/dev/null", "w", stdout);   // 排除终端 I/O 噪声
     bench_cout_sync();
     bench_printf();
     bench_print();
@@ -207,7 +207,7 @@ Performance is `print`'s selling point, but what trips people up most in day-to-
 
 int main()
 {
-    // sync_with_stdio defaults to true: the order is correct
+    // sync_with_stdio 默认 true,顺序正确
     std::cout << "第一行(cout)\n";
     std::print("第二行(print)\n");
     std::cout << "第三行(cout)\n";
@@ -232,14 +232,14 @@ But plenty of people write `std::ios::sync_with_stdio(false)` for performance. T
 
 int main()
 {
-    std::ios::sync_with_stdio(false);   // the usual "speed up cout" move
+    std::ios::sync_with_stdio(false);   // 常见的"加速 cout"写法
 
     std::cout << "第一行(cout)\n";
     std::print("第二行(print)\n");
     std::cout << "第三行(cout)\n";
     std::print("第四行(print)\n");
 
-    std::cout.flush();   // without the flush, cout's leftovers may never show up at all
+    std::cout.flush();   // 不 flush,cout 残留可能根本看不到
     return 0;
 }
 ```
@@ -272,7 +272,7 @@ int main()
 {
     std::ios::sync_with_stdio(false);
     std::cout << "A(cout)\n";
-    std::print(std::cout, "B(print→cout)\n");   // goes through cout's own buffer
+    std::print(std::cout, "B(print→cout)\n");   // 走 cout 自己的缓冲
     std::cout << "C(cout)\n";
     std::print(std::cout, "D(print→cout)\n");
 
@@ -291,8 +291,8 @@ D(print→cout)
 The order is completely correct. Putting the two runs side by side makes it obvious:
 
 ```text
-print(stdout) interleaved with cout (sync=false):  → A C B D  (scrambled)
-print(cout)   sharing one buffer with << (sync=false): → A B C D  (correct)
+print(stdout) 与 cout 交错(sync=false):     → A C B D  (错乱)
+print(cout)   与 <<  同缓冲(sync=false):     → A B C D  (正确)
 ```
 
 The mechanism in one sentence: `print(FILE*)` and `cout` are two independent buffers — with sync off, each flushes on its own; `print(ostream)` reuses `cout`'s streambuf and lives or dies with `<<`. Hence a simple engineering rule: **the moment your program turns sync off, always use `print(std::cout, ...)` when mixing, never bare `print(...)`**. That way you keep `print`'s formatting convenience without picking a fight with `cout`.
@@ -309,17 +309,17 @@ The fix in the previous section works because `print` has two sets of stream-wri
 
 int main()
 {
-    // One face: FILE* (stdout / stderr / files you fopen yourself)
+    // 一副面孔:FILE*(stdout/stderr/自己 fopen 的文件)
     std::print(stdout, "写 stdout: {}\n", 1);
-    std::println(stderr, "写 stderr: {}", 2);   // stderr is unbuffered: a good fit for logs and errors
+    std::println(stderr, "写 stderr: {}", 2);   // stderr 无缓冲,适合日志/错误
 
-    // The other face: ostream (cout / cerr / stringstream / any ostream)
+    // 另一副面孔:ostream(cout/cerr/stringstream/任何 ostream)
     std::ostringstream os;
     std::print(os, "写 stringstream: {} = {}\n", "x", 3.14);
     std::println(os, "第二行");
-    std::print("{}", os.str());   // dump what was accumulated to stdout in one shot
+    std::print("{}", os.str());   // 把攒下来的内容一次性吐到 stdout
 
-    // And of course you can feed it cout directly
+    // 当然也能直接喂 cout
     std::print(std::cout, "直接 print 到 cout: {}\n", 7);
     return 0;
 }
@@ -359,17 +359,17 @@ int main()
 {
     std::print("第一行(带换行)\n");
     std::print("第二行没换行就崩了");
-    std::abort();   // simulate a crash
+    std::abort();   // 模拟崩溃
 }
 ```
 
 Run it directly on a terminal, and through a pipe — the results differ:
 
 ```text
-=== terminal (line-buffered) output ===
-[exit=134]                          # nothing came out at all: the buffer wasn't flushed before abort
-=== redirected to a pipe (block-buffered) output ===
-[done]                              # likewise, nothing
+=== 终端(行缓冲)输出 ===
+[exit=134]                          # 整段都没出来,abort 前缓冲没刷
+=== 重定向到管道(块缓冲)输出 ===
+[done]                              # 同样什么都没有
 ```
 
 In both cases, everything `print` had staged in the buffer was lost to `abort()` (which does not flush user-space buffers — it goes straight to `_exit`) — including that first line with the `\n`. Which goes to show: on `stdout`, `print` **does not flush on newline**; it relies on the program exiting normally for the unified flush. If your program can die abnormally (a crash, `_exit`, killed by a signal) and you need critical logs to land, either write to `stderr` (unbuffered) or call `std::fflush(stdout)` manually at the critical points.
@@ -394,10 +394,10 @@ int main()
 #ifdef __cpp_lib_format
     std::println("__cpp_lib_format = {}", __cpp_lib_format);
 #endif
-    // The no-argument println() overload officially lands in C++26, but
-    // cppreference notes "all known implementations make them available in C++23 mode"
+    // println() 无参重载:标准里算 C++26,但 cppreference 注明
+    // "all known implementations make them available in C++23 mode"
     std::print("password");
-    std::println();   // prints just a newline
+    std::println();   // 只输出换行
     return 0;
 }
 ```

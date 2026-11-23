@@ -22,10 +22,10 @@ tags:
 title: Introduction to Value Categories
 translation:
   source: documents/vol1-fundamentals/ch01/04-value-categories.md
-  source_hash: c493e5f8f05ecefb7201e8e9f8a3ee956aac67a932c235c22a484b63623ad335
-  translated_at: '2026-09-25T09:59:35+00:00'
-  engine: anthropic
-  token_count: 8900
+  source_hash: e14ecc524eab6f6191dcf6c3932f610f4c3b50f34c65dce50ca833c38a307c7d
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 8965
 ---
 # The Episode Where Difficulty Ramps Up: Value Categories in C++
 
@@ -46,11 +46,11 @@ The most typical lvalue is an ordinary variable. In `int x = 10;`, `x` is an lva
 Let's look at a few concrete examples:
 
 ```cpp
-int x = 10;       // x is an lvalue: a small patch of stack space used to hold 10
-int* ptr = &x;    // ptr is an lvalue: &x pulled out x's address and stored it into this little memory slot called ptr—you can find this ptr in memory.
-*ptr = 20;        // What does ptr point to? Oh, it holds x's address—let me go see where x is. Found it: back when we wrote int x, the compiler dropped it somewhere on the stack; scribble out the 10 and write in a 20
+int x = 10;       // x 是左值，栈上一块小空间拿来放了10
+int* ptr = &x;    // ptr 是左值，&x 取出了 x 的地址存放到了 ptr 这个内存小个格子了，你可以在内存上找到这个ptr。
+*ptr = 20;        // 看看ptr指向啥？哦，他存储的是x的地址，我去看看x在哪，找到了，上面int x的时候编译器丢到栈的一个地方上，涂掉10改成20
 int arr[5] = {};
-arr[2] = 42;      // arr[2] is an lvalue—it stands for the memory at the third position of the array
+arr[2] = 42;      // arr[2] 是左值——它代表数组第三个位置的内存
 ```
 
 These expressions all share one characteristic: you can take their address. `&x`, `&(*ptr)`, `&(arr[2])` are all legal operations. This is in fact the most practical way to judge whether an expression is an lvalue—if you can take its address and it has a name, it is basically an lvalue.
@@ -64,10 +64,10 @@ An rvalue is precisely the opposite of an lvalue: it is an expression **without 
 The most typical rvalue is a literal. `42` is an rvalue—it is the integer 42, but "42" has no memory address (at least not at the level of your code); you cannot write `&42`. The result of the expression `x + y` is also an rvalue: when the compiler computes `x + y`, it drops the result into a temporary spot, that spot has no name, and there is no way to refer to it through a variable name.
 
 ```cpp
-42                  // rvalue—a literal
-3.14                // rvalue—a floating-point literal
-x + y               // rvalue—the temporary result of an arithmetic expression
-static_cast<int>(3.14)  // rvalue—a temporary value produced by a type conversion
+42                  // 右值——字面量
+3.14                // 右值——浮点字面量
+x + y               // 右值——算术表达式的临时结果
+static_cast<int>(3.14)  // 右值——类型转换产生的临时值
 ```
 
 The function-return case deserves special attention: if a function returns a value (not a reference)—say `int get_value() { return 42; }`—then the result of calling `get_value()` is an rvalue; at the syntactic level, **it is a temporary value copied out from inside the function, with no persistent identity**. But if you write `int& get_ref() { return x; }`, `get_ref()` returns a reference and the result is an lvalue—because it ultimately binds to a variable that has an identity.
@@ -80,14 +80,14 @@ C++ has several kinds of references; let's start from the most basic one, the lv
 
 ```cpp
 int x = 10;
-int& ref = x;     // No problem: ref is an alias for x
-ref = 20;          // x is now 20 as well
+int& ref = x;     // 没问题：ref 是 x 的别名
+ref = 20;          // 现在 x 也变成了 20
 ```
 
 But if you try to make an lvalue reference bind to an rvalue:
 
 ```cpp
-int& ref = 42;    // Compilation error!
+int& ref = 42;    // 编译错误！
 ```
 
 The compiler will refuse outright, with an error message that looks roughly like this:
@@ -101,7 +101,7 @@ The reason is intuitive: `42` is a temporary value whose lifetime may expire exa
 There is one exception, though—a const lvalue reference can bind to an rvalue:
 
 ```cpp
-const int& ref = 42;   // Legal!
+const int& ref = 42;   // 合法！
 ```
 
 This looks a bit counterintuitive, but the C++ standard makes a special provision here: **when a const lvalue reference binds to an rvalue, the compiler automatically extends that temporary's lifetime so that it lives until the reference's scope ends.** This is actually a very practical feature—later on you will often see `const std::string&` in function parameters, and **the reason it accepts both lvalue arguments and rvalue arguments is precisely this rule.**
@@ -116,9 +116,9 @@ Since references have come up, let's lay out their basic usage properly. Concept
 
 ```cpp
 int x = 10;
-int& ref = x;    // ref is an alias for x
-ref = 20;        // x is now 20
-std::cout << x;  // prints 20
+int& ref = x;    // ref 是 x 的别名
+ref = 20;        // x 现在是 20
+std::cout << x;  // 输出 20
 ```
 
 References have several important properties that you need to get right from the very start. First, a reference **must be initialized at creation**—you cannot declare a reference first and point it at some variable later. `int& ref;` flat-out fails to compile; the compiler will tell you a reference needs an initializer. Second, once a reference is bound it cannot be changed—there is no such operation as "point the reference at another variable." If you write `ref = y;`, that is not rebinding ref to y; it is assigning y's value to the variable that ref refers to. This is completely different from a pointer's behavior—a pointer can point at a different address whenever it likes.
@@ -126,26 +126,26 @@ References have several important properties that you need to get right from the
 The most common use of references is as function parameters. If we pass by value, the function gets a copy of the argument, and modifying the copy leaves the original data untouched; if we pass by reference, the function operates on the original data directly. For large objects (say, a very long string or a container holding many elements), passing by value means an expensive copy operation, while passing by reference carries no extra overhead at all.
 
 ```cpp
-/// @brief Pass by value—modifications inside the function don't affect the outside
+/// @brief 值传递——函数内部修改不影响外部
 void add_one_by_value(int n)
 {
-    n = n + 1;    // Only modifies the local copy
+    n = n + 1;    // 只修改了局部的拷贝
 }
 
-/// @brief Pass by reference—the function modifies the outer variable directly
+/// @brief 引用传递——函数内部直接修改外部变量
 void add_one_by_ref(int& n)
 {
-    n = n + 1;    // Modifies the original variable
+    n = n + 1;    // 修改了原始变量
 }
 
 int main()
 {
     int a = 10;
     add_one_by_value(a);
-    std::cout << a << "\n";   // prints 10—unchanged
+    std::cout << a << "\n";   // 输出 10，没变
 
     add_one_by_ref(a);
-    std::cout << a << "\n";   // prints 11—changed
+    std::cout << a << "\n";   // 输出 11，变了
 
     return 0;
 }
@@ -157,8 +157,8 @@ Returning a reference to a local variable is one of the mistakes beginners make 
 int& bad_function()
 {
     int local = 42;
-    return local;    // Serious error! local is destroyed after the function returns
-}                    // The returned reference points to a destroyed variable
+    return local;    // 严重错误！local 在函数返回后销毁
+}                    // 返回的引用指向已销毁的变量
 ```
 
 The compiler will usually warn you, but it won't stop you from compiling. Remember one simple principle: **never return a reference or a pointer to a local variable**. For now, that gives us a usable minimal set of rules about references; as for which scenarios references and pointers each cover and how to choose between them, Chapter 4 will put the two side by side for a systematic comparison.
@@ -169,11 +169,11 @@ Before C++11, C++ had exactly one kind of reference—the lvalue reference we ju
 
 ```cpp
 int x = 10;
-int& lref = x;        // lvalue reference, bound to the lvalue x
-int&& rref = 42;      // rvalue reference, bound to the rvalue 42
-int&& rref2 = x + 1;  // rvalue reference, bound to a temporary expression result
+int& lref = x;        // 左值引用，绑定到左值 x
+int&& rref = 42;      // 右值引用，绑定到右值 42
+int&& rref2 = x + 1;  // 右值引用，绑定到临时表达式结果
 
-// int&& rref3 = x;   // Compilation error! An rvalue reference cannot bind to an lvalue
+// int&& rref3 = x;   // 编译错误！右值引用不能绑定到左值
 ```
 
 You might ask: what are rvalue references for? Why go out of the way to create a kind of reference that only binds to temporaries? The answer is **move semantics**—it lets us "steal" the resources inside a temporary value instead of making an expensive copy. Take a container holding a million elements: once you no longer need the original one, move semantics lets you take over its internal pointers directly, at nearly zero cost.
@@ -185,18 +185,18 @@ We won't unpack all of that here; for now, just remember the `T&&` spelling and 
 That's a lot of theory, so let's write a complete program to verify these rules. This program will show which expressions are lvalues and which are rvalues, and run through the various reference-binding cases.
 
 ```cpp
-// values.cpp -- a demo of value categories and reference binding
+// values.cpp -- 值类别与引用绑定演示
 // Standard: C++11
 
 #include <iostream>
 
-/// @brief Returns an integer value (an rvalue)
+/// @brief 返回一个整数值（右值）
 int get_value()
 {
     return 42;
 }
 
-/// @brief Returns a reference to an integer (an lvalue)
+/// @brief 返回一个整数的引用（左值）
 int global = 100;
 int& get_ref()
 {
@@ -205,49 +205,49 @@ int& get_ref()
 
 int main()
 {
-    // ---- lvalues ----
-    int x = 10;            // x is an lvalue
-    int* ptr = &x;         // &x is legal: x is an lvalue, its address can be taken
-    *ptr = 20;             // *ptr is an lvalue
+    // ---- 左值 ----
+    int x = 10;            // x 是左值
+    int* ptr = &x;         // &x 合法：x 是左值，可以取地址
+    *ptr = 20;             // *ptr 是左值
     int arr[3] = {1, 2, 3};
-    arr[0] = 99;           // arr[0] is an lvalue
+    arr[0] = 99;           // arr[0] 是左值
 
     std::cout << "x = " << x << "\n";            // 20
     std::cout << "arr[0] = " << arr[0] << "\n";  // 99
 
-    // ---- rvalues ----
-    // &42;                  // error: cannot take the address of an rvalue
-    // &(x + 1);             // error: the result of x + 1 is an rvalue
-    // &get_value();          // error: a function's return value is an rvalue
+    // ---- 右值 ----
+    // &42;                  // 错误：不能对右值取地址
+    // &(x + 1);             // 错误：x + 1 的结果是右值
+    // &get_value();          // 错误：函数返回值是右值
 
-    int sum = x + arr[1];   // the result of x + arr[1] is an rvalue
+    int sum = x + arr[1];   // x + arr[1] 的结果是右值
     std::cout << "sum = " << sum << "\n";        // 22
 
-    // ---- lvalue references ----
-    int& lref = x;          // OK: an lvalue reference bound to an lvalue
+    // ---- 左值引用 ----
+    int& lref = x;          // OK：左值引用绑定到左值
     lref = 30;
     std::cout << "x = " << x << "\n";            // 30
 
-    // int& bad = 42;        // error: an lvalue reference cannot bind to an rvalue
+    // int& bad = 42;        // 错误：左值引用不能绑定到右值
 
-    const int& cref = 42;   // OK: a const reference can bind to an rvalue
+    const int& cref = 42;   // OK：const 引用可以绑定到右值
     std::cout << "cref = " << cref << "\n";      // 42
 
-    // ---- rvalue references (C++11) ----
-    int&& rref = 42;        // OK: an rvalue reference bound to an rvalue
-    int&& rref2 = x + 1;   // OK: x + 1 is an rvalue
-    // int&& rref3 = x;     // error: an rvalue reference cannot bind to an lvalue
+    // ---- 右值引用（C++11）----
+    int&& rref = 42;        // OK：右值引用绑定到右值
+    int&& rref2 = x + 1;   // OK：x + 1 是右值
+    // int&& rref3 = x;     // 错误：右值引用不能绑定到左值
 
     std::cout << "rref = " << rref << "\n";      // 42
     std::cout << "rref2 = " << rref2 << "\n";    // 31
 
-    // ---- value categories of function return values ----
-    // get_value() returns an rvalue
+    // ---- 函数返回值的值类别 ----
+    // get_value() 返回右值
     int val = get_value();
     std::cout << "get_value() = " << val << "\n";   // 42
 
-    // get_ref() returns an lvalue
-    get_ref() = 200;       // OK: get_ref() returns an lvalue reference, which can be assigned to
+    // get_ref() 返回左值
+    get_ref() = 200;       // OK：get_ref() 返回左值引用，可以赋值
     std::cout << "global = " << global << "\n";      // 200
 
     return 0;

@@ -10,9 +10,10 @@ description: "Two threads concurrently increment a volatile int: six runs at 100
 reading_time_minutes: 9
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/07-what-volatile-guarantees/02-volatile-race-and-lock-prefix.md
-  source_hash: a3fff743bd5d444514841966f4f5801bddfdb437ae3e561b607d0d46c0cd9445
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 3ce7bd4fd3fa935633b0dfb6676505b0337b3abf9dfdce59a71420178d882e0d
+  translated_at: '2026-11-22T16:48:52Z'
+  engine: glm-5.3-refresh
+  token_count: 10863
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,15 +29,15 @@ The previous piece ended on a list of bans: merging, elimination, and reordering
 At this point a very widespread piece of folklore is waiting for us: two threads share a variable, one writing while the other reads, and as long as the variable is qualified with volatile, each side sees the other's fresh value right away, right? Push the question one step further: when both threads increment it, can volatile keep the count from leaking? Let's just run the experiment, with the ground rules stated up front: the program contains no synchronization of any kind. Two threads reading and writing the same volatile int concurrently with no synchronization between them is, by the C++ standard's book, a data race. A data race means two threads access the same object, at least one of the accesses is a write, and no synchronization separates them. The standard classifies it as undefined behavior, and undefined behavior means the standard no longer promises any boundary on the program's behavior. The output below only records what actually happened on my machine. Switch machines, switch the load, and what you see could easily differ.
 
 ```cpp
-// v4_race.cpp: a shared volatile variable incremented concurrently by two threads, a data race (undefined behavior) demo
-// This program demonstrates UB; it only records what actually happened on my machine
+// v4_race.cpp: volatile 共享变量 + 两线程并发自增 —— 数据竞争(未定义行为)展示
+// 本程序是 UB 的展示,只记录本机实际发生的现象
 #include <cstdio>
 #include <thread>
 
 volatile int counter = 0;
 
 int main() {
-    constexpr int kIters = 100000;  // increments per thread
+    constexpr int kIters = 100000;  // 每线程自增次数
 
     std::thread t1([] { for (int i = 0; i != kIters; ++i) ++counter; });
     std::thread t2([] { for (int i = 0; i != kIters; ++i) ++counter; });
@@ -113,16 +114,16 @@ A word on reproducing this, also up front: every number pasted in this piece is 
 Reading this far you may already have invented an escape: ++ squeezes its read-modify-write into one instruction, and that is why the window is so narrow. So split the read, the arithmetic, and the write into three statements, and the window opens, no? The compiler couldn't glue them back together, could it? GCC 16's measured answer: it could. Let's also pick up the word fusing here, because the rest of this piece leans on it: when the compiler assembles two independent memory accesses into the same instruction, we call it fusing. Here is the source we will look at:
 
 ```cpp
-// v4_race_rmw.cpp: read, add, write split into three statements, watching whether GCC still fuses them
+// v4_race_rmw.cpp: 读、算、写拆成三条语句 —— 观察 GCC 是否仍熔合
 #include <cstdio>
 #include <thread>
 
 volatile int counter = 0;
 
 void bump() {
-    int v = counter;   // volatile read
-    v = v + 1;         // ordinary arithmetic
-    counter = v;       // volatile write
+    int v = counter;   // volatile 读
+    v = v + 1;         // 普通计算
+    counter = v;       // volatile 写
 }
 
 int main() {
@@ -169,16 +170,16 @@ The three source statements we wrote came out as a single instruction in machine
 To open the window for real, what we call on is the compiler barrier. One plain sentence for the word barrier: a wall that binds only the compiler, occupies not one byte of machine code, yet forbids the compiler from merging memory accesses on either side of it or moving them across it. We will use GCC's inline assembly form `asm volatile ("" : "+r"(v))`: an empty piece of inline assembly whose `"+r"(v)` constraint binds the variable v into its input-output list. The compiler has to assume that the value v holds from the read on this side of the wall and the value written back on the other side know nothing about each other, so it dares not merge the accesses at either end. Amusingly, even this wall is held up by volatile: asm volatile declares that the inline assembly has side effects and must not be deleted. Notice the asymmetry, it cannot reach the CPU at all, yet wherever the job is reining in the compiler, it works everywhere. In this group of experiments the barrier is only the means of observation; what it blocks is the compiler merging the two accesses of the thing under observation, and the thing under observation is, from start to finish, that volatile int counter:
 
 ```cpp
-// v4_race_split.cpp: a compiler barrier between the read and the write, observing the shape of the race once the window is open
+// v4_race_split.cpp: 读与写之间加编译器屏障,观察窗口拉开后的竞争形态
 #include <cstdio>
 #include <thread>
 
 volatile int counter = 0;
 
 void bump() {
-    int v = counter;                  // volatile read
-    asm volatile ("" : "+r"(v));      // compiler barrier: keeps the two accesses from fusing (means of observation, not the thing observed)
-    counter = v + 1;                  // volatile write
+    int v = counter;                  // volatile 读
+    asm volatile ("" : "+r"(v));      // 编译器屏障:防止两条访问被熔合(观察手段,不是观察对象)
+    counter = v + 1;                  // volatile 写
 }
 
 int main() {
@@ -225,7 +226,7 @@ With the window open, lost updates appear at scale, and the six runs lost betwee
 The scenario stays as it was. We swap the counter from `volatile int` to `std::atomic<int>` and keep the 100,000-increment-per-thread load and the loop shape untouched:
 
 ```cpp
-// v5_atomic.cpp: same scenario, std::atomic instead, the count should now always be correct
+// v5_atomic.cpp: 同场景换 std::atomic —— 计数应当恒正确
 #include <atomic>
 #include <cstdio>
 #include <thread>
@@ -274,4 +275,4 @@ Put the increment instruction from the volatile version's thread body next to th
 
 The instruction bodies are identical, the operand shapes match, and the only difference is the word lock in front. At the source level the compiler cannot tell which side will lose updates; what it hands to both sides is legal code. The difference lands entirely at the machine layer, and the job of backstopping goes to the hardware. volatile's addl against atomic's lock addl: that one word is the line between forbidding the compiler and forbidding races, projected into machine code. Thread in the earlier barrier and the whole picture closes: volatile and the compiler barrier both address the compiler, and the machine code spends not one extra byte on either, while the lock prefix addresses the CPU, and what it says is written right into the instruction.
 
-lock is where the atomic story opens, not where it ends. Atomic operations also carry memory ordering (memory_order) parameters, governing whether ordinary reads and writes around the atomic access may be rearranged by the CPU, and on that dimension volatile has no counterpart at all. That ground belongs to vol5's concurrency volume, and we will not tread on it: [Atomic Operations](../../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md) and [A Deep Dive into Memory Ordering](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) give both a full measured treatment, and the difference between the compiler barrier from the previous section and a genuine CPU barrier is laid out in [Fences and Compiler Barriers](../../../vol5-concurrency/ch03-atomic-memory-model/03-fence-and-barrier.md), in the same chapter. As for which promises volatile actually makes in writing, the next piece goes to the standard's own text.
+lock is where the atomic story opens, not where it ends. Atomic operations also carry memory ordering (memory_order) parameters, governing whether ordinary reads and writes around the atomic access may be rearranged by the CPU, and on that dimension volatile has no counterpart at all. That ground belongs to vol5's concurrency volume, and we will not tread on it: [Atomic Operations](../../../vol5-concurrency/chapter05-atomic-memory-model/01-what-atomics-solve.md) and [A Deep Dive into Memory Ordering](../../../vol5-concurrency/chapter05-atomic-memory-model/04-choosing-memory-orders.md) give both a full measured treatment, and the difference between the compiler barrier from the previous section and a genuine CPU barrier is laid out in [Fences and Compiler Barriers](../../../vol5-concurrency/chapter05-atomic-memory-model/05-memory-order-patterns.md), in the same chapter. As for which promises volatile actually makes in writing, the next piece goes to the standard's own text.

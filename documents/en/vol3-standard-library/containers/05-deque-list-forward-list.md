@@ -24,9 +24,9 @@ title: 'deque, list, and forward_list: Three Alternatives to vector'
 translation:
   source: documents/vol3-standard-library/containers/05-deque-list-forward-list.md
   source_hash: 62d31793dc2e51e2e7d56aba00cb2f0511f210d0a7714c8fdc80b4c19a77a080
-  translated_at: '2026-09-26T02:11:40+00:00'
-  engine: anthropic
-  token_count: 4400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6585
 ---
 # deque, list, and forward_list: Three Alternatives to vector
 
@@ -41,12 +41,12 @@ One sentence to remember up front: `deque` is "a vector you can insert into at b
 deque (pronounced "deck", double-ended queue) resembles vector the most, but it solves vector's O(n) front-insertion problem. Its underlying storage is not one big contiguous block, but **segmented contiguity**: a control array (a set of pointers), where each pointer points to a fixed-size block (a chunk); elements live in these blocks, and each block is contiguous inside.
 
 ```cpp
-// Simplified skeleton of deque's segmented contiguity (standard-library internals; details differ by vendor)
+// deque 分段连续的简化骨架（标准库内部，各厂细节不同）
 struct Deque {
-    std::vector<Block*> control;   // the control array; each entry points to one block
-    // each Block is a stretch of contiguous memory holding several elements
+    std::vector<Block*> control;   // 中控数组，每项指向一个块
+    // 每个 Block 是一段连续内存，装若干元素
 };
-// Random access: block = control[i / chunk_size], element = block[i % chunk_size]
+// 随机访问：block = control[i / chunk_size]，元素 = block[i % chunk_size]
 ```
 
 This structure brings three properties. First, **push/pop at both ends are O(1)**: when the tail block fills up, append a new block; when the head fills up, add a block in front (or fill the head block from the back forward) — either way, no existing element moves. This is its biggest advantage over vector. Second, **random access stays O(1)**: `d[i]` works out which block the element sits in, then takes the offset within the block; there is just one extra "control → block" pointer dereference compared with vector, so it is slightly slower. Third, **growing does not relocate every element**: when a deque runs out of room, only the control array (a set of pointers — tiny) needs to grow, then new blocks are hung on; the addresses of existing elements do not change — far gentler than vector's reallocation (move everything, invalidate every iterator).
@@ -140,7 +140,7 @@ int main()
         std::vector<int> v;
         auto t0 = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < N; ++i) {
-            v.insert(v.begin(), i);   // O(n) every time
+            v.insert(v.begin(), i);   // 每次 O(n)
         }
         auto t1 = std::chrono::high_resolution_clock::now();
         std::cout << "vector front insert: "

@@ -1,6 +1,6 @@
 ---
-title: 'Volume 5: Concurrent Programming'
-description: From thread primitives to coroutine asynchrony
+title: "Volume 5: Concurrent Programming"
+description: "From thread primitives to coroutine-based asynchrony"
 platform: host
 tags:
   - cpp-modern
@@ -8,27 +8,33 @@ tags:
   - intermediate
 translation:
   source: documents/vol5-concurrency/index.md
-  source_hash: c01fb4c1ae045c817de2cbdadd809fc4370e8e5d467bf7418ad57fcd76c0c207
-  translated_at: '2026-09-26T06:13:04+00:00'
-  engine: anthropic
-  token_count: 400
+  source_hash: efd4905f79dd93609060e79086e7fd009e5b50039c1c344107a3f1941034ef79
+  translated_at: '2026-11-22T16:22:55+00:00'
+  engine: glm-5.3-parent
+  token_count: 1990
 ---
 
 # Volume 5: Concurrent Programming
 
-From thread primitives to coroutine asynchrony, from locks to lock-free, from synchronization to tasks — Volume 5 helps you build complete, well-rounded judgment for concurrency. Our principle: **correctness first, then performance; locks first, then lock-free; synchronization first, then tasks**.
+In this volume, we talk about the part that is hard to get around in almost every domain of programming: concurrent programming.
+
+The author has already restructured this volume once, but quite a few articles are still tagged as LLM first drafts — and the plan here is to mark that honestly! If you are willing, bring your LLM along and give these pieces your sharpest review.
+
+## Experiments and Verification
+
+The experiment programs for this volume live in `code/examples/vol5/` and in the inline examples on each page — click and run. The original experiments were verified on GCC 16.2.1, WSL2 (16 logical cores, 2026-11-14), and re-verified when extracted into standalone files. Behavior involving the C++ standard library was checked against cppreference and the current draft on eel.is; clause links are collected in each article's reference section. Output order may vary between runs, and timings drift with the machine — the magnitudes, the numbering, and the mechanisms stay the same.
 
 ## Chapter Navigation
 
+This is the new version of the concurrent programming volume: eight stages at present, plus a cookbook for readers who already know concurrency and would rather skip the author's rambling.
+
 <ChapterNav variant="sub">
-  <ChapterLink href="ch00-concurrency-fundamentals">ch00 · Concurrent Thinking and Fundamentals</ChapterLink>
-  <ChapterLink href="ch01-thread-lifecycle-raii">ch01 · Thread Lifecycle and RAII</ChapterLink>
-  <ChapterLink href="ch02-mutex-condition-sync">ch02 · Mutexes, Condition Variables, and Synchronization Primitives</ChapterLink>
-  <ChapterLink href="ch03-atomic-memory-model">ch03 · Atomic Operations and Memory Models</ChapterLink>
-  <ChapterLink href="ch04-concurrent-data-structures">ch04 · Concurrent Data Structures</ChapterLink>
-  <ChapterLink href="ch05-future-task-threadpool">ch05 · Futures, Tasks, and Thread Pools</ChapterLink>
-  <ChapterLink href="ch06-async-io-coroutine">ch06 · Asynchronous I/O and Coroutines</ChapterLink>
-  <ChapterLink href="ch07-actor-channel">ch07 · Actor Model and CSP</ChapterLink>
-  <ChapterLink href="ch08-debug-testing-perf">ch08 · Debugging, Testing, and Performance</ChapterLink>
-  <ChapterLink href="ch09-distributed-bridge">ch09 · Distributed Bridging</ChapterLink>
+  <ChapterLink href="chapter01-start-concurrency">Stage 1 · Getting a Program to Run Concurrently</ChapterLink>
+  <ChapterLink href="chapter02-sharing-data">Stage 2 · How Multiple Tasks Use Data Together</ChapterLink>
+  <ChapterLink href="chapter03-wait-and-coordinate">Stage 3 · Waiting and Coordinating Between Tasks</ChapterLink>
+  <ChapterLink href="chapter04-organizing-tasks">Stage 4 · From Managing Threads to Organizing Tasks</ChapterLink>
+  <ChapterLink href="chapter05-atomic-memory-model">Stage 5 · Understanding Atomic Operations and the Memory Model</ChapterLink>
+  <ChapterLink href="chapter06-validating-designs">Stage 6 · Judging Whether a Concurrent Design Works</ChapterLink>
+  <ChapterLink href="chapter07-coroutines">Stage 7 · Expressing Suspendable Work with Coroutines</ChapterLink>
+  <ChapterLink href="cookbook">Cookbook · The Volume 5 Quick Reference</ChapterLink>
 </ChapterNav>

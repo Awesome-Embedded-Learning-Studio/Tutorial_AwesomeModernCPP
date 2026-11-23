@@ -32,9 +32,9 @@ title: 'iostream: Stream Abstraction and Why It''s So Slow'
 translation:
   source: documents/vol3-standard-library/io/55-iostream.md
   source_hash: 6d928b858c8b3e124c02c2932a450c2d80217b59a7ea1e10dd69237a2b547c50
-  translated_at: '2026-09-26T00:41:29+00:00'
-  engine: anthropic
-  token_count: 5700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15717
 ---
 # iostream: Stream Abstraction and Why It's So Slow
 
@@ -47,23 +47,23 @@ We'll keep coming back to one concrete task: **read one million integers from st
 Many people's mental model of `iostream` stops at "`cin` is input, `cout` is output". But the moment you open the `<iostream>` header, you're looking at a whole inheritance hierarchy. Let's lay it out from bottom to top, because when we later ask "why is it slow", every layer contributes a share of the overhead:
 
 ```text
-ios_base          ← common base of all streams: format flags, locale, state bits
-  └─ ios          ← adds the streambuf pointer and error handling
-       ├─ istream ← input: operator>>, get, getline
-       └─ ostream ← output: operator<<, put, write
-            └─ iostream ← multiply inherits from istream and ostream
+ios_base          ← 所有流的公共基类：格式标志、locale、状态位
+  └─ ios          ← 加上 streambuf 指针和错误处理
+       ├─ istream ← 输入：operator>>、get、getline
+       └─ ostream ← 输出：operator<<、put、write
+            └─ iostream ← 多继承自 istream 和 ostream
 ```
 
 The one actually doing the work is the `streambuf` pointer hanging off `ios`. `istream` / `ostream` themselves only do "formatting and dispatch" — they translate `>>` / `<<` into read/write requests for characters, then hand those requests down to the underlying `streambuf`. `streambuf` is the layer that manages buffering and interfaces with the real I/O channel (terminal, file, memory block). You can picture the relationship like this:
 
 ```text
-your code  ──>>/<<──►  istream/ostream(formatting + sentry + locale)
+你的代码  ──>>/<<──►  istream/ostream(格式化 + sentry + locale)
                           │
-                          ▼  delegates character requests downward
-                      streambuf(buffering, actual reads/writes)
+                          ▼  把字符请求委托下去
+                      streambuf(缓冲、实际读写)
                           │
                           ▼
-                    real I/O channel(stdin / file / string)
+                    真正的 I/O 通道(stdin / 文件 / string)
 ```
 
 This chain is where `iostream`'s abstraction power comes from — the same `<<` / `>>` code switches seamlessly between screen, file, and memory just by swapping the `streambuf`. But it's also one of the roots of its "slowness": **every single `<<` walks the entire dispatch chain**. Our measurements later will show just how expensive that chain is.
@@ -86,7 +86,7 @@ The fact that `cerr` is unbuffered matters a lot, so let's verify it hands-on. T
 int main() {
     std::cout << "[cout] 这一串会先在 cout 的缓冲里待着";
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    // cerr is unbuffered: even though cout hasn't flushed, cerr goes out immediately
+    // cerr 不缓冲：哪怕 cout 还没 flush，cerr 立刻出去
     std::cerr << "[cerr] 我不缓冲，立刻打到 stderr\n";
     std::cout << " (cout 这一段补完才一起 flush)\n";
     return 0;
@@ -166,7 +166,7 @@ After `sync_with_stdio` is turned off, `cin` / `cout` use their own buffers whil
 #include <iostream>
 
 int main(int argc, char** argv) {
-    if (argc > 1) std::ios_base::sync_with_stdio(false);  // passing an argument = turn sync off
+    if (argc > 1) std::ios_base::sync_with_stdio(false);  // 传参 = 关同步
     std::printf("[printf] 1\n");
     std::cout << "[cout]   2\n";
     std::printf("[printf] 3\n");
@@ -200,7 +200,7 @@ The pattern is plain: `cout`'s two lines get batched together by its own buffer,
 What `cin.tie(nullptr)` removes is "automatically flushing `cout` before each read". In batch-processing scenarios that's pure profit — there's no prompt to print, and flushing before every read is nothing but waste. But if you're writing an interactive program and habitually do this:
 
 ```cpp
-std::cout << "Enter x: ";   // prompt has no newline, and no manual flush
+std::cout << "Enter x: ";   // 提示没换行，也不手 flush
 std::cin >> x;
 ```
 
@@ -231,12 +231,12 @@ The cores of the `scanf` and `fread + from_chars` paths look like this, respecti
 
 ```cpp
 // Standard: C++20
-// Path A: scanf, going straight through the FILE* buffer
+// 路径 A：scanf，直接走 FILE* 缓冲
 long acc = 0;
 int x;
 while (std::scanf("%d", &x) == 1) acc += x;
 
-// Path B: fread slurps all of stdin into memory, then from_chars parses it number by number
+// 路径 B：fread 把 stdin 整块读进内存，再 from_chars 逐个解析
 std::vector<char> buf;
 { char chunk[1 << 16]; size_t n;
   while ((n = std::fread(chunk, 1, sizeof(chunk), stdin)) > 0)
@@ -245,7 +245,7 @@ const char* first = buf.data();
 const char* last  = buf.data() + buf.size();
 long acc2 = 0;
 while (first < last) {
-    while (first < last && (*first == ' ' || *first == '\n')) ++first;  // from_chars doesn't skip leading whitespace, so we do it ourselves
+    while (first < last && (*first == ' ' || *first == '\n')) ++first;  // from_chars 不跳前导空白，自己跳
     if (first >= last) break;
     int y;
     auto r = std::from_chars(first, last, y);
@@ -258,10 +258,10 @@ while (first < last) {
 All four paths got the same one-million-integer data file; times are the minimum across multiple runs (absolute values drift per machine — look only at the order of magnitude):
 
 ```text
-cin   (sync on,  default)   ~177 ms
-scanf                       ~59 ms
-cin   (sync off + untie)    ~40 ms
-fread + from_chars          ~18 ms
+cin   (sync on,  默认)     ~177 ms
+scanf                      ~59 ms
+cin   (sync off + untie)   ~40 ms
+fread + from_chars         ~18 ms
 ```
 
 Put side by side, these numbers make the conclusion crystal clear:
@@ -298,27 +298,27 @@ int main() {
     std::istringstream iss("42  hello  99");
     int x;
 
-    iss >> x;   // reads 42 cleanly
+    iss >> x;   // 正常读到 42
     std::cout << "读到 " << x
               << "  good=" << iss.good() << " fail=" << iss.fail()
               << " eof=" << iss.eof() << " bool(iss)=" << static_cast<bool>(iss) << '\n';
 
-    iss >> x;   // wants an int but hits hello — failbit gets set, x unchanged
+    iss >> x;   // 想读 int，却碰到 hello —— failbit 置位，x 不变
     std::cout << "格式不匹配后: good=" << iss.good()
               << " fail=" << iss.fail()
               << " bool(iss)=" << static_cast<bool>(iss) << '\n';
 
     int y = -999;
-    iss >> y;   // stream is in fail state, this >> is a no-op, y unchanged
+    iss >> y;   // 流处于 fail 状态，这次 >> 是空操作，y 不变
     std::cout << "y 还是 " << y << "，因为流在 fail 状态下 >> 被忽略\n";
 
-    iss.clear();   // clears failbit; "hello" is still sitting in the buffer waiting
+    iss.clear();   // 清掉 failbit，"hello" 仍在缓冲里等着
     std::string s;
-    iss >> s;      // use a string to digest "hello"
-    iss >> x;      // goes on to read 99
+    iss >> s;      // 用 string 把 "hello" 消化掉
+    iss >> x;      // 继续读到 99
     std::cout << "clear() 之后: s=" << s << " x=" << x << '\n';
 
-    // read past the end: eofbit and failbit get set together
+    // 读到末尾再读：eofbit 和 failbit 一起置位
     iss >> x;
     std::cout << "读到末尾后: eof=" << iss.eof()
               << " fail=" << iss.fail() << '\n';
@@ -341,7 +341,7 @@ A few practical takeaways from this state machine:
 **`operator bool` (and `operator!`) is the single entry point for checking whether a stream is usable.** The standard library gives streams an implicit conversion to `bool`, equivalent to `!fail()` — true as long as neither `failbit` nor `badbit` is set. That's precisely the foundation of the classic loop idiom:
 
 ```cpp
-while (iss >> x) sum += x;   // >> returns the stream itself, which then converts to bool
+while (iss >> x) sum += x;   // >> 返回流本身，流再转 bool
 ```
 
 `>> x` returns the `istream&` (the stream itself), which then implicitly converts to `bool`: keep looping while valid data arrives, exit on end-of-file (`eofbit` gets set together with `failbit`) or on a format error. This style is far cleaner — and safer — than "first `>>`, then check `eof()`" — **checking `eof()` alone is the classic trap**, because it's only set after you've read past the end, so the last value read may be a half-built one.

@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/04-latency-throughput-cycles.md
   source_hash: 10c0f1a03693b6d428c16794b4ad01d1897c6bf9dd9632cea62ecb7e17e1e9f8
-  translated_at: '2026-09-26T16:39:56+00:00'
-  engine: anthropic
-  token_count: 6200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5965
 ---
 
 # Latency, Throughput, Cycles: What Are You Actually Measuring
@@ -67,7 +67,7 @@ static inline std::uint64_t bit_mix(std::uint64_t x) {
 First, the **latency measurement** approach. The idea: call it once at a time, time each call individually, run many iterations and take the median — doing our best to reflect "how long one call itself takes":
 
 ```cpp
-// Read the TSC (hardware cycle counter) with rdtsc — more precise than chrono
+// 用 rdtsc 读 TSC (硬件周期计数器), 精度比 chrono 高
 static inline std::uint64_t rdtsc() {
     std::uint32_t hi, lo;
     __asm__ __volatile__("rdtsc" : "=a"(lo), "=d"(hi));
@@ -83,7 +83,7 @@ for (int i = 0; i < M; ++i) {
     std::uint64_t b = rdtsc();
     samples[i] = b - a;
 }
-// Sort and take the median
+// 排序取中位数
 ```
 
 Now the **throughput measurement** approach. Note how it looks nothing like the latency measurement: instead of timing each call individually, it runs five hundred million iterations back to back in one big loop and reads the TSC only at the start and at the end. The key is that the loop body builds a **data dependency chain** — each iteration's result feeds the next one:
@@ -92,7 +92,7 @@ Now the **throughput measurement** approach. Note how it looks nothing like the 
 constexpr int N = 500'000'000;
 std::uint64_t acc = 12345;
 auto c0 = rdtsc();
-for (int i = 0; i < N; ++i) acc = bit_mix(acc);  // Every iteration depends on the previous result
+for (int i = 0; i < N; ++i) acc = bit_mix(acc);  // 每次都依赖上次结果
 auto c1 = rdtsc();
 double per_op = (double)(c1 - c0) / N;
 ```
@@ -100,11 +100,11 @@ double per_op = (double)(c1 - c0) / N;
 The results on this machine (GCC 16.1.1, `-O2`):
 
 ```text
-Throughput measurement (with data dependency): 9.30 cycles/op   (sink=7075159340691660003)
-Latency measurement   (per-call timing): 37.00 cycles/op (median, including rdtsc overhead)
-Minimum observed: 1.00 cycles/op (close to the bare overhead of two rdtsc calls)
+吞吐量测量 (带数据依赖): 9.30 cycles/op   (sink=7075159340691660003)
+延迟测量   (单次计时): 37.00 cycles/op (中位数, 含 rdtsc 开销)
+最小观测: 1.00 cycles/op (接近 rdtsc 两次调用本身的开销)
 
-Same bit_mix, throughput 9.30 vs latency measurement 37.00 — the gap comes from how it was measured
+同一个 bit_mix, 吞吐量 9.30 vs 延迟测量 37.00 —— 数值差异来自测量方式
 ```
 
 Same function, two ways of measuring, a 4x gap. That 4x is not noise, and it is not the compiler playing tricks — it is purely that the question you asked was different.
@@ -130,10 +130,10 @@ It depends on what you want to measure.
 **To measure throughput** (how much work gets done per second), you turn it around: **actively break the dependency chain**, so the CPU can run multiple iterations in parallel. Take each call's input from independent sources (read from a pre-generated array, say), and never let this call's output become the next call's input:
 
 ```cpp
-// Throughput measurement: independent inputs, the CPU can parallelize across iterations
+// 吞吐量测量: 输入独立, CPU 可以跨迭代并行
 auto c0 = rdtsc();
 for (int i = 0; i < N; ++i) {
-    do_not_optimize(bit_mix(inputs[i]));  // inputs[i] are mutually independent
+    do_not_optimize(bit_mix(inputs[i]));  // inputs[i] 之间互不依赖
 }
 auto c1 = rdtsc();
 ```

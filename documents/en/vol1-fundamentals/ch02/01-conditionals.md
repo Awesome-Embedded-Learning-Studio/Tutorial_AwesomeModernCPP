@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Conditional Statements
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #176)"
+      en: "Contributed exercise solutions and article revisions (PR #176)"
 translation:
   source: documents/vol1-fundamentals/ch02/01-conditionals.md
-  source_hash: 10642e23321d7bb03002b4260a0cb7104b0f32219593162035cde2282daa2aae
-  translated_at: '2026-09-25T10:12:37+00:00'
-  engine: anthropic
-  token_count: 9800
+  source_hash: c4f9107fb1f07834cd049b0d38b7e3c221a726653624ff22133d156842410645
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10043
 ---
 # Conditional Statements: Teaching Your Program to Read the Room
 
@@ -138,7 +149,7 @@ So, even if the branch body is only one line, add the braces! Add the braces! Ad
 When you need to compare the same expression against multiple discrete values, `switch` is clearer than an `if/else if` chain. Compilers usually optimize it into a jump table too, so the lookup is close to O(1).
 
 ```cpp
-// Folks, just get familiar with the look for now: you can treat enum class as plain enum for the time being, but it is clearly better than enum — feel free to ask an AI why
+// 各位，混个眼熟，enum class您可以先当enum使用，但是他显然比enum更好，可以问问AI为什么
 enum class Command {
     kStart,
     kStop,
@@ -213,9 +224,9 @@ Now let's fold everything from this chapter into one complete program: read an e
 ```cpp
 #include <iostream>
 
-/// @brief Determine the letter grade with an if-else chain
-/// @param score Score on a 0-100 scale
-/// @return The grade letter
+/// @brief 用 if-else 链判断成绩等级
+/// @param score 百分制分数 (0-100)
+/// @return 等级字符
 char grade_by_if(int score)
 {
     if (score >= 90) {
@@ -231,9 +242,9 @@ char grade_by_if(int score)
     }
 }
 
-/// @brief Determine the letter grade with a switch
-/// @param score Score on a 0-100 scale
-/// @return The grade letter
+/// @brief 用 switch 判断成绩等级
+/// @param score 百分制分数 (0-100)
+/// @return 等级字符
 char grade_by_switch(int score)
 {
     switch (score / 10) {

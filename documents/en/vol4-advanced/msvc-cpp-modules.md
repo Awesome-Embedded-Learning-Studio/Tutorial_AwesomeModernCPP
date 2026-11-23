@@ -13,9 +13,9 @@ description: ''
 translation:
   source: documents/vol4-advanced/msvc-cpp-modules.md
   source_hash: 4efdca4eaf31afea8ec4da7800c07953160c59720910100dbc7fabd73bb8dc1a
-  translated_at: '2026-09-26T03:11:34+00:00'
-  engine: anthropic
-  token_count: 4800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4737
 ---
 # MSVC C++ Modules, Explained: Principles, Motivation, and Engineering Practice
 
@@ -59,7 +59,7 @@ The header mechanism forces you to expose unnecessary implementation details in 
 
 ```c++
 // foo.h
-#include <vector> // <-- unnecessary exposure
+#include <vector> // <-- 不必要的暴露
 
 class Foo {
     std::vector<int> data;

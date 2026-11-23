@@ -15,9 +15,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/04-object-file-anatomy.md
   source_hash: 2161618898666ea49367b0e144a971c48e072449f922d1ee02da41552919129f
-  translated_at: '2026-10-13T03:55:58+00:00'
-  engine: anthropic
-  token_count: 4900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11566
 ---
 
 # Object File Anatomy: What's Inside a .o
@@ -196,7 +196,7 @@ $ gcc -g -c demo.c -o demo_g.o && readelf -S demo_g.o | grep debug
   [ 6] .rela.debug_info  RELA ...
   [ 7] .debug_abbrev     PROGBITS ...
   [ 8] .debug_aranges    PROGBITS ...
-  ... plus .debug_line and the rest
+  ...还有 .debug_line 等
 ```
 
 The section table has grown a row of sections starting with `.debug_`, and what they hold is DWARF. DWARF is the debug information format standard of the ELF world; gdb's breakpoints, single-stepping, and variable inspection all read these sections. The names speak plainly too: .debug_line records line numbers, .debug_info records types and variables. So did size put on weight? Let us put the two side by side:

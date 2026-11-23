@@ -23,9 +23,9 @@ title: 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/05-weak-ptr.md
   source_hash: 66e5193847198bc51fdf4a5dbc7a16b0b0f62c6853b8371b22defe9c284eecae
-  translated_at: '2026-09-27T04:57:20+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12622
 ---
 # weak_ptr and Circular References: Breaking the Ownership Deadlock
 
@@ -45,7 +45,7 @@ Before diving into `weak_ptr`, let's feel the circular-reference problem firstha
 struct Node {
     std::string name;
     std::shared_ptr<Node> next;
-    std::shared_ptr<Node> prev;  // the shared_ptr here is what creates the circular reference
+    std::shared_ptr<Node> prev;  // 这里的 shared_ptr 导致循环引用
 
     explicit Node(const std::string& n) : name(n) {
         std::cout << "Node(" << name << ") 构造\n";
@@ -59,14 +59,14 @@ void circular_reference_bug() {
     auto a = std::make_shared<Node>("A");
     auto b = std::make_shared<Node>("B");
 
-    a->next = b;  // A → B (B's reference count: 1 → 2)
-    b->prev = a;  // B → A (A's reference count: 1 → 2)
+    a->next = b;  // A → B（B 的引用计数: 1 → 2）
+    b->prev = a;  // B → A（A 的引用计数: 1 → 2）
 
     std::cout << "准备离开函数...\n";
-    // When the function ends:
-    // a goes out of scope, A's reference count: 2 → 1 (B->prev still holds A)
-    // b goes out of scope, B's reference count: 2 → 1 (A->next still holds B)
-    // Result: A and B both sit at a reference count of 1 that never reaches zero — memory leak!
+    // 函数结束时：
+    // a 离开作用域，A 的引用计数: 2 → 1（B->prev 仍然持有 A）
+    // b 离开作用域，B 的引用计数: 2 → 1（A->next 仍然持有 B）
+    // 结果：A 和 B 的引用计数都是 1，永远不会归零——内存泄漏！
 }
 ```
 
@@ -99,24 +99,24 @@ void weak_ptr_api_demo() {
 
     {
         auto shared = std::make_shared<int>(42);
-        weak = shared;  // weak doesn't increment the reference count
+        weak = shared;  // weak 不增加引用计数
 
         std::cout << "use_count: " << weak.use_count() << "\n";  // 1
         std::cout << "expired: " << weak.expired() << "\n";      // 0 (false)
 
-        // Obtain a shared_ptr through lock()
+        // 通过 lock() 获取 shared_ptr
         if (auto locked = weak.lock()) {
             std::cout << "value: " << *locked << "\n";  // 42
             std::cout << "use_count after lock: "
                       << weak.use_count() << "\n";  // 2
         }
-        // locked goes out of scope, the reference count drops back to 1
+        // locked 离开作用域，引用计数回到 1
     }
 
-    // shared has been destroyed
+    // shared 已经被销毁
     std::cout << "expired after scope: " << weak.expired() << "\n";  // 1 (true)
 
-    // lock() returns an empty shared_ptr
+    // lock() 返回空的 shared_ptr
     auto locked = weak.lock();
     std::cout << "locked is nullptr: " << (locked == nullptr) << "\n";  // 1 (true)
 }
@@ -132,7 +132,7 @@ Back in the doubly linked list example, all we have to do is change `prev` from 
 struct NodeFixed {
     std::string name;
     std::shared_ptr<NodeFixed> next;
-    std::weak_ptr<NodeFixed> prev;  // changed to weak_ptr
+    std::weak_ptr<NodeFixed> prev;  // 改为 weak_ptr
 
     explicit NodeFixed(const std::string& n) : name(n) {
         std::cout << "Node(" << name << ") 构造\n";
@@ -146,15 +146,15 @@ void fixed_circular_reference() {
     auto a = std::make_shared<NodeFixed>("A");
     auto b = std::make_shared<NodeFixed>("B");
 
-    a->next = b;  // A → B (B's strong reference count: 1 → 2)
-    b->prev = a;  // B ⇢ A (a weak reference; A's strong reference count stays at 1)
+    a->next = b;  // A → B（B 的强引用计数: 1 → 2）
+    b->prev = a;  // B ⇢ A（弱引用，A 的强引用计数不变，仍然是 1）
 
     std::cout << "准备离开函数...\n";
-    // When the function ends:
-    // a goes out of scope, A's strong reference count: 1 → 0, A is destroyed
-    //   destroying A destroys A->next, so B's strong reference count: 2 → 1
-    // b goes out of scope, B's strong reference count: 1 → 0, B is destroyed
-    // Every node is correctly released!
+    // 函数结束时：
+    // a 离开作用域，A 的强引用计数: 1 → 0，A 被销毁
+    //   A 的析构会销毁 A->next，B 的强引用计数: 2 → 1
+    // b 离开作用域，B 的强引用计数: 1 → 0，B 被销毁
+    // 所有节点都被正确释放！
 }
 ```
 
@@ -209,11 +209,11 @@ private:
 class EventBus {
 public:
     void subscribe(std::shared_ptr<EventListener> listener) {
-        listeners_.push_back(listener);  // stored as a weak_ptr
+        listeners_.push_back(listener);  // 存储 weak_ptr
     }
 
     void publish(const std::string& msg) {
-        // Clean out observers that have already been destroyed
+        // 清理已销毁的观察者
         listeners_.erase(
             std::remove_if(listeners_.begin(), listeners_.end(),
                 [](const std::weak_ptr<EventListener>& w) {
@@ -222,7 +222,7 @@ public:
             listeners_.end()
         );
 
-        // Notify all the living observers
+        // 通知所有存活的观察者
         for (const auto& weak : listeners_) {
             if (auto listener = weak.lock()) {
                 listener->on_event(msg);
@@ -245,15 +245,15 @@ void observer_demo() {
         bus.subscribe(l2);
 
         bus.publish("第一条消息");
-        // Both L1 and L2 receive it
+        // L1 和 L2 都能收到
 
         std::cout << "--- L2 离开作用域 ---\n";
     }
-    // L1 and L2 have both gone out of scope
-    // but the EventBus holds weak_ptrs, so it cannot stop them from being destroyed
+    // L1 和 L2 都离开了作用域
+    // 但 EventBus 用的是 weak_ptr，所以不会阻止它们被销毁
 
     bus.publish("第二条消息");
-    // No observer receives it — they have already been destroyed
+    // 没有观察者能收到——它们已经被销毁了
 }
 ```
 
@@ -297,20 +297,20 @@ private:
 class ResourceCache {
 public:
     std::shared_ptr<ExpensiveResource> get(const std::string& key) {
-        // Try the cache first
+        // 先尝试从缓存获取
         auto it = cache_.find(key);
         if (it != cache_.end()) {
             if (auto cached = it->second.lock()) {
                 std::cout << "缓存命中: " << key << "\n";
                 return cached;
             }
-            // The weak_ptr has expired; remove it from the cache
+            // weak_ptr 已过期，从缓存中移除
             cache_.erase(it);
         }
 
-        // Cache miss; load the resource
+        // 缓存未命中，加载资源
         auto resource = std::make_shared<ExpensiveResource>(key);
-        cache_[key] = resource;  // store a weak_ptr
+        cache_[key] = resource;  // 存储 weak_ptr
         return resource;
     }
 
@@ -340,18 +340,18 @@ void cache_demo() {
     ResourceCache cache;
 
     {
-        auto r1 = cache.get("texture/player.png");  // cache miss, loads it
-        auto r2 = cache.get("texture/player.png");  // cache hit
+        auto r1 = cache.get("texture/player.png");  // 缓存未命中，加载
+        auto r2 = cache.get("texture/player.png");  // 缓存命中
 
         std::cout << "缓存中的条目数: " << cache.size() << "\n";  // 1
 
-        // r1 and r2 go out of scope
+        // r1 和 r2 离开作用域
     }
 
     std::cout << "资源已无人使用\n";
-    std::cout << "缓存中的条目数: " << cache.size() << "\n";  // 0 (the weak_ptr has expired)
+    std::cout << "缓存中的条目数: " << cache.size() << "\n";  // 0（weak_ptr 已过期）
 
-    auto r3 = cache.get("texture/player.png");  // needs to be reloaded
+    auto r3 = cache.get("texture/player.png");  // 需要重新加载
 }
 ```
 

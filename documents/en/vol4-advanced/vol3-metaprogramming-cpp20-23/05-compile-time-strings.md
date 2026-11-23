@@ -24,9 +24,9 @@ title: 'Compile-Time Strings: NTTP Class Type and fixed_string'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/05-compile-time-strings.md
   source_hash: 46344aaed4633a131ea71d231b31b48b2d6455810fb682252a1a4a69cf40bbea
-  translated_at: '2026-09-26T04:53:36+00:00'
-  engine: anthropic
-  token_count: 3800
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6074
 ---
 # Compile-Time Strings: NTTP Class Type and fixed_string
 
@@ -39,7 +39,7 @@ Before C++20, an NTTP could only be an integer, an enum, a pointer, or a referen
 ```cpp
 template <const char* Name>
 struct Bad {};
-Bad<"hello"> b;   // a literal as an NTTP: fails to compile
+Bad<"hello"> b;   // 字面量作 NTTP,编译失败
 ```
 
 ```text
@@ -50,11 +50,11 @@ error: '"hello"' is not a valid template argument for type 'const char*'
 GCC's own words spell it out: `string literals can never be used in this context`. The reason is that a template argument is required to have linkage, so that the same template instance can be merged across two translation units; a string literal has no linkage, and the compiler refuses it outright. To make `const char*` work as an NTTP, you first have to store the string in a `constexpr` variable with external linkage:
 
 ```cpp
-constexpr const char kRed[] = "red";   // an object with linkage
+constexpr const char kRed[] = "red";   // 有 linkage 的对象
 template <const char* Name>
 struct Tagged { static constexpr const char* name = Name; };
 
-Tagged<kRed> t;   // this compiles
+Tagged<kRed> t;   // 这次能编过
 ```
 
 It compiles, sure, but that pulls in a second layer of trouble: the argument in `Tagged<kRed>` is the **address of the object** `kRed`, not the contents of the character sequence `"red"`. If two translation units each define a `kRed`, their addresses differ, and `Tagged<kRed>` instantiates as two different types. That clashes with the template intuition that "same argument means same type." Stack one more layer of maintenance cost on top: every string you want to use as a template argument has to be declared as a variable somewhere outside first, and the code fills up with these boilerplate variables that exist only to serve the compiler. Add it all up, and that is why "strings as template arguments" was essentially unused before C++20.
@@ -70,7 +70,7 @@ template <std::size_t N>
 struct FixedString {
     char value[N] = {};
 
-    // The literal "abc" has type const char[4] (including \0), which matches const char(&)[N]
+    // 字面量 "abc" 的类型是 const char[4](含 \0),正好匹配 const char(&)[N]
     constexpr FixedString(const char (&str)[N]) {
         for (std::size_t i = 0; i < N; ++i) value[i] = str[i];
     }
@@ -85,7 +85,7 @@ struct FixedString {
     constexpr const char* c_str() const { return value; }
 };
 
-// CTAD deduction guide: lets the literal "hello" deduce FixedString<6> (6 includes the trailing \0)
+// CTAD 推导指引:让字面量 "hello" 推导出 FixedString<6>(6 含末尾 \0)
 template <std::size_t N>
 FixedString(const char (&)[N]) -> FixedString<N>;
 ```
@@ -138,7 +138,7 @@ P0732 opened the door, but only the one for structural classes. Let's try a deli
 
 ```cpp
 class Secret {
-    int x;   // private (class members are private by default)
+    int x;   // private(默认 class 成员是 private)
 public:
     constexpr Secret(int v) : x(v) {}
 };

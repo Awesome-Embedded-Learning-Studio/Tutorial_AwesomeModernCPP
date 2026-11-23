@@ -21,10 +21,10 @@ tags:
 title: 'Cachelines and locality: the 64-byte minimum unit of transfer'
 translation:
   source: documents/vol6-performance/ch02-cpu-microarchitecture/02-02-cacheline-and-locality.md
-  source_hash: 6a6e7203adac373ba9ae435ddbceb1e218234d7285757ec965f432b9c8968917
-  translated_at: '2026-09-26T05:56:33+00:00'
-  engine: anthropic
-  token_count: 3200
+  source_hash: 968ae41193e94cb6aedbf9f94b2e7df697156fab994b82f41e62ec27cb345d28
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7933
 ---
 # Cachelines and locality: the 64-byte minimum unit of transfer
 
@@ -65,37 +65,37 @@ The core is still the sequential circular traversal, but this time we sweep the 
 ```cpp
 double stride_throughput(long elems, long stride_elem) {
     const long ACCESSES = 64'000'000;
-    long mask = elems - 1;            // elems is a power of two
+    long mask = elems - 1;            // elems 是 2 的幂
     int sink = 0; long idx = 0;
     auto t0 = std::chrono::steady_clock::now();
     for (long i = 0; i < ACCESSES; ++i) {
         sink += g_data[idx];
         idx = (idx + stride_elem) & mask;
     }
-    do_not_optimize(sink);            // prevent DCE, same semantics as Google Benchmark DoNotOptimize
+    do_not_optimize(sink);            // 防 DCE,语义同 Google Benchmark DoNotOptimize
     auto t1 = std::chrono::steady_clock::now();
     double secs = std::chrono::duration<double>(t1 - t0).count();
-    return (double)ACCESSES / secs / 1e6; // M accesses/sec
+    return (double)ACCESSES / secs / 1e6; // M 访问/秒
 }
 ```
 
 Working set 2 MB (an `int` array, 512K elements), pinned with `taskset -c 0`, sweep the stride once:
 
 ```text
-===== A. Stride scan (working set 2MB, lands in L3) =====
-stride(B)     M accesses/sec   notes
-       4B       2017.5   < cacheline: several accesses amortize one line
-       8B       1956.3   < cacheline: several accesses amortize one line
-      16B       1986.7   < cacheline: several accesses amortize one line
-      32B       1962.3   < cacheline: several accesses amortize one line
-      48B       1820.1   < cacheline: several accesses amortize one line
-      56B       1543.5   < cacheline: several accesses amortize one line
-      64B       1422.1   = cacheline: each access lands exactly on a new line   ← cliff
-      72B       1181.8   > cacheline: every access hits a new line
-      96B       1034.8   > cacheline: every access hits a new line
-     128B        995.8   > cacheline: every access hits a new line
-     256B       1324.2   > cacheline: every access hits a new line   ← anomalous bump, see below (suspected prefetcher)
-     512B        528.7   > cacheline: every access hits a new line
+===== A. 步长扫描(工作集 2MB,落 L3)=====
+stride(B)     M访问/秒       说明
+       4B       2017.5   < cacheline:同行的多次访问被摊薄
+       8B       1956.3   < cacheline:同行的多次访问被摊薄
+      16B       1986.7   < cacheline:同行的多次访问被摊薄
+      32B       1962.3   < cacheline:同行的多次访问被摊薄
+      48B       1820.1   < cacheline:同行的多次访问被摊薄
+      56B       1543.5   < cacheline:同行的多次访问被摊薄
+      64B       1422.1   = cacheline:每次访问正好换一行   ← 断崖
+      72B       1181.8   > cacheline:每次访问都是新行
+      96B       1034.8   > cacheline:每次访问都是新行
+     128B        995.8   > cacheline:每次访问都是新行
+     256B       1324.2   > cacheline:每次访问都是新行   ← 反常凸点,见下文(疑似预取器)
+     512B        528.7   > cacheline:每次访问都是新行
 ```
 
 How to read this table: keep your eyes on "**stride = 64B is the watershed**".
@@ -130,20 +130,20 @@ void walk_2d(int* a, int N, bool row_major) {
     auto t0 = std::chrono::steady_clock::now();
     if (row_major)
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) s += a[i * N + j]; // along the row: sequential, stride=4B
+            for (int j = 0; j < N; ++j) s += a[i * N + j]; // 沿行:顺序,stride=4B
     else
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) s += a[j * N + i]; // along the column: hopping, stride=N*4B=8KB
+            for (int j = 0; j < N; ++j) s += a[j * N + i]; // 沿列:跳跃,stride=N*4B=8KB
     sink = s;
     auto t1 = std::chrono::steady_clock::now();
-    /* print elapsed time and throughput */
+    /* 打印耗时和吞吐 */
 }
 ```
 
 ```text
-===== B. 2D traversal (N=2048, matrix 16 MB = L3 size) =====
-   row-major:     1.0 ms,  16.7 GB/s
-   col-major:     6.3 ms,   2.7 GB/s
+===== B. 2D 遍历(N=2048,矩阵 16 MB = L3 大小)=====
+   行优先 row-major:     1.0 ms,  16.7 GB/s
+   列优先 col-major:     6.3 ms,   2.7 GB/s
 ```
 
 **Same matrix, same amount of computation, same hits in L3 — column-major is more than 6x slower than row-major.**
@@ -160,17 +160,17 @@ The cacheline also directly decides one layout question that is special to C++: 
 
 ```cpp
 struct Bad {
-    int    id;          // hot: looked up every frame
-    char   debug_tag;   // cold: only read when logging
-    double values[6];   // hot: computed every frame
-    void*  parent;      // cold: only used when walking the tree
+    int    id;          // 热:每帧都要查
+    char   debug_tag;   // 冷:只有打日志才读
+    double values[6];   // 热:每帧都算
+    void*  parent;      // 冷:只有遍历树时才用
 };
 
 struct Good {
-    int    id;          // hot
-    double values[6];   // hot   ← hot fields grouped together
-    char   debug_tag;   // cold
-    void*  parent;      // cold  ← cold fields set apart
+    int    id;          // 热
+    double values[6];   // 热    ← 热字段聚一起
+    char   debug_tag;   // 冷
+    void*  parent;      // 冷    ← 冷字段分开
 };
 ```
 
@@ -194,7 +194,7 @@ But a program's performance does not depend only on data movement: the way the C
 
 ## References
 
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22.16 *Cache and memory access*: Zen-family cache parameters (64 B lines, ways/sets at each level), hardware prefetch behavior. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22.16 *Cache and memory access*: Zen-family cache parameters (64 B lines, ways/sets at each level), hardware prefetch behavior: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bryant & O'Hallaron, *CSAPP*, Chapter 6 *The Memory Hierarchy*: formal definitions of cachelines and spatial/temporal locality, plus the memory mountain
 - Drepper, U., *What Every Programmer Should Know About Memory*: engineering details of cachelines, alignment, and prefetching (the classic long read)
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch02/cacheline_locality.cpp`

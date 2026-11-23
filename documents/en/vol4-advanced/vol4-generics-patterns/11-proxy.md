@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/11-proxy.md
   source_hash: c442a2df8ae0ca2b6d2bc0121f2c8e46a14cb8d564d386847f416fc290fcfdcc
-  translated_at: '2026-09-26T05:29:21+00:00'
-  engine: anthropic
-  token_count: 14000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 20635
 ---
 
 # Proxy Pattern: You're Already Using It Without Realizing It
@@ -33,13 +33,13 @@ Let's set the name "Proxy Pattern" aside for a moment and look at a scenario you
 ```cpp
 class Source {
 public:
-    void do_work() { /* the real work */ }
+    void do_work() { /* 真正的活儿 */ }
 };
 
 int main() {
     Source* src = new Source;
-    src->do_work();      // works just fine
-    delete src;          // but you have to remember to release it manually
+    src->do_work();      // 用得好好的
+    delete src;          // 但你得记得手动释放
 }
 ```
 
@@ -48,8 +48,8 @@ This code runs, of course, but you already know where it's fragile—you're hold
 ```cpp
 int main() {
     auto src = std::make_unique<Source>();
-    src->do_work();      // use it exactly as before—the syntax hasn't changed at all
-    // released automatically on scope exit, no delete needed
+    src->do_work();      // 该咋用咋用,语法完全没变
+    // 离开作用域自动释放,不用 delete
 }
 ```
 
@@ -74,24 +74,24 @@ public:
     using Getter = std::function<T()>;
     using Setter = std::function<void(const T&)>;
 
-    // default: the "store the value directly" implementation
+    // 默认走「直接存值」的实现
     Property()
         : getter_([this] { return value_; }),
           setter_([this](const T& v) { value_ = v; }) {}
 
     explicit Property(const T& v) : Property() { value_ = v; }
 
-    // inject custom getter/setter — validation, notifications, logging all hook in here
+    // 注入自定义的 getter/setter —— 校验、通知、日志都挂在这里
     Property(Getter g, Setter s) : getter_(std::move(g)), setter_(std::move(s)) {}
 
-    operator T() const { return getter_(); }  // read: goes through the getter
-    Property& operator=(const T& v) {         // write: goes through the setter
+    operator T() const { return getter_(); }  // 读:走 getter
+    Property& operator=(const T& v) {         // 写:走 setter
         setter_(v);
         return *this;
     }
 
 private:
-    mutable T value_{};   // mutable: lets the getter modify it even inside const methods
+    mutable T value_{};   // mutable:getter_ 在 const 方法里也能改它
     Getter getter_;
     Setter setter_;
 };
@@ -105,8 +105,8 @@ What does it look like in use? You'll find that a field wrapped in a `Property` 
 
 ```cpp
 Property<int> port(8080);
-int v = port;     // implicit conversion to T, triggers the getter
-port = 9090;      // operator=, triggers the setter
+int v = port;     // 隐式转 T,触发 getter
+port = 9090;      // operator=,触发 setter
 ```
 
 Let's verify that this chain of implicit conversion and assignment really behaves the way we described:
@@ -132,7 +132,7 @@ private:
 
 int main() {
     Property<int> port(8080);
-    int v = port;          // implicit conversion to T -> getter
+    int v = port;          // 隐式转 T -> getter
     std::cout << "read = " << v << "\n";
     port = 9090;           // operator= -> setter
     std::cout << "after assign = " << port.raw() << "\n";
@@ -170,7 +170,7 @@ struct Image {
     virtual ~Image() = default;
 };
 
-// the real image: loads from disk right in the constructor, slow
+// 真实图片:构造时就要从磁盘加载,很慢
 class RealImage : public Image {
 public:
     explicit RealImage(const std::string& f) : filename_(f) { load_from_disk(); }
@@ -191,8 +191,8 @@ class ImageProxy : public Image {
 public:
     explicit ImageProxy(const std::string& f) : filename_(f) {}
     void display() override {
-        ensure_real();     // construct RealImage on the first call only
-        real_->display();  // forward to the real object
+        ensure_real();     // 第一次调用时才构造 RealImage
+        real_->display();  // 转发给真实对象
     }
 
 private:
@@ -268,7 +268,7 @@ Compile and run:
 $ g++ -std=c++23 -O2 -Wall proxy_lazy_verify.cpp -o proxy_lazy_verify
 $ ./proxy_lazy_verify
 before display, load_count = 0
-Loading cat.png from disk (expensive)   # note: loading happens on the first display only
+Loading cat.png from disk (expensive)   # 注意:第一次 display 才加载
 Displaying cat.png
 Displaying cat.png
 after 2 displays, load_count = 1 (expect 1)
@@ -299,7 +299,7 @@ class NaiveProxy : public Image {
 public:
     explicit NaiveProxy(int id) : id_(id) {}
     void display() override {
-        if (!real_) real_ = std::make_unique<RealImage>(id_);  // data race!
+        if (!real_) real_ = std::make_unique<RealImage>(id_);  // 数据竞争!
         real_->display();
     }
 private:
@@ -320,10 +320,10 @@ $ g++ -std=c++23 -O1 -pthread -fsanitize=thread proxy_lazy_tsan.cpp -o proxy_laz
 $ ./proxy_lazy_tsan 2>&1 | head -5
 ==================
 WARNING: ThreadSanitizer: data race (pid 69560)
-    #0 NaiveProxy::display() ...   # reads real_
+    #0 NaiveProxy::display() ...   # 读 real_
     ...
     Previous write of size 8 by thread T1:
-    #0 NaiveProxy::display() ...   # writes real_
+    #0 NaiveProxy::display() ...   # 写 real_
 ```
 
 TSan caught it at a glance: one thread is writing `real_` while another reads it, the two have no synchronization relationship whatsoever, and per the standard that is undefined behavior. Never carry the single-threaded `if (!real_)` straight into a multithreaded environment—skip this fix and it will blow up, guaranteed.
@@ -400,25 +400,25 @@ The proxy's solution: build a local object that implements the same interface as
 #include <string>
 #include <thread>
 
-// a simulated transport layer (in real life: socket / HTTP / gRPC)
+// 模拟一个传输层(真实场景是 socket / HTTP / gRPC)
 class Transport {
 public:
     std::string send_request(const std::string& req) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // simulate network latency
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));  // 模拟网络延迟
         if (req == "get_time") return "2025-09-29T12:00:00Z";
         if (req.rfind("compute:", 0) == 0) return "result:" + req.substr(8);
         throw std::runtime_error("unknown request");
     }
 };
 
-// local abstraction of the remote service
+// 远程服务的本地抽象
 struct RemoteService {
     virtual std::string get_time() = 0;
     virtual int remote_compute(int x, int y) = 0;
     virtual ~RemoteService() = default;
 };
 
-// the remote proxy: translates method calls into transport requests
+// 远程代理:把方法调用翻译成 transport 请求
 class RemoteServiceProxy : public RemoteService {
 public:
     explicit RemoteServiceProxy(Transport* t) : transport_(t) {}
@@ -429,7 +429,7 @@ public:
 
     int remote_compute(int x, int y) override {
         std::string req = "compute:" + std::to_string(x) + "," + std::to_string(y);
-        transport_->send_request(req);              // a real implementation would parse "result:..."
+        transport_->send_request(req);              // 真实场景会解析 "result:..."
         return x + y;
     }
 
@@ -464,9 +464,9 @@ public:
 
     int compute(int x) override {
         if (auto it = cache_.find(x); it != cache_.end()) {
-            return it->second;          // cache hit, return directly
+            return it->second;          // 命中缓存,直接返回
         }
-        int result = real_->compute(x); // miss: only now do we compute
+        int result = real_->compute(x); // 没命中,才算
         cache_[x] = result;
         return result;
     }
@@ -500,9 +500,9 @@ class SyncProxy : public SomeInterface {
 public:
     explicit SyncProxy(SomeInterface* r) : real_(r) {}
     void op() override {
-        std::lock_guard<std::mutex> lk(mtx_);   // lock on entering the method
-        real_->op();                            // the real work
-    }                                           // unlock automatically on exit
+        std::lock_guard<std::mutex> lk(mtx_);   // 进方法先锁
+        real_->op();                            // 真正干活
+    }                                           // 离开自动解锁
 
 private:
     SomeInterface* real_;
@@ -531,10 +531,10 @@ public:
     CowString() : data_(std::make_shared<std::string>()) {}
     CowString(const std::string& s) : data_(std::make_shared<std::string>(s)) {}
 
-    // read: return a const reference directly; many CowStrings share the same copy
+    // 读:直接返回 const 引用,多个 CowString 共享同一份
     const std::string& str() const { return *data_; }
 
-    // write: first ensure exclusive ownership (copying if necessary), then modify
+    // 写:先确保独占(必要时复制),再改
     void append(const std::string& s) {
         ensure_unique();
         data_->append(s);
@@ -542,8 +542,8 @@ public:
 
 private:
     void ensure_unique() {
-        if (data_.use_count() > 1) {                         // not exclusive
-            data_ = std::make_shared<std::string>(*data_);   // make a copy
+        if (data_.use_count() > 1) {                         // 不独占
+            data_ = std::make_shared<std::string>(*data_);   // 复制一份
         }
     }
     std::shared_ptr<std::string> data_;
@@ -559,7 +559,7 @@ You may have seen `ensure_unique()` written like this in some older material:
 
 ```cpp
 void ensure_unique() {
-    if (!data_.unique()) {        // ⚠️ shared_ptr::unique() — removed from the standard as of C++20
+    if (!data_.unique()) {        // ⚠️ shared_ptr::unique() —— C++20 起已从标准移除
         data_ = std::make_shared<std::string>(*data_);
     }
 }
@@ -584,13 +584,13 @@ int main() {
     std::thread t1([&] {
         for (int i = 0; i < 100000; ++i) {
             auto copy = shared;   // use_count: 1 -> 2
-            (void)copy;           // destruction: 2 -> 1
+            (void)copy;           // 析构: 2 -> 1
         }
     });
     std::atomic<long> saw_two{0};
     std::thread t2([&] {
         for (int i = 0; i < 100000; ++i) {
-            if (shared.use_count() > 1) ++saw_two;   // the reference count will be observed jumping
+            if (shared.use_count() > 1) ++saw_two;   // 会观察到引用计数跳变
         }
     });
     t1.join();

@@ -26,9 +26,9 @@ title: "flat_map Design Guide (I): motivation, API, and the flat_tree architectu
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/hands_on/01-flat-map-design.md
   source_hash: b3bc404a6d5c7125b591db0225fd9477eabd150dae35a56c1b2d4072c9508ff8
-  translated_at: '2026-09-26T03:06:14+00:00'
-  engine: anthropic
-  token_count: 2400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4530
 ---
 # flat_map Design Guide (I): motivation, API, and the flat_tree architecture
 
@@ -46,8 +46,8 @@ The facade is disarmingly plain:
 
 ```cpp
 template <class Key, class Mapped,
-          class Compare = std::less<>,                              // transparent default
-          class Container = std::vector<std::pair<Key, Mapped>>>    // non-const Key
+          class Compare = std::less<>,                              // 透明默认
+          class Container = std::vector<std::pair<Key, Mapped>>>    // 非 const Key
 class flat_map : public flat_tree<Key, internal::GetFirst, Compare, Container>;
 ```
 

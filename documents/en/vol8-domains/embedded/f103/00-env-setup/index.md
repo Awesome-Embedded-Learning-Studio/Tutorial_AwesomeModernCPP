@@ -12,10 +12,10 @@ difficulty: beginner
 platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/index.md
-  source_hash: 85fd815512ede1547bb743999585a48d57916aa9699307513fc8b6a30f9c04bd
-  translated_at: '2026-09-26T04:19:22+00:00'
-  engine: anthropic
-  token_count: 1000
+  source_hash: a69261ea726e7567e5ef580e5912038a244ec9bb047bb29b6578299824ac2980
+  translated_at: '2026-11-22T16:42:17+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1100
 ---
 
 # Getting Started

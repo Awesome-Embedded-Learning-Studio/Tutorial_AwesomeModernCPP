@@ -24,9 +24,9 @@ title: 'Deep Dive into RAII: The Cornerstone of Resource Management'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/01-raii-deep-dive.md
   source_hash: 08defcf873b5b1cb4fcba82a4a25299ac5dc6e42ce3ad49bee083c288ed786fd
-  translated_at: '2026-09-27T04:42:49+00:00'
-  engine: anthropic
-  token_count: 8200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16647
 ---
 # Deep Dive into RAII: The Cornerstone of Resource Management
 
@@ -62,11 +62,11 @@ public:
         }
     }
 
-    // Copying is forbidden—a file handle should not be held by two objects at once
+    // 禁止拷贝——文件句柄不应该被两个对象同时持有
     FileHandle(const FileHandle&) = delete;
     FileHandle& operator=(const FileHandle&) = delete;
 
-    // Moving is allowed—ownership can be transferred
+    // 允许移动——所有权可以转移
     FileHandle(FileHandle&& other) noexcept
         : file_(other.file_)
     {
@@ -95,8 +95,8 @@ Usage is minimal:
 void write_log(const char* msg) {
     FileHandle fh("/tmp/app.log", "a");
     std::fprintf(fh.get(), "%s\n", msg);
-    // When the function ends, fh's destructor fcloses automatically
-    // Normal return, early return, or thrown exception—no leak in any case
+    // 函数结束时，fh 的析构自动 fclose
+    // 不管是正常返回、提前 return 还是抛异常，都不会泄漏
 }
 ```
 
@@ -133,7 +133,7 @@ void demo_stack_unwinding() {
     Tracer a("a");
     Tracer b("b");
     throw std::runtime_error("boom!");
-    Tracer c("c");  // Execution never reaches this point
+    Tracer c("c");  // 永远不会执行到这里
 }
 
 int main() {
@@ -181,8 +181,8 @@ void may_throw() {
 void test_stack_unwinding() {
     Tracer t1("t1");
     Tracer t2("t2");
-    may_throw();  // The exception is thrown here
-    Tracer t3("t3");  // Execution never reaches this point
+    may_throw();  // 异常在这里抛出
+    Tracer t3("t3");  // 永远不会执行到这里
 }
 
 int main() {
@@ -222,7 +222,7 @@ struct TestDestructor {
 int main() {
     std::cout << "Is destructor noexcept? "
               << std::is_nothrow_destructible<TestDestructor>::value << "\n";
-    // Output: Is destructor noexcept? 1
+    // 输出：Is destructor noexcept? 1
 }
 ```
 
@@ -251,15 +251,15 @@ Let's look at a practical example: suppose we are writing a configuration-update
 class ConfigManager {
 public:
     void update_config(const std::string& key, const std::string& value) {
-        // std::lock_guard is a classic application of RAII
-        // Locks on construction, unlocks on destruction—even an exception in between cannot deadlock
+        // std::lock_guard 是 RAII 的经典应用
+        // 构造时上锁，析构时解锁——即使中间抛异常也不会死锁
         std::lock_guard<std::mutex> lock(mutex_);
 
-        // std::vector and std::string are both RAII containers
-        // If push_back throws bad_alloc, lock_guard's destructor still unlocks
+        // std::vector 和 std::string 都是 RAII 容器
+        // 如果 push_back 抛出 bad_alloc，lock_guard 的析构仍然会解锁
         entries_.push_back({key, value});
 
-        // Writing the file is RAII too: ofstream closes the file automatically on destruction
+        // 写入文件也是 RAII：ofstream 析构时自动关闭文件
         std::ofstream out(config_path_, std::ios::app);
         if (out) {
             out << key << "=" << value << "\n";
@@ -303,18 +303,18 @@ public:
         }
     }
 
-    // Copying is forbidden
+    // 禁止拷贝
     Socket(const Socket&) = delete;
     Socket& operator=(const Socket&) = delete;
 
-    // Move constructor
+    // 移动构造
     Socket(Socket&& other) noexcept
         : fd_(other.fd_)
     {
         other.fd_ = -1;
     }
 
-    // Move assignment
+    // 移动赋值
     Socket& operator=(Socket&& other) noexcept {
         if (this != &other) {
             if (fd_ >= 0) ::close(fd_);
@@ -341,26 +341,26 @@ Two of the most classic RAII examples in the C++ standard library are `std::lock
 #include <mutex>
 #include <iostream>
 
-// Wrong way: managing the lock manually
+// 错误示范：手动管理锁
 void bad_increment(std::mutex& m, int& counter) {
     m.lock();
     if (counter > 100) {
-        m.unlock();        // Don't forget to unlock before every return
+        m.unlock();        // 别忘了每个 return 前都要 unlock
         return;
     }
     counter++;
-    // What if an exception is thrown here? The lock is never released → deadlock
-    m.unlock();            // And don't forget this final unlock either
+    // 如果这里抛异常了呢？锁永远不会释放 → 死锁
+    m.unlock();            // 最后也别忘了 unlock
 }
 
-// Right way: RAII management
+// 正确做法：RAII 管理
 void good_increment(std::mutex& m, int& counter) {
     std::lock_guard<std::mutex> lock(m);
     if (counter > 100) {
-        return;  // lock_guard's destructor unlocks automatically
+        return;  // lock_guard 析构自动 unlock
     }
     counter++;
-    // However we exit, lock_guard will unlock
+    // 不管怎么退出，lock_guard 都会 unlock
 }
 ```
 
@@ -384,7 +384,7 @@ public:
     GpioPin(uint8_t pin, GpioDir dir, bool init_level = false) noexcept
         : pin_(pin), dir_(dir)
     {
-        // Assume an underlying HAL API
+        // 假设底层 HAL API
         hal_gpio_config(pin_, dir_, /*pull=*/false, init_level);
         if (dir_ == GpioDir::kOutput) {
             hal_gpio_write(pin_, init_level);
@@ -393,11 +393,11 @@ public:
 
     ~GpioPin() noexcept {
         if (moved_) return;
-        // Restore to a safe state: input (high impedance), to prevent leakage from a floating pin
+        // 恢复为安全态：输入（高阻），防止引脚浮空导致漏电
         hal_gpio_config(pin_, GpioDir::kInput, false, false);
     }
 
-    // Copying forbidden, moving allowed
+    // 禁止拷贝，允许移动
     GpioPin(const GpioPin&) = delete;
     GpioPin& operator=(const GpioPin&) = delete;
 
@@ -428,7 +428,7 @@ void blink_once() {
     led.write(true);
     hal_delay_ms(100);
     led.write(false);
-    // When the function ends, led automatically returns to a safe input state
+    // 函数结束时，led 自动恢复为安全输入态
 }
 ```
 
@@ -450,7 +450,7 @@ public:
         bus_.end_transaction();
     }
 
-    // Copying and moving both forbidden
+    // 禁止拷贝和移动
     SpiTransaction(const SpiTransaction&) = delete;
     SpiTransaction& operator=(const SpiTransaction&) = delete;
     SpiTransaction(SpiTransaction&&) = delete;
@@ -468,7 +468,7 @@ When using it, you only need to place the transaction object in scope:
 void read_sensor(SpiBus& spi, uint8_t cs) {
     SpiTransaction t(spi, cs);
     spi.transfer(tx_buf, rx_buf, len);
-    // Any return, break, or exception releases CS correctly
+    // 任何 return、break 或异常都会正确释放 CS
 }
 ```
 
@@ -499,15 +499,15 @@ public:
     ~ScopeGuard() noexcept {
         if (active_) {
             func_();
-            // If func_() throws, since the destructor is marked noexcept
-            // the C++ runtime calls std::terminate() automatically
+            // 如果 func_() 抛出异常，由于析构函数标记为 noexcept
+            // C++ 运行时会自动调用 std::terminate()
         }
     }
 
-    // Dismiss the guard—sometimes, after success, you don't want the cleanup to run
+    // 取消守卫——有时候成功后不想执行清理
     void dismiss() noexcept { active_ = false; }
 
-    // Copying is forbidden
+    // 禁止拷贝
     ScopeGuard(const ScopeGuard&) = delete;
     ScopeGuard& operator=(const ScopeGuard&) = delete;
 
@@ -531,13 +531,13 @@ void complex_operation() {
         cleanup_temp_files();
     });
 
-    // ... a series of operations that might fail ...
+    // ... 一系列可能失败的操作 ...
 
     if (error_occurred) {
-        return;  // guard's destructor runs the cleanup
+        return;  // guard 的析构会执行清理
     }
 
-    // Success—no cleanup needed
+    // 成功了，不需要清理
     guard.dismiss();
 }
 ```
@@ -565,19 +565,19 @@ struct Tracer {
 
 void test_normal_return() {
     Tracer t("normal");
-    return;  // The destructor gets called
+    return;  // 析构函数会被调用
 }
 
 void test_exit() {
     Tracer t("exit");
-    std::exit(0);  // The destructor does NOT get called!
+    std::exit(0);  // 析构函数不会被调用！
 }
 
 int main() {
     std::cout << "Normal case:\n";
     test_normal_return();
     std::cout << "\nstd::exit() case:\n";
-    test_exit();  // Constructs Tracer("exit") internally, then std::exit terminates the process directly
+    test_exit();  // 内部构造 Tracer("exit") 后 std::exit，进程直接终止
 }
 ```
 

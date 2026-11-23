@@ -24,10 +24,10 @@ tags:
 title: "flat_map hands-on (IV): sorted_unique construction optimization"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/03-4-flat-map-sorted-unique-construction.md
-  source_hash: b86b525e9a1ab59a2a3d2f135ca0e289cd4864e87dfa252ee9e36035ea8ab638
-  translated_at: '2026-09-26T02:32:13+00:00'
-  engine: anthropic
-  token_count: 2400
+  source_hash: c6e0a4ad017c7a40f5c1e87d405ec256f807c3241e1f06b2f8df1970eb57e2e2
+  translated_at: '2026-11-22T16:41:57.485437+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6493
 ---
 # flat_map hands-on (IV): sorted_unique construction optimization
 
@@ -44,7 +44,7 @@ The most intuitive way is to write a loop and insert one at a time. It looks har
 ```cpp
 flat_map<int, Config> m;
 for (auto& [k, v] : load_data()) {
-    m.insert({k, v});   // an O(n) shift every single time
+    m.insert({k, v});   // 每次都 O(n) shift
 }
 ```
 
@@ -61,9 +61,9 @@ The way around `O(N²)` is batching. Dump all the data into a vector first, then
 ```cpp
 std::vector<std::pair<int, Config>> raw;
 raw.reserve(N);
-for (auto& [k, v] : load_data()) raw.emplace_back(k, v);   // vector push_back, amortized O(1)
+for (auto& [k, v] : load_data()) raw.emplace_back(k, v);   // vector push_back,摊还 O(1)
 
-flat_map<int, Config> m(std::move(raw));   // move construction, one sort inside
+flat_map<int, Config> m(std::move(raw));   // move 构造,内部一次排序
 ```
 
 What the `flat_map(container_type&& items)` constructor does (around flat_tree.h:578) is simple: take over the vector's storage — an `O(1)` move — then call `sort_and_unique` once, at a cost of `O(N log N)`. Total construction cost is thereby pressed down to `O(N log N)`. Set that against per-element insert's `O(N²)`, still with 100k elements: `N log N ≈ 1.7×10⁶` versus `N² = 10¹⁰` — four orders of magnitude apart.
@@ -77,8 +77,8 @@ This is the construction posture flat_map officially recommends: accumulate the 
 Take it one step further: if the data in your hands is already sorted and duplicate-free, then the `O(N log N)` `sort_and_unique` inside bulk construction is work done for nothing. Why not just take the vector over as-is? That is precisely what the `sorted_unique` constructor is there to solve:
 
 ```cpp
-std::vector<std::pair<int, Config>> raw = load_already_sorted_data();   // already sorted
-flat_map<int, Config> m(sorted_unique, std::move(raw));   // skips sort_and_unique, O(N)
+std::vector<std::pair<int, Config>> raw = load_already_sorted_data();   // 已有序
+flat_map<int, Config> m(sorted_unique, std::move(raw));   // 跳过 sort_and_unique,O(N)
 ```
 
 Pass a `sorted_unique` tag as the first argument and flat_map routes to the sort-skipping constructor overload (flat_tree.h:606-646). It does exactly two things in total: take over the vector — an `O(1)` move — and run `DCHECK(is_sorted_and_unique(...))` once as a debug check. In release builds the DCHECK is empty, so the total cost is just that one takeover stroke: pure `O(N)`.
@@ -104,7 +104,7 @@ Here comes the question. You vouch to flat_map that "the data is sorted" — but
 ```cpp
 flat_tree(sorted_unique_t, container_type&& body, const Compare& comp)
     : body_(std::move(body)), comp_(comp) {
-    DCHECK(is_sorted_and_unique(body_, comp_));   // debug check
+    DCHECK(is_sorted_and_unique(body_, comp_));   // debug 校验
 }
 ```
 
@@ -149,14 +149,14 @@ inline constexpr sorted_unique_t sorted_unique{};
 
 class MiniMap {
 public:
-    // Plain constructor: sort and de-duplicate
+    // 普通构造:排序去重
     MiniMap(std::vector<int> data) : data_(std::move(data)) {
         std::sort(data_.begin(), data_.end());
         data_.erase(std::unique(data_.begin(), data_.end()), data_.end());
     }
-    // sorted_unique constructor: skip the sort, debug check
+    // sorted_unique 构造:跳过排序,debug 校验
     MiniMap(sorted_unique_t, std::vector<int> data) : data_(std::move(data)) {
-        assert(is_sorted_unique());   // catches a lie in debug
+        assert(is_sorted_unique());   // debug 抓撒谎
     }
     std::size_t size() const { return data_.size(); }
 private:
@@ -169,9 +169,9 @@ private:
 };
 
 int main() {
-    MiniMap a{std::vector<int>{3, 1, 2, 1}};     // plain construction, sort + dedup → 3 elements
-    MiniMap b(sorted_unique, std::vector<int>{1, 2, 3, 4});  // skip the sort → 4 elements
-    // MiniMap c(sorted_unique, std::vector<int>{1, 3, 2});  // lying! debug abort
+    MiniMap a{std::vector<int>{3, 1, 2, 1}};     // 普通构造,排序去重 → 3 元素
+    MiniMap b(sorted_unique, std::vector<int>{1, 2, 3, 4});  // 跳过排序 → 4 元素
+    // MiniMap c(sorted_unique, std::vector<int>{1, 3, 2});  // 撒谎!debug abort
     return 0;
 }
 ```

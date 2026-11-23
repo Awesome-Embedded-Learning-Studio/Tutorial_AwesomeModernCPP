@@ -19,9 +19,9 @@ title: std::array
 translation:
   source: documents/cpp-reference/containers/04-array.md
   source_hash: c4f9c1234850acc66cff7bcd0e84f309d15c146bd76b9de9a49449379b9e1d11
-  translated_at: '2026-09-26T17:12:11+00:00'
-  engine: anthropic
-  token_count: 500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1709
 ---
 # std::array (C++11)
 
@@ -59,8 +59,8 @@ int main() {
     arr.fill(0);
     arr[0] = 42;
     for (const auto& v : arr)
-        std::cout << v << ' '; // outputs: 42 0 0
-    std::cout << "\nsize: " << arr.size(); // outputs: size: 3
+        std::cout << v << ' '; // 输出: 42 0 0
+    std::cout << "\nsize: " << arr.size(); // 输出: size: 3
 }
 ```
 

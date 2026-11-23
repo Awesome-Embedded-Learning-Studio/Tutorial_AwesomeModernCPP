@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/07-decorator.md
   source_hash: 490058de01c00d5a9eb22d89d79ad647a648fcdb3721f4b30bc437e1716d2bad
-  translated_at: '2026-09-26T05:15:55+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13563
 ---
 
 # Decorator Pattern: From Deep Inheritance Hell to Chained Wrappers
@@ -44,7 +44,7 @@ The first time many people face the requirement "the text needs quotes and stars
 
 ```cpp
 struct PlainTextPrinter {
-    void print(const std::string& text) { /* direct output */ }
+    void print(const std::string& text) { /* 直接输出 */ }
 };
 
 struct QuotedPrinter : PlainTextPrinter {
@@ -89,7 +89,7 @@ The base object is trivial—just implement the interface:
 class PlainTextPrinter : public AbsTextPrinter {
 public:
     void simple_print(const std::string& text) override {
-        std::print("{}", text);  // only the most basic output
+        std::print("{}", text);  // 只做最基础的输出
     }
 };
 ```
@@ -107,7 +107,7 @@ public:
     explicit BaseDecorator(std::shared_ptr<AbsTextPrinter> ptr)
         : inner_(std::move(ptr)) {}
 
-    // pure virtual: concrete decorators must implement it themselves
+    // 纯虚:具体装饰器必须自己实现
     void simple_print(const std::string& text) override = 0;
 };
 ```
@@ -123,10 +123,10 @@ With the skeleton in place, the concrete decorators are almost embarrassingly li
 ```cpp
 class QuoteDecorator : public BaseDecorator {
 public:
-    using BaseDecorator::BaseDecorator;  // inherit the constructors, skip rewriting them
+    using BaseDecorator::BaseDecorator;  // 继承构造函数,省得重写
 
     void simple_print(const std::string& text) override {
-        inner_->simple_print("\"" + text + "\"");  // before forwarding: add quotes
+        inner_->simple_print("\"" + text + "\"");  // 转发前:加引号
     }
 };
 
@@ -135,7 +135,7 @@ public:
     using BaseDecorator::BaseDecorator;
 
     void simple_print(const std::string& text) override {
-        inner_->simple_print("***" + text + "***");  // before forwarding: add stars
+        inner_->simple_print("***" + text + "***");  // 转发前:加星号
     }
 };
 
@@ -145,7 +145,7 @@ public:
 
     void simple_print(const std::string& text) override {
         std::string result = text;
-        // before forwarding: uppercase the content, then pass the transformed result down
+        // 转发前:把内容改成大写,再把改造后的结果往下传
         std::transform(text.begin(), text.end(), result.begin(),
                        [](unsigned char ch) { return std::toupper(ch); });
         inner_->simple_print(result);
@@ -175,16 +175,16 @@ Now comes the most satisfying moment of the Decorator pattern: composition. All 
 int main() {
     std::string text = "Hello, World!";
 
-    // innermost layer: the base object
+    // 最内层:基础对象
     auto plain = std::make_shared<PlainTextPrinter>();
 
-    // wrap on a quote layer
+    // 套一层引号
     auto quoted = std::make_shared<QuoteDecorator>(plain);
 
-    // then a star layer (outside quoted)
+    // 再套一层星号(包在 quoted 外面)
     auto starred = std::make_shared<StarDecorator>(quoted);
 
-    // outermost layer: uppercase
+    // 最外层套大写
     auto full = std::make_shared<UpperCaseDecorator>(starred);
 
     full->simple_print(text);
@@ -246,10 +246,10 @@ Note it has no virtual functions and inherits nothing—it is just an ordinary s
 ```cpp
 template <typename Base>
 struct QuoteMixin : Base {
-    using Base::Base;  // inherit Base's constructors
+    using Base::Base;  // 继承 Base 的构造函数
 
     void simple_print(const std::string& text) const {
-        Base::simple_print("\"" + text + "\"");  // call Base's version
+        Base::simple_print("\"" + text + "\"");  // 调用 Base 的版本
     }
 };
 
@@ -267,7 +267,7 @@ struct StarMixin : Base {
 
 ```cpp
 int main() {
-    // nested composition yields one concrete type
+    // 嵌套组合,得到一个具体类型
     using Decorated = StarMixin<QuoteMixin<PlainRaw>>;
     Decorated d;
     d.simple_print("hi");
@@ -279,7 +279,7 @@ The output is identical to the dynamic version: `["***hi***"]`. But the cost is 
 ```sh
 $ g++ -std=c++23 -O2 -Wall -Wextra mixin.cpp -o mixin
 $ objdump -d -C mixin | grep -iE "simple_print|QuoteMixin|StarMixin"
-(empty)
+(空)
 ```
 
 Not **one single** `call` to `simple_print`, `QuoteMixin`, or `StarMixin` anywhere in `main`. The entire decoration chain—stars, quotes, raw output—was inlined away at compile time; at runtime the act of "decorating" simply does not exist. This is what **zero-overhead abstraction** truly means: you write it as elegantly as runtime composition, and the compiler turns it into a piece of hand-written inline code.
@@ -320,18 +320,18 @@ Pulling this off takes two capabilities. The first is registering each decorator
 The second, and the more critical one, is **atomic replacement of the entire chain**. If a reader thread is traversing the chain while you swap it, one careless step is a use-after-free. C++20 hands us a tool that is clean to the point of being nearly free: `std::atomic<std::shared_ptr<T>>`. Put the root reference of the whole decoration chain into an atomic `shared_ptr`; once the new chain is rebuilt, do a single atomic `store`, and every subsequent access sees the new chain, while threads still using the old chain safely finish their current call on their own held copy of the reference. The old chain destroys itself automatically once its reference count drops to zero.
 
 ```cpp
-// the root reference: an atomic shared_ptr (C++20)
+// 根引用:原子化的 shared_ptr(C++20)
 std::atomic<std::shared_ptr<Shape>> root;
 
 void reload_config_and_apply(const std::vector<std::string>& cfg) {
-    // assemble the new chain from the config (elided: wrap decorators layer by layer)
+    // 用配置拼出新链(略:逐层套装饰器)
     auto base = std::make_shared<Circle>();
     auto new_root = build_from_config(base, cfg);
-    root.store(new_root, std::memory_order_release);  // atomic replacement
+    root.store(new_root, std::memory_order_release);  // 原子替换
 }
 
 std::string read_current() {
-    // every read gets its own shared_ptr copy and works on that
+    // 每次读都拿到一个 shared_ptr 副本,在副本上操作
     auto p = root.load(std::memory_order_acquire);
     return p->describe();
 }

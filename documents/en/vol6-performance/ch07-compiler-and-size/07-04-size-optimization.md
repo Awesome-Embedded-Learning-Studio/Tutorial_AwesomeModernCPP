@@ -23,10 +23,10 @@ tags:
 title: 'Binary size optimization: -Os, --gc-sections, and template bloat control'
 translation:
   source: documents/vol6-performance/ch07-compiler-and-size/07-04-size-optimization.md
-  source_hash: ecb1cd0e9ecac0f7209203d546dffaaf1f248a87def29bc0135e8d8c53791870
-  translated_at: '2026-09-26T07:07:15+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: 0e2c3b9d30ae0fc1d1386434d1da9664b191fd17ca95983f3e9194cfc16552ea
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4251
 ---
 # Binary size optimization: -Os, --gc-sections, and template bloat control
 
@@ -53,11 +53,11 @@ Measured on `size_demo` (which contains dead code + multiple template instantiat
 > ⚠️ Measure code size with the text segment from the `size` command, not with `ls -l`. A whole ELF includes headers/alignment/debug info and gets polluted — and on some compiler versions the `-Os` ELF can even come out bigger than `-O2`. Throughout this article we measure with the text segment (the code segment) reported by `size <binary>`.
 
 ```text
-            text     data     bss     (local GCC 16, order of magnitude)
--O2:        ~4144    ...      ...     ← baseline
--Os:        ~3740    ...      ...     ← smaller text than -O2
--Oz:        ~3740    ...      ...     ← same ballpark as -Os
---gc-sections ~4017 ...      ...     ← after dead-code reclamation
+            text     data     bss     (本机 GCC 16 量级)
+-O2:        ~4144    ...      ...     ← 基线
+-Os:        ~3740    ...      ...     ← 比 -O2 text 小
+-Oz:        ~3740    ...      ...     ← 与 -Os 同量级
+--gc-sections ~4017 ...      ...     ← 死代码回收后
 ```
 
 Absolute numbers shift with the compiler version, but the direction is stable: the text of `-Os`/`-Oz` is smaller than `-O2`.
@@ -69,9 +69,9 @@ On this small demo the difference is tiny (a few hundred bytes) because the prog
 The idea of this move is to place every function/data object in its own section and reclaim the **unreferenced sections** at link time. Two steps:
 
 ```bash
-# Compile: each function in its own section
+# 编译:每个函数独立段
 g++ -ffunction-sections -fdata-sections ...
-# Link: reclaim unreferenced sections
+# 链接:回收未引用段
 g++ ... -Wl,--gc-sections
 ```
 
@@ -89,9 +89,9 @@ A template instantiates a separate copy of the code for each type, so it bloats 
 
   ```cpp
   // common.h
-  extern template class std::vector<int>;   // declaration: don't generate it here
+  extern template class std::vector<int>;   // 声明:别在这生成
   // common.cpp
-  template class std::vector<int>;           // instantiate once
+  template class std::vector<int>;           // 实例化一次
   ```
 
 - **Extract common logic**: pull the type-independent parts of a template out into a non-template base class / common function, compiled only once. For example, `vector<T>`'s memory management can be shared through a non-template `vector_base`.
@@ -117,7 +117,7 @@ The core trade-off is that **size optimization and speed optimization often pull
 ## References
 
 - The existing vol6 `06-evaluating-performance-and-size.md` (this article is the predecessor of its expanded version; it already exists)
-- Agner Fog, *Optimizing assembly*, §10 *Code size optimization*. Local copy
+- Agner Fog, *Optimizing assembly*, §10 *Code size optimization*
 - GCC/Clang documentation for `-Os`/`-Oz`/`-ffunction-sections`/`-Wl,--gc-sections`/`extern template`
 - CSAPP chapter 7, *Linking* (background on the linking mechanics behind `--gc-sections`)
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch07/size_demo.cpp`

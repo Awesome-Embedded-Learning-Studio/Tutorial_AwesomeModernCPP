@@ -10,9 +10,10 @@ description: "Walks the four tables PML4, PDPT, PD and PT in order, splits three
 reading_time_minutes: 23
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/06-page-table-walk/02-four-level-walk-and-pagemap.md
-  source_hash: 21b3275dcb1b3d4ca880fb864648baca8c701693b4362e8c0e5b4c8a4339a138
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 05cbf3d7441cd1d1a32bd2b05ec9f223661038582480a1d5f13e13f4b4152f2d
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 14648
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -30,13 +31,13 @@ x86-64's paged table has four levels. Each table is sized to exactly one page: a
 Let's take three real addresses apart with a program. The field layout is fixed: bits 47 to 39 index the PML4, bits 38 to 30 index the PDPT, bits 29 to 21 index the PD, bits 20 to 12 index the PT, and the low 12 bits are the page offset:
 
 ```cpp
-// f4_split.cpp -- split a 48-bit virtual address into a 12-bit offset plus four 9-bit indexes
+// f4_split.cpp —— 把 48 位虚拟地址拆成 12 位偏移加四段 9 位索引
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
 
 int main(int argc, char** argv) {
-    uint64_t addr = 0x7fffffffd0dcULL;   // the &stack_var from the F1 setarch -R run
+    uint64_t addr = 0x7fffffffd0dcULL;   // F1 setarch -R 那一组的 &stack_var
     if (argc > 1) addr = strtoull(argv[1], nullptr, 0);
 
     printf("address            = 0x%016llx\n", (unsigned long long)addr);
@@ -116,7 +117,7 @@ Why does splitting save that much? A rough count settles it. The top-level table
 What actually goes into a PTE? We do not have to guess, because Linux spreads it out for us. /proc/self/pagemap is an interface file the kernel provides; every virtual page takes one 8-byte entry in it, laid out in virtual page number order. So to read the PTE for some address, divide the address by the page size to get the page number, then multiply by 8 to get the byte offset within the file. Let's write a program to read a stack variable:
 
 ```cpp
-// f3_pagemap.cpp -- read a stack variable's PTE from /proc/self/pagemap and decode its bits
+// f3_pagemap.cpp —— 从 /proc/self/pagemap 读栈变量的 PTE 并拆解各位
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
@@ -195,7 +196,7 @@ stack-before vaddr=0x7ffcce28160c
   -> phys addr (PFN<<12)     = 0x0000000000000   [PFN field is ZERO - not readable at this privilege]
 --- after touching stack var ---
 stack-after  vaddr=0x7ffcce28160c
-  (identical to the before section: raw 0x8180000000000000, present=1, PFN=0)
+  (与 before 完全相同：raw 0x8180000000000000，present=1，PFN=0)
 ```
 
 One label in the output needs explaining. The line `before touching dedicated mmap page` is a fixed string hardcoded in the printing function. At the f3 stage it actually corresponds to the page holding the stack variable; the dedicated, freshly mmap'd clean page does not enter the story until f3b. The after line says stack variable, and that one does line up.
@@ -248,7 +249,7 @@ My terminal for these experiments is a non-interactive session and cannot supply
 One more thing to think back over: in f3's output, the before and after sections are exactly the same. The plan was to read the PTE once before touching the variable and once after, and watch the present bit go from 0 to 1. But printf had already touched the stack variable before the first read, so by the time we looked, present was long since 1, and the moment of the flip was never captured. That moment is exactly what we want to film, so we need a clean page that nobody has touched for sure. We mmap a fresh page of anonymous memory, read its PTE, write one byte into it, and read again:
 
 ```cpp
-// f3b_present.cpp -- watch the present bit flip from 0 to 1 on a fresh anonymous page nobody has touched
+// f3b_present.cpp —— 在没人碰过的全新匿名页上观察 present 位 0 到 1 的翻转
 #include <cstdio>
 #include <cstdint>
 #include <fcntl.h>

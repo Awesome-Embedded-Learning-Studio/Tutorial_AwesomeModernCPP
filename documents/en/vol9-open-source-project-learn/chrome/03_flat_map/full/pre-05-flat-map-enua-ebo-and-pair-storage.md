@@ -26,9 +26,9 @@ title: "flat_map prerequisite (V): NO_UNIQUE_ADDRESS, EBO, and pair storage"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/03_flat_map/full/pre-05-flat-map-enua-ebo-and-pair-storage.md
   source_hash: 5225cd0457fdc2b30283c0d6d57eecd4f53312400c417e1ee752c0eefcd6c756
-  translated_at: '2026-09-26T02:55:34+00:00'
-  engine: anthropic
-  token_count: 4200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6100
 ---
 # flat_map prerequisite (V): NO_UNIQUE_ADDRESS, EBO, and pair storage
 
@@ -40,17 +40,17 @@ C++ carries a piece of historical baggage that made us frown the first time we l
 
 ```cpp
 struct Empty {};
-sizeof(Empty);   // 1 (not 0)
+sizeof(Empty);   // 1(不是 0)
 ```
 
 On its own, this doesn't hurt. It starts to hurt the moment you want to use an empty type as a member. The canonical case is a stateless comparator such as `std::less<>` — there is nothing inside it, it is purely a call wrapper. If you declare it as a member, by the book:
 
 ```cpp
 struct Holder {
-    std::less<> comp;   // empty object, yet takes 1 byte (+ alignment padding)
+    std::less<> comp;   // 空对象,但占 1 字节(+ 对齐填充)
     int data;
 };
-sizeof(Holder);   // 8 bytes (1 byte comp + 3 bytes padding + 4 bytes data)
+sizeof(Holder);   // 8 字节(1 字节 comp + 3 字节填充 + 4 字节 data)
 ```
 
 In theory `comp` is zero-overhead (it holds no data at all), yet in practice it takes 1 byte and drags alignment padding along with it — 4 bytes of pointless bloat.
@@ -59,10 +59,10 @@ EBO (Empty Base Optimization) is the escape hatch reserved for the "empty class 
 
 ```cpp
 struct Empty {};
-struct Holder : Empty {   // empty class as base
+struct Holder : Empty {   // 空类作基类
     int data;
 };
-sizeof(Holder);   // 4 bytes (Empty optimized away)
+sizeof(Holder);   // 4 字节(Empty 被优化掉)
 ```
 
 The standard library's containers all rely on this trick to keep empty allocators and empty comparators from costing memory — they inherit from them as base classes instead of tucking them in as members. But EBO has a boundary: it only works for base classes, not for members. Write the empty object as a member and it costs what it costs.
@@ -76,10 +76,10 @@ C++20 loosened that boundary. The new `[[no_unique_address]]` attribute tells th
 ```cpp
 struct Empty {};
 struct Holder {
-    [[no_unique_address]] Empty comp;   // annotated, the empty member can be zero bytes
+    [[no_unique_address]] Empty comp;   // 标注后,空成员可零字节
     int data;
 };
-sizeof(Holder);   // 4 bytes (comp EBO'd away)
+sizeof(Holder);   // 4 字节(comp 被 EBO 掉了)
 ```
 
 Chromium doesn't use the attribute raw; it wraps it in a macro, `NO_UNIQUE_ADDRESS` — on compilers that support the attribute it expands to `[[no_unique_address]]`, otherwise to nothing. That way the code doesn't need conditional compilation everywhere.
@@ -96,9 +96,9 @@ A claim you often hear online is that `[[no_unique_address]]` works better on Cl
 struct Empty {};
 struct WithNUA  { [[no_unique_address]] Empty e; int i; };
 struct WithoutNUA { Empty e; int i; };
-// Measured on GCC 16 / Clang 22:
-// sizeof(WithNUA)   = 4 bytes (e optimized away)
-// sizeof(WithoutNUA) = 8 bytes (e takes 1 + padding 3 + i takes 4)
+// 实测 GCC 16 / Clang 22:
+// sizeof(WithNUA)   = 4 字节(e 被优化掉)
+// sizeof(WithoutNUA) = 8 字节(e 占 1 + 填充 3 + i 占 4)
 ```
 
 So flat_map's empty comparator gets EBO on both GCC and Clang; don't let the popular claim lead you astray.
@@ -122,9 +122,9 @@ class flat_map : ...;
 Why does flat_map take the non-const road? The root is that the underlying container is a vector. To keep a vector ordered, there is no getting around the shifts in `insert`/`erase` — `std::move_backward` hauling elements in bulk — and that requires the element type to be move-assignable. But in a `pair<const Key, Mapped>`, `first` is const and cannot be move-assigned:
 
 ```cpp
-// Measured (C++17):
-static_assert(!std::is_move_assignable_v<std::pair<const int, int>>);   // not move-assignable → vector shift impossible
-static_assert( std::is_move_assignable_v<std::pair<int, int>>);        // move-assignable
+// 实测(C++17):
+static_assert(!std::is_move_assignable_v<std::pair<const int, int>>);   // 不可移动赋值 → vector shift 做不了
+static_assert( std::is_move_assignable_v<std::pair<int, int>>);        // 可移动赋值
 ```
 
 `pair<const K, V>` is not move-assignable, and that seals off the vector's shift path. For flat_map to survive, it has no choice but the non-const `pair<K,V>`.

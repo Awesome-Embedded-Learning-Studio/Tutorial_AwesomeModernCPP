@@ -19,9 +19,9 @@ title: Variadic Templates
 translation:
   source: documents/cpp-reference/templates/02-variadic-templates.md
   source_hash: 026a457e68bebaedb8178ad0b62daab959454588c00b2e29168773526d5b942f
-  translated_at: '2026-09-27T02:18:03+00:00'
-  engine: anthropic
-  token_count: 600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1628
 ---
 <!--
 Reference Card Template
@@ -64,7 +64,7 @@ No header required (language feature)
 
 template<typename... Ts>
 void print(Ts... args) {
-    // Use an initializer list to print the arguments one by one, in order
+    // 利用初始化列表保证顺序地逐个打印
     int dummy[] = {(std::cout << args << " ", 0)...};
     (void)dummy;
 }

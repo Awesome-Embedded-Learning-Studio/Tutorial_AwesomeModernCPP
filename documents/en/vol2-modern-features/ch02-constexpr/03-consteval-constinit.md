@@ -23,10 +23,10 @@ tags:
 title: 'consteval and constinit: New Tools for Compile-Time Guarantees'
 translation:
   source: documents/vol2-modern-features/ch02-constexpr/03-consteval-constinit.md
-  source_hash: d2738a2f08bfff4c40c014735aedd3da73422a9f89d88eca5e88845c18abe7fc
-  translated_at: '2026-09-27T10:17:17+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: ae6a38aedf176abb597a9e711ee8e343d44ba448d0a169f3ab86ea5001ff35b8
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12717
 ---
 # consteval and constinit: New Tools for Compile-Time Guarantees
 
@@ -50,15 +50,15 @@ consteval int square(int x)
     return x * x;
 }
 
-// OK: the argument is a constant, and the context is a constexpr variable initialization
-constexpr int kResult = square(8);  // compiles, kResult == 64
+// OK：参数是常量，上下文是 constexpr 变量初始化
+constexpr int kResult = square(8);  // 编译通过，kResult == 64
 
-// OK: the argument is a constant literal
-int arr[square(5)];  // OK, square(5) == 25, used as the array size
+// OK：参数是常量字面量
+int arr[square(5)];  // OK，square(5) == 25，数组大小
 
-// Error! The argument comes from runtime
+// 错误！参数来自运行时
 int runtime_val = 42;
-// int bad = square(runtime_val);  // compile error: not a constant expression
+// int bad = square(runtime_val);  // 编译错误：不是常量表达式
 ```
 
 Now let's line up the `constexpr` version — the same function with only the keyword changed:
@@ -70,7 +70,7 @@ constexpr int square_maybe(int x)
 }
 
 int runtime_val = 42;
-int ok = square_maybe(runtime_val);  // OK! Degrades into a runtime call
+int ok = square_maybe(runtime_val);  // OK！退化为运行时调用
 ```
 
 Put the two snippets side by side and the difference shows: a `constexpr` function handed a runtime argument quietly falls back to runtime execution, while a `consteval` function handed the same argument fails to compile, period. You can think of `consteval` as a hardened `constexpr`; the extra part is the mandatory compile-time guarantee — that "must" we keep talking about.
@@ -101,12 +101,12 @@ consteval std::uint32_t command_id(const char (&s)[N])
     return fnv1a32(s, N - 1);
 }
 
-// All IDs are generated at compile time, with zero runtime cost
+// 所有 ID 都在编译期生成，没有任何运行时开销
 constexpr auto kIdStart = command_id("START");
 constexpr auto kIdStop  = command_id("STOP");
 constexpr auto kIdReset = command_id("RESET");
 
-// Compile-time verification: ensure there are no hash collisions
+// 编译期验证：确保没有哈希冲突
 static_assert(kIdStart != kIdStop);
 static_assert(kIdStart != kIdReset);
 static_assert(kIdStop != kIdReset);
@@ -121,15 +121,15 @@ The second scenario is compile-time configuration validation. When you need a co
 ```cpp
 consteval int validate_buffer_size(int size)
 {
-    // If the constraint is not satisfied, this is a direct compile error
+    // 如果约束不满足，直接编译错误
     return size > 0 && size <= 4096 && (size & (size - 1)) == 0
         ? size
         : throw "Buffer size must be a power of 2 between 1 and 4096";
-    // In a consteval context, throw causes a compile error
+    // 在 consteval 上下文中，throw 会导致编译错误
 }
 
 constexpr int kBufferSize = validate_buffer_size(1024);  // OK
-// constexpr int kBadSize = validate_buffer_size(1000);  // compile error! Not a power of 2
+// constexpr int kBadSize = validate_buffer_size(1000);  // 编译错误！不是 2 的幂
 ```
 
 The third scenario is compile-time type tags and metadata. When you want to embed a piece of compile-time information into the type system (say, peripheral descriptions or protocol field definitions), `consteval` guarantees they won't quietly turn into runtime objects.
@@ -160,21 +160,21 @@ static_assert(kUsart1Tag.base_address == 0x40013800);
 ```cpp
 consteval int forced_compile_time(int x) { return x * x; }
 
-// Error! Calling a consteval function inside a constexpr function,
-// but the result of that call is not a constant expression
+// 错误！constexpr 函数中调用 consteval 函数，
+// 但该调用的结果不是常量表达式
 constexpr int wrapper(int x)
 {
-    // return forced_compile_time(x);  // compile error
-    return x * x;  // has to implement the logic itself
+    // return forced_compile_time(x);  // 编译错误
+    return x * x;  // 需要自己实现逻辑
 }
 
-// OK: a consteval function may call another consteval function
+// OK：consteval 函数中可以调用 consteval 函数
 consteval int double_square(int x)
 {
     return forced_compile_time(x) * 2;
 }
 
-constexpr auto kVal = double_square(3);  // OK, kVal == 18
+constexpr auto kVal = double_square(3);  // OK，kVal == 18
 ```
 
 The rule was later loosened by one notch (by P2564R3 in C++23 — the "P plus a number" is a standard committee proposal number). We need to read the scope of that loosening carefully: the ones entitled to the relaxation are `constexpr` functions instantiated from templates, plus things like lambda call operators not marked `consteval`. When they call a `consteval` function, as long as the call ultimately lands in a constant-evaluation context, no error comes your way. The non-template `constexpr` functions we write ourselves are not on the list — the `wrapper` in the code above happens to be non-template; try uncommenting that line, and it still won't compile. The standard actually lists a third category too, functions synthesized by `= default`, but their bodies aren't written by you, so we seldom run into them. Combining `consteval` with `constexpr` inside templates got considerably more flexible from then on.
@@ -192,7 +192,7 @@ C++23 also introduced `if consteval`, with the companion negative form `if !cons
 constexpr std::size_t compute_hash(const char* str, std::size_t len)
 {
     if consteval {
-        // Compile-time path: use a pure constexpr algorithm
+        // 编译期路径：使用纯 constexpr 的算法
         std::size_t hash = 0xcbf29ce484222325ull;
         for (std::size_t i = 0; i < len; ++i) {
             hash ^= static_cast<std::size_t>(str[i]);
@@ -200,19 +200,19 @@ constexpr std::size_t compute_hash(const char* str, std::size_t len)
         }
         return hash;
     } else {
-        // Runtime path: other implementation strategies are fair game here
+        // 运行时路径：可以使用其他实现策略
         std::size_t hash = 0xcbf29ce484222325ull;
         for (std::size_t i = 0; i < len; ++i) {
             hash ^= static_cast<std::size_t>(str[i]);
             hash *= 0x100000001b3ull;
         }
-        // On the runtime path, if the compiler supports inline SIMD instructions,
-        // it may auto-vectorize this loop; a SIMD library can also be called explicitly
+        // 运行时路径中，如果编译器支持内联 SIMD 指令，
+        // 可能会自动向量化这段循环；也可以显式调用 SIMD 库
         return hash;
     }
 }
 
-constexpr auto kCompileTimeHash = compute_hash("test", 4);  // takes the compile-time path
+constexpr auto kCompileTimeHash = compute_hash("test", 4);  // 走编译期路径
 ```
 
 Let's be upfront about one thing: both paths in the example still use the same algorithm — the difference is left in the comments. In a real program, one side could swap in vectorization or some other optimization strategy. `if consteval` decides only "which path to take"; how the code on each path is written is none of its business.
@@ -232,11 +232,11 @@ The second stage, dynamic initialization, needs runtime code to participate. And
 ```cpp
 // a.cpp
 #include <vector>
-std::vector<int> g_data{1, 2, 3};  // Dynamic initialization: calls vector's constructor
+std::vector<int> g_data{1, 2, 3};  // 动态初始化：调用 vector 的构造函数
 
 // b.cpp
 extern std::vector<int> g_data;
-int g_first_element = g_data[0];  // May read g_data before it is initialized!
+int g_first_element = g_data[0];  // 可能读到未初始化的 g_data！
 ```
 
 The most headache-inducing part of this class of bug is its instability: with some link orders everything is fine, swap to a different link order and it breaks — and of all things, it strikes precisely at that one instant of program startup. When you do run into it, the clues in your hands are few, and tracking it down is genuinely exhausting.
@@ -252,16 +252,16 @@ The semantics of `constinit` fit in one sentence: it goes on variable declaratio
 ```cpp
 #include <array>
 
-// OK: aggregate initialization of std::array is constant initialization
+// OK：std::array 的聚合初始化是常量初始化
 constinit std::array<int, 4> g_table = {1, 2, 3, 4};
 
-// OK: initialized with the return value of a constexpr function
+// OK：用 constexpr 函数的返回值初始化
 constexpr int compute_value() { return 42; }
 constinit int g_value = compute_value();
 
-// Error! get_runtime_value is not a constant expression and needs dynamic initialization
+// 错误！get_runtime_value 不是常量表达式，需要动态初始化
 // int get_runtime_value();
-// constinit int g_bad = get_runtime_value();  // compile error
+// constinit int g_bad = get_runtime_value();  // 编译错误
 ```
 
 ### What constinit and constexpr Each Promise
@@ -269,11 +269,11 @@ constinit int g_value = compute_value();
 Both `constinit` and `constexpr` brush up against compile time, but the dimensions they promise differ. A `constexpr` variable demands two things: the value is settled at compile time, and the object itself is `const` — you cannot modify it. A `constinit` variable also demands that its initial value be settled at compile time, but the object itself stays modifiable.
 
 ```cpp
-constexpr int kConstVal = 42;        // Compile-time value + not modifiable
-// kConstVal = 100;                  // Error! A constexpr variable is const
+constexpr int kConstVal = 42;        // 编译期值 + 不可修改
+// kConstVal = 100;                  // 错误！constexpr 变量是 const 的
 
-constinit int gMutableVal = 42;      // Compile-time initialization + modifiable
-gMutableVal = 100;                   // OK! The value can be changed at runtime
+constinit int gMutableVal = 42;      // 编译期初始化 + 可修改
+gMutableVal = 100;                   // OK！运行时可以改值
 ```
 
 This difference looks small, but in real projects it is exactly what comes in handy. Take a global configuration buffer: you want its initial value pinned down at compile time, steering clear of SIOF, and once the program is up and running you also want to update its contents. When a requirement like that lands in your lap, `constinit` is there to catch it.
@@ -285,11 +285,11 @@ This difference looks small, but in real projects it is exactly what comes in ha
 `constinit` has another practical side effect: applied to a `thread_local` variable, it does away with the runtime initialization-check overhead. Let's look at the two side by side:
 
 ```cpp
-// Without constinit: every access has to check whether the thread-local storage is initialized
+// 没有 constinit：每次访问都需要检查线程局部存储是否已初始化
 thread_local int tl_counter = 42;
 
-// With constinit: the compiler knows initialization completed at load time,
-// so no runtime guard variable is needed
+// 有 constinit：编译器知道初始化在加载时就完成了，
+// 不需要运行时守卫变量（guard variable）
 constinit thread_local int tl_fast_counter = 42;
 ```
 
@@ -301,11 +301,11 @@ An ordinary `thread_local` variable has to be checked once for "has it been init
 
 ```cpp
 // header.h
-extern constinit int g_shared_value;  // Tells users: this is constant-initialized
+extern constinit int g_shared_value;  // 告诉使用者：这是常量初始化的
 
 // source.cpp
 #include "header.h"
-constinit int g_shared_value = 100;   // The actual definition
+constinit int g_shared_value = 100;   // 实际定义
 ```
 
 This trick slots nicely into large projects. An `extern constinit` declaration in a header file makes things plain on its own: you, reading that line, know that this global variable's initialization behavior is settled, with no dynamic initialization mixed in.
@@ -343,7 +343,7 @@ consteval std::uint32_t hash_string(const char* s)
     return h;
 }
 
-constexpr auto kHashStart = hash_string("START");  // Mandatory compile-time evaluation
+constexpr auto kHashStart = hash_string("START");  // 编译期强制求值
 constexpr auto kHashStop  = hash_string("STOP");
 ```
 
@@ -356,8 +356,8 @@ constexpr int lookup_value(int index)
     return index >= 0 && index < 5 ? kTable[index] : 0;
 }
 
-constinit int g_first = lookup_value(0);   // Evaluated at compile time
-constinit int g_third = lookup_value(2);   // Evaluated at compile time
+constinit int g_first = lookup_value(0);   // 编译期求值
+constinit int g_third = lookup_value(2);   // 编译期求值
 ```
 
 The last pairing puts `consteval` to work on compile-time validation. With the validation function itself marked `consteval`, its execution is pinned to compile time. The job of producing the compile error can simply be handed to `static_assert`. If you'd rather have the error message bubble up straight from inside the function, a `throw` does it — a trick we already saw earlier in `validate_buffer_size`.
@@ -370,9 +370,9 @@ consteval bool check_config(int baud_rate, int data_bits)
     return true;
 }
 
-// Compile-time configuration validation with static_assert + a consteval function
+// 用 static_assert + consteval 函数做编译期配置校验
 static_assert(check_config(115200, 8), "Invalid UART config");
-// static_assert(check_config(0, 8));  // compile error: validation fails
+// static_assert(check_config(0, 8));  // 编译错误：校验不通过
 ```
 
 ## A Few Spots Where Things Go Wrong

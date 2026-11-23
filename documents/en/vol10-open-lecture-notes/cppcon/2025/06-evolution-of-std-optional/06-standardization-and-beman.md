@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/06-evolution-of-std-optional/06-standardization-and-beman.md
   source_hash: 57958397e6324f7425fcafd3fc3c8cd1da7741d1bb022198416530deff44bf82
-  translated_at: '2026-09-26T16:29:53+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4979
 ---
 
 # The Standardization Truth: The Beman Project and a Reference Implementation That Actually Runs
@@ -51,8 +51,8 @@ Pull out the body of `assign_opt`:
 
 ```asm
 _Z10assign_optRSt8optionalIRiERKS1_:
-        movq    (%rsi), %rax      # read 8 bytes from b — just a pointer
-        movq    %rax, (%rdi)      # write it to a
+        movq    (%rsi), %rax      # 从 b 读 8 字节，就是一个指针
+        movq    %rax, (%rdi)      # 写到 a
         ret
 ```
 

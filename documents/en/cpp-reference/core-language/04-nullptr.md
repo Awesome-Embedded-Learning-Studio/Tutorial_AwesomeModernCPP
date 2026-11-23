@@ -18,9 +18,9 @@ title: nullptr
 translation:
   source: documents/cpp-reference/core-language/04-nullptr.md
   source_hash: 029b188e3461d3df1a7d4207784a11c9135b2ab22946c041fbd4fd3aaf05cf82
-  translated_at: '2026-09-27T01:32:44+00:00'
-  engine: anthropic
-  token_count: 370
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1267
 ---
 # nullptr (C++11)
 
@@ -48,8 +48,8 @@ void f(int) { std::cout << "int\n"; }
 void f(int*) { std::cout << "int*\n"; }
 
 int main() {
-    f(0);        // Calls f(int), possibly unintended
-    f(nullptr);  // Calls f(int*), exact match
+    f(0);        // 调用 f(int)，可能非预期
+    f(nullptr);  // 调用 f(int*)，精确匹配
     int* p = nullptr;
     if (p == nullptr) { std::cout << "null\n"; }
 }

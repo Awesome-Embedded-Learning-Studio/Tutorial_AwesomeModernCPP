@@ -19,9 +19,9 @@ title: override specifier
 translation:
   source: documents/cpp-reference/core-language/06-override-final.md
   source_hash: a8b5f85610928bd6195d5b697fe609acba57eb537a0fb42ad726ace344ffdc25
-  translated_at: '2026-09-27T01:37:26+00:00'
-  engine: anthropic
-  token_count: 350
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1482
 ---
 # override specifier (C++11)
 
@@ -50,7 +50,7 @@ None (a language-keyword-level feature)
 #include <iostream>
 struct Base { virtual void foo() { std::cout << "Base\n"; } };
 struct Derived : Base {
-    // void foo(int) override; // compile error: signature mismatch
+    // void foo(int) override; // 编译错误：签名不匹配
     void foo() override { std::cout << "Derived\n"; }
 };
 int main() {

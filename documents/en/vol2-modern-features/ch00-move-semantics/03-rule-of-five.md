@@ -24,9 +24,9 @@ tags:
 translation:
   source: documents/vol2-modern-features/ch00-move-semantics/03-rule-of-five.md
   source_hash: 5af5132d6ce12d434c091c0b7e8171f94f978e5756a7a0c46622631740ff649e
-  translated_at: '2026-09-27T04:30:40+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10644
 ---
 # The Rule of Five: How the Special Member Functions Fit Together
 
@@ -46,13 +46,13 @@ public:
     OnlyDestructor(std::size_t n) : data_(new char[n]) {}
     ~OnlyDestructor() { delete[] data_; }
 
-    // No move constructor declared!
-    // And the compiler won't implicitly generate one either (a user-defined destructor is present)
+    // 没有声明移动构造函数！
+    // 编译器也不会隐式生成（因为有自定义析构函数）
 };
 
 OnlyDestructor a(100);
-OnlyDestructor b = std::move(a);  // Degrades to copy construction!
-                                    // The implicit copy constructor shallow-copies -> double delete
+OnlyDestructor b = std::move(a);  // 退化为拷贝构造！
+                                    // 隐式拷贝构造做浅拷贝 -> 双重 delete
 ```
 
 The consequence here is worse than plain inefficiency. The implicitly generated copy constructor does a shallow copy—replicating the pointers member by member—so `a` and `b`'s `data_` end up pointing at the same block of memory. When both are destroyed, `delete[]` runs twice, and you get an outright double free: the same memory released twice. We can verify this behavior with type traits (compile-time tools for probing a type's properties) <RefLink :id="2" preview="cppreference std::is_move_constructible — true via copy ctor fallback even without a real move ctor" />:
@@ -67,14 +67,14 @@ static_assert(std::is_move_constructible_v<OnlyDestructor>,
 Looks contradictory? Break it apart and it isn't. `is_move_constructible`'s true has a reason behind it: the compiler can use the copy constructor to "satisfy" move construction—rvalues are allowed to bind to `const T&` in the first place. But that doesn't mean a real move constructor exists to do the pointer transfer. Here is the complete verification code:
 
 ```cpp
-// rule_of_five_fallback.cpp -- with only a destructor, std::move degrades to copy construction
+// rule_of_five_fallback.cpp -- 只有析构函数时，std::move 退化为拷贝构造
 // Standard: C++17
 
 #include <iostream>
 #include <type_traits>
 #include <utility>
 
-// Only a destructor is defined; no copy/move operations are declared
+// 只定义了析构函数，没有声明任何拷贝/移动操作
 class OnlyDestructor
 {
     char* data_;
@@ -86,10 +86,10 @@ public:
     }
 
     ~OnlyDestructor() { delete[] data_; }
-    // Note: neither a move constructor nor a copy constructor is declared here
+    // 注意：这里既没有声明移动构造，也没有声明拷贝构造
 };
 
-// Compile-time verification: it "can be move constructed", but not because a real move constructor exists
+// 编译期验证：它"能移动构造"，但不是因为真有移动构造函数
 static_assert(!std::is_trivially_move_constructible_v<OnlyDestructor>,
               "没有真正的（平凡的）移动构造函数");
 static_assert(std::is_move_constructible_v<OnlyDestructor>,
@@ -104,9 +104,9 @@ int main()
               << std::is_move_constructible_v<OnlyDestructor>
               << "  (但能用拷贝构造蒙混过关)\n";
 
-    // Really executing OnlyDestructor b = std::move(a): the implicit copy constructor shallow-copies,
-    // a and b's data_ point at the same memory, and destroying both double frees.
-    // We don't actually run it here (it would crash); the compile-time static_asserts already gave the verdict.
+    // 真要执行 OnlyDestructor b = std::move(a)，隐式拷贝构造做浅拷贝，
+    // a 和 b 的 data_ 指向同一块内存，两者析构时 double free。
+    // 这里不真的跑（会崩），编译期 static_assert 已经给出结论。
     return 0;
 }
 ```
@@ -132,7 +132,7 @@ class Buffer {
     std::size_t capacity_;
 
 public:
-    // 1. Constructor
+    // 1. 构造函数
     explicit Buffer(std::size_t capacity)
         : data_(new char[capacity])
         , size_(0)
@@ -140,13 +140,13 @@ public:
     {
     }
 
-    // 2. Destructor
+    // 2. 析构函数
     ~Buffer()
     {
         delete[] data_;
     }
 
-    // 3. Copy constructor
+    // 3. 拷贝构造
     Buffer(const Buffer& other)
         : data_(new char[other.capacity_])
         , size_(other.size_)
@@ -155,7 +155,7 @@ public:
         std::memcpy(data_, other.data_, size_);
     }
 
-    // 4. Move constructor
+    // 4. 移动构造
     Buffer(Buffer&& other) noexcept
         : data_(other.data_)
         , size_(other.size_)
@@ -166,7 +166,7 @@ public:
         other.capacity_ = 0;
     }
 
-    // 5. Copy assignment
+    // 5. 拷贝赋值
     Buffer& operator=(const Buffer& other)
     {
         if (this != &other) {
@@ -179,7 +179,7 @@ public:
         return *this;
     }
 
-    // 6. Move assignment
+    // 6. 移动赋值
     Buffer& operator=(Buffer&& other) noexcept
     {
         if (this != &other) {
@@ -218,7 +218,7 @@ public:
 
     ~Buffer() { delete[] data_; }
 
-    // Copy constructor
+    // 拷贝构造
     Buffer(const Buffer& other)
         : data_(other.capacity_ ? new char[other.capacity_] : nullptr)
         , size_(other.size_)
@@ -229,7 +229,7 @@ public:
         }
     }
 
-    // Move constructor
+    // 移动构造
     Buffer(Buffer&& other) noexcept
         : data_(other.data_)
         , size_(other.size_)
@@ -240,7 +240,7 @@ public:
         other.capacity_ = 0;
     }
 
-    // Unified assignment operator—pass-by-value picks copy or move automatically
+    // 统一的赋值运算符——通过值传递自动选择拷贝或移动
     Buffer& operator=(Buffer other) noexcept
     {
         swap(*this, other);
@@ -294,23 +294,23 @@ public:
         }
     }
 
-    // Copying is forbidden—a file handle cannot be shared
+    // 禁止拷贝——文件句柄不可共享
     FileHandle(const FileHandle&) = delete;
     FileHandle& operator=(const FileHandle&) = delete;
 
-    // Moving is allowed—a file handle can transfer ownership
+    // 允许移动——文件句柄可以转移所有权
     FileHandle(FileHandle&& other) noexcept
         : file_(other.file_)
         , path_(std::move(other.path_))
     {
-        other.file_ = nullptr;  // Prevent 'other' from closing the file when destroyed
+        other.file_ = nullptr;  // 防止 other 析构时关闭文件
     }
 
     FileHandle& operator=(FileHandle&& other) noexcept
     {
         if (this != &other) {
             if (file_) {
-                std::fclose(file_);  // Close the current file
+                std::fclose(file_);  // 关闭当前文件
             }
             file_ = other.file_;
             path_ = std::move(other.path_);
@@ -323,7 +323,7 @@ public:
     const std::string& path() const { return path_; }
 };
 
-/// @brief Factory function: opens a log file
+/// @brief 工厂函数：打开日志文件
 FileHandle open_log(const std::string& name)
 {
     return FileHandle(name.c_str(), "a");
@@ -334,11 +334,11 @@ int main()
     auto log = open_log("app.log");
     std::fprintf(log.get(), "Application started\n");
 
-    // Transfer ownership of the log file to another variable
+    // 把日志文件的所有权转移给另一个变量
     FileHandle moved_log = std::move(log);
     std::fprintf(moved_log.get(), "Log handle moved\n");
 
-    // log.get() now returns nullptr; don't use it anymore
+    // log.get() 现在返回 nullptr，不要再使用它
     return 0;
 }
 ```

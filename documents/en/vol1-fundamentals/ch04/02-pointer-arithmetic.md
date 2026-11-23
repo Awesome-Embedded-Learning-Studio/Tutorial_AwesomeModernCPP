@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Pointer Arithmetic and Arrays
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #208)"
+      en: "Contributed exercise solutions and article revisions (PR #208)"
 translation:
   source: documents/vol1-fundamentals/ch04/02-pointer-arithmetic.md
-  source_hash: 26f4cb9285d282a0a299c1635baa3d6e9789f7373207541e35fd2153d3548c18
-  translated_at: '2026-09-25T10:38:05+00:00'
-  engine: anthropic
-  token_count: 4600
+  source_hash: a4757dfd597a75627c685ac538c51a8169bc5022cfc05e93aea6a4761e3c957f
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13138
 ---
 # Pointer Arithmetic and Arrays: p + 1 Adds More Than Just One Byte
 
@@ -43,7 +54,7 @@ Let's begin with the most classic move of all: declare an array, then assign its
 int main()
 {
     int arr[5] = {10, 20, 30, 40, 50};
-    int* p = arr;  // Legal! An array name can be assigned directly to a pointer
+    int* p = arr;  // 合法！数组名可以直接赋给指针
 
     std::cout << "arr 的地址:  " << arr << "\n";
     std::cout << "p 的值:      " << p << "\n";
@@ -61,19 +72,19 @@ arr[0] 的地址: 0x7ffd3a2b1c00
 *p:          10
 ```
 
-All three addresses are exactly the same. This brings us to one of the most important concepts in C++: **array-to-pointer decay**. When we write the name `arr`, in the vast majority of contexts the compiler does not treat it as "the entire array," but as "a pointer to the array's first element"—that is, `&arr[0]`.
+三个地址完全一样。这就引出了 C++ 里一个极其重要的概念：**数组到指针退化（array-to-pointer decay）**。当咱们写下 `arr` 这个名字的时候，编译器在绝大多数上下文里不会把它当成"整个数组"，而是把它当成"指向数组第一个元素的指针"，也就是 `&arr[0]`。
 
-So, strictly speaking, the sentence "an array name is a pointer" is wrong. The type of `arr` is `int[5]`, a complete array type that holds 5 `int`s and occupies 20 bytes. But the moment we use it in a context that wants a pointer (assigning it to an `int*`, passing it to a function, doing arithmetic on it), the compiler automatically decays it into an `int*`. This decay is irreversible: once decayed, there is no way back, and the array's length information is lost along with it.
+所以说"数组名就是指针"这句话严格来说是错的。`arr` 的类型是 `int[5]`，它是一个完整的数组类型，包含了 5 个 `int`，占 20 字节。但一旦咱们把它用在需要指针的语境里（比如赋值给 `int*`、传给函数、做算术运算），编译器就会自动把它退化成 `int*`。这个退化的过程是不可逆的，退化了就回不去了，数组长度信息也跟着丢了。
 
-> Since I said "the vast majority of contexts," when does it not decay? Only three situations hand us the whole array: `sizeof(arr)` returns the size of the entire array; `&arr` yields a "pointer to the array" (of type `int(*)[5]`, not `int*`); and initializing a character array from a string literal. Everywhere else, the array name decays, full stop.
+> 说了"绝大多数上下文"，那什么时候不退化呢？咱们能拿到整个数组的场合只有三种：`sizeof(arr)` 返回整个数组的大小，`&arr` 得到的是"指向数组的指针"（类型是 `int(*)[5]` 而非 `int*`），以及用字符串字面量初始化字符数组时。除此之外，数组名一律退化。
 
-## Pointer Addition and Subtraction—Stepping by Elements, Not Bytes
+## 指针加减运算——按元素步进，不是按字节
 
-Arithmetic is one of the pointer's most powerful abilities. But the rules here are not quite what everyday intuition suggests: adding 1 to a pointer moves it by **the size of one element of the pointed-to type**, not by 1 byte.
+指针最强大的能力之一就是算术运算。但这里的运算规则和咱们平常理解的不太一样：指针加 1，移动的是**一个所指向类型的大小**，不是 1 个字节。
 
-### What Pointer Addition Actually Does
+### 指针加法的实际效果
 
-Let's look straight at the code and compare the stepping of `int*` versus `char*`:
+咱们直接用代码看，对比 `int*` 和 `char*` 的步进：
 
 ```cpp
 #include <iostream>
@@ -115,17 +126,17 @@ pc + 1: 0x7ffd4e3a1bf1 -> *(pc+1) = B
 pc + 2: 0x7ffd4e3a1bf2 -> *(pc+2) = C
 ```
 
-Watch the address deltas. Each `+1` on an `int*` bumps the address by 4 (from `...c00` to `...c04`), while each `+1` on a `char*` bumps it by only 1 (from `...bf0` to `...bf1`). This is the core rule of pointer arithmetic: **`p + n` actually moves `n * sizeof(*p)` bytes**. The compiler works out the real byte offset automatically from the type the pointer points to—we never need to multiply by `sizeof` by hand.
+咱们注意看地址的差值。`int*` 每加 1 地址增加了 4（从 `...c00` 到 `...c04`），而 `char*` 每加 1 地址只增加了 1（从 `...bf0` 到 `...bf1`）。这就是指针算术的核心规则：**`p + n` 实际移动了 `n * sizeof(*p)` 个字节**。编译器会自动根据指针指向的类型来计算实际的字节偏移量，咱们不需要手动乘以 `sizeof`。
 
-This stepping sequence is available as an animation: you can play it, pause it, or single-step through it to see clearly how the address changes each time `pi` gains 1 and which slot the dereference lands on:
+这段步进做成了动画，您可以播放、暂停，也可以按步进键单步看，把 `pi` 每加 1 地址怎么变、解引用落在哪一格都看个清楚：
 
 <Anim id="pointer-arithmetic" />
 
-> For the `char*` output we forced hexadecimal address printing with `static_cast<void*>`, because `std::ostream` gives `char*` special treatment—it assumes it is a C string and keeps printing until it runs into a `'\0'`. We will meet this pit again shortly.
+> `char*` 的输出咱们用了 `static_cast<void*>` 来强制以十六进制打印地址，原因是 `std::ostream` 对 `char*` 有特殊处理——它会当它是 C 字符串然后一直打印到遇到 `'\0'` 为止，这个坑等下还会再遇到。
 
-### Pointer Subtraction—Measuring Distance in Elements
+### 指针减法——计算元素距离
 
-Subtract two pointers that point into the same array, and what you get is how many elements apart they sit (not a byte count):
+咱们让两个指向同一个数组的指针做减法，得到的是它们之间相隔多少个元素（不是字节数）：
 
 ```cpp
 int arr[5] = {10, 20, 30, 40, 50};
@@ -135,13 +146,13 @@ int* p2 = &arr[4];  // points at 50
 std::cout << "p2 - p1 = " << (p2 - p1) << "\n";  // 3
 ```
 
-The result of `p2 - p1` is 3, because exactly 3 elements separate `arr[1]` from `arr[4]`. This property is extremely useful in many algorithms—for example, to compute an element's index within an array, all we need is `ptr - arr`.
+`p2 - p1` 的结果是 3，因为从 `arr[1]` 到 `arr[4]` 中间隔了 3 个元素。这个特性在很多算法里都非常有用，比如计算某个元素在数组中的下标，咱们只需要 `ptr - arr` 就能得到。
 
-> Pointer subtraction is only valid between two pointers that point into the **same array** (or the same contiguous block of memory). Subtract two completely unrelated pointers and the result is undefined behavior—and the compiler may not even warn us.
+> 指针减法只能对**指向同一个数组**（或同一块连续内存）的两个指针进行。咱们要是拿两个毫无关系的指针做减法，结果是未定义行为，编译器连警告都不一定会给。
 
-## Traversing an Array with Pointers
+## 用指针遍历数组
 
-Since `arr + i` is exactly `&arr[i]`, we can perfectly well walk the array from head to tail with a pointer, no subscripts required:
+既然 `arr + i` 就等于 `&arr[i]`，那咱们完全可以用指针从头走到尾来遍历数组，而不需要下标：
 
 ```cpp
 #include <iostream>
@@ -181,15 +192,15 @@ int main()
 range-for: 10 20 30 40 50
 ```
 
-Wow, all three versions look the same! So here comes the question: which one should we use?
+wow, 三种写法看起来一样呢！那么问题来了：咱们该用哪种？
 
-In day-to-day development, **prefer range-for**. It is the most concise, the least error-prone, and after compiler optimization its performance is exactly the same as pointer traversal. Pointer traversal earns its keep in scenarios that need finer control—for example, when you only want to walk part of the array (starting from the first element that meets some condition), or when you need to manipulate several positions at once. But for one clean pass over the entire array, range-for is the best choice. Let's compress the choice among the three into a single sentence: whole-range traversal goes to range-for; segmented or interleaved manipulation is where pointers come out.
+在日常开发中，**优先用 range-for**。它最简洁、最不容易出错，而且编译器优化后性能和指针遍历完全一致。指针遍历的优势在于那些需要更精细控制的场景，比如您只需要遍历数组的一部分（从某个符合条件的元素开始），或者需要同时操作多个位置。但要是把整个数组过一遍，range-for 就是最好的选择。咱们把三种遍历的选择记成一句话：整段遍历用 range-for，分段或交错操作才上指针。
 
-> A very common trap sits right here: the "one-past-the-end pointer" `arr + 5` is legal, and we may compare against it, but we must **never dereference it**. `*(arr + 5)` is undefined behavior, because the position it points to already lies outside the array's bounds. The C++ standard only allows computing this address; it does not allow reading or writing what it points to. This is the same idea as the `end()` iterator of standard library containers: it marks "the position after the last element" and is not itself a valid element.
+> 这里有个非常常见的坑：`arr + 5` 这个"尾后指针"是合法的，咱们可以用它做比较，但**绝对不能解引用它**。`*(arr + 5)` 是未定义行为，因为它指向的位置已经超出了数组的范围。C++ 标准只允许计算这个地址，不允许读取或写入它指向的内容。这和标准库容器的 `end()` 迭代器是同一个思路：它标记的是"最后元素的下一个位置"，本身不是有效元素。
 
-## Pointers and C-Style Strings
+## 指针与 C 风格字符串
 
-A C-style string is at heart nothing more than a `char` array terminated by `'\0'` (the null character). Since it is an array, everything we said about the relationship between pointers and arrays applies here. A string literal like `"hello"` written in C++ code has type `const char[6]` (5 characters plus 1 `'\0'`) and decays to `const char*` in most contexts.
+C 风格字符串本质上就是一个以 `'\0'`（空字符）结尾的 `char` 数组。既然是数组，那所有关于指针和数组的关系在这里全都适用。咱们在 C++ 代码里写下的 `"hello"` 这样的字符串字面量，类型是 `const char[6]`（5 个字符加 1 个 `'\0'`），在大多数上下文里会退化成 `const char*`。
 
 ```cpp
 #include <iostream>
@@ -220,7 +231,7 @@ int main()
 长度: 5
 ```
 
-Now let's rewrite this length computation in pure pointer style, without a single subscript:
+现在咱们用纯指针的方式重写这个长度计算，不用任何下标：
 
 ```cpp
 const char* str_len_demo(const char* s)
@@ -234,17 +245,17 @@ const char* str_len_demo(const char* s)
 }
 ```
 
-This pattern is everywhere inside implementations of the C standard library. Functions like `strlen`, `strcpy`, and `strchr` all rest on this kind of pointer traversal at the bottom—start at the beginning, walk one character at a time, and stop when you hit a `'\0'`. The `s - start` step exploits the pointer subtraction we covered earlier and directly yields how many elements were crossed along the way.
+这个模式在 C 标准库的实现里无处不在。`strlen`、`strcpy`、`strchr` 这些函数的底层都是类似的指针遍历——从头开始一个字符一个字符地走，直到碰到 `'\0'` 为止。`s - start` 利用了咱们前面讲的指针减法，直接得到中间跨越了多少个元素。
 
-> Here is another classic trap: `const char* s = "hello";` makes `s` point at a string literal. String literals are stored in the program's read-only data segment, so **we must never modify the content through this pointer**. `s[0] = 'H';` causes undefined behavior—on most systems it triggers a segmentation fault right away. If you need a modifiable string, use a character array: `char s[] = "hello";` copies the content into an array on the stack, and modifying it is then safe.
+> 这里又是一个非常经典的踩坑点：`const char* s = "hello";` 让 `s` 指向了一个字符串字面量。字符串字面量存储在程序的只读数据段中，**咱们绝对不能通过这个指针去修改内容**。`s[0] = 'H';` 会导致未定义行为——在大多数系统上会直接触发段错误（segmentation fault）。要是需要一个可修改的字符串，请用字符数组 `char s[] = "hello";`，这样会把内容拷贝到栈上的数组里，修改就安全了。
 
-## The Essence of the Subscript Operator
+## 下标运算符的本质
 
-Now that the groundwork is in place, we can state one thing plainly: **the `[]` operator is essentially syntactic sugar for pointer arithmetic**.
+现在铺垫够了，咱们可以说清一件事：**`[]` 运算符本质上就是指针算术的语法糖**。
 
-Look at what the compiler actually does with `arr[n]`: `*(arr + n)`—first add the offset `n` to the pointer `arr`, then dereference. Because an array name decays into a pointer inside expressions, the whole process is pure pointer manipulation. This also explains why an array loses its length after being passed to a function: the function receives nothing but a pointer, so `sizeof` can only produce the size of the pointer itself, not of the original array.
+咱们看编译器处理 `arr[n]` 时实际做的事情：`*(arr + n)`，先对指针 `arr` 加上偏移量 `n`，然后解引用。因为数组名在表达式中会退化成指针，所以整个过程完全是指针操作。这也解释了为什么数组传给函数之后，函数内部就丢失了数组长度：函数拿到的只是一个指针，`sizeof` 只能得到指针本身的大小，而不是原来的数组大小。
 
-Since `arr[n]` is `*(arr + n)`, and addition is commutative, we can derive that `n[arr]`—that is, `*(n + arr)`—is completely equivalent. Yes, writing `5[arr]` is legal and behaves exactly the same as `arr[5]`.
+既然 `arr[n]` 就是 `*(arr + n)`，而加法满足交换律，那咱们可以推出 `n[arr]` 也就是 `*(n + arr)`，完全等价。是的，`5[arr]` 这种写法是合法的，和 `arr[5]` 的效果完全一样。
 
 ```cpp
 int arr[5] = {10, 20, 30, 40, 50};
@@ -253,11 +264,11 @@ std::cout << arr[3] << "\n";  // 40
 std::cout << 3[arr] << "\n";  // Also 40—but this is pure trivia, so never write it in real code
 ```
 
-We bring up this bit of trivia to deepen understanding: **subscripting is just pointer addition plus a dereference**—there is no extra mechanism behind it. Once that truly clicks, many things that used to look strange explain themselves—for example, why `sizeof` goes wrong after an array is passed as an argument, and why negative subscripts are legal in certain scenarios (`p[-1]` is simply `*(p - 1)`, provided you guarantee that `p - 1` points at valid memory).
+咱们提这个冷知识，意图是加深理解：**下标就是指针加法加上解引用**，没有额外的机制。您真正明白了这一点，很多之前觉得奇怪的现象就都解释得通了——比如为什么数组传参后 `sizeof` 不对、为什么负数下标在某些场景下是合法的（`p[-1]` 就是 `*(p - 1)`，只要您保证 `p - 1` 指向有效内存）。
 
-## Multidimensional Arrays and Pointers—Just a Taste
+## 多维数组与指针——点到为止
 
-Multidimensional arrays are the most headache-inducing part of the pointer-array relationship. Let's look at one simple example—just a taste, no deep dive:
+多维数组是指针和数组关系里最容易让人头疼的部分。咱们先给出一个简单的示例，点到为止，不做深入展开：
 
 ```cpp
 int matrix[3][4] = {
@@ -271,13 +282,13 @@ int (*row_ptr)[4] = matrix;  // A pointer to "an array of 4 ints"
 std::cout << row_ptr[1][2] << "\n";  // 7
 ```
 
-The type of `matrix` is `int[3][4]`; after decay it becomes a pointer to the first row, of type `int(*)[4]`—a "pointer to an array of 4 `int`s". Note that the parentheses in `(*row_ptr)` are mandatory: `[]` binds tighter than `*`, and `int* row_ptr[4]` declares an "array of 4 `int*`s"—an entirely different thing.
+`matrix` 的类型是 `int[3][4]`，退化后变成指向第一行的指针，类型是 `int(*)[4]`——"指向含有 4 个 `int` 的数组的指针"。咱们注意这个 `(*row_ptr)` 的括号是必须的：`[]` 的优先级比 `*` 高，`int* row_ptr[4]` 声明的是"含有 4 个 `int*` 的数组"，完全不是一回事。
 
-The pointer relationships of multidimensional arrays really are a bit twisty, and feeling dizzy right now is perfectly fine: in real projects, directly manipulating multidimensional arrays through raw pointers is rare, and once we get to `std::array` and `std::span` later, safer ways to handle this kind of problem will be available.
+多维数组的指针关系确实比较绕，您现在觉得有点晕也没关系，实际项目中直接用裸指针操作多维数组的场景并不多，后面学到 `std::array` 和 `std::span` 以后会有更安全的方式来处理这类问题。
 
-## In Practice: The Complete ptr_arith.cpp Demo
+## 实战：综合演示 ptr_arith.cpp
 
-Let's fold everything covered earlier into one complete program, spanning pointer traversal, distance via pointer subtraction, and C-string manipulation with pointers:
+咱们把前面讲的内容整合进一个完整的程序，涵盖指针遍历、指针减法求距离、以及用指针操作 C 字符串：
 
 ```cpp
 #include <cstddef>
@@ -349,7 +360,7 @@ int main()
 }
 ```
 
-Compile and run:
+编译运行：
 
 ```bash
 g++ -Wall -Wextra -std=c++17 ptr_arith.cpp -o ptr_arith && ./ptr_arith
@@ -371,17 +382,17 @@ first 和 last 之间隔了 5 个元素
 反转后: 9 18 23 7 12 5
 ```
 
-This program ties together every core point of the chapter: pointer traversal, pointer subtraction for distance, pointer-scanning a C string, and in-place array reversal with the two-pointer technique. That "two-pointer" trick for reversing an array—two pointers starting at the head and the tail, walking toward the middle and swapping as they go—is one we will run into again and again in interviews and algorithm problems.
+这个程序把本章的核心知识点全部串起来了：指针遍历、指针减法算距离、C 字符串的指针扫描、以及用双指针技术原地反转数组。其中反转数组的"双指针"技巧（一头一尾两个指针往中间走、边走边交换），咱们在面试和算法题里会经常遇到。
 
-## Exercises
+## 练习
 
-### Exercise 1: Writing strlen by Hand
+### 练习一：手写 strlen
 
-Please implement string-length computation with pure pointers, using no standard library functions. The function signature is `std::size_t my_strlen(const char* s)`.
+请您不用任何标准库函数，纯指针实现字符串长度计算，函数签名为 `std::size_t my_strlen(const char* s)`。
 
-How to verify: we compare whether `my_strlen("hello world")` agrees with the result of `std::strlen("hello world")`.
+验证方法：咱们对比 `my_strlen("hello world")` 与 `std::strlen("hello world")` 的结果是否一致。
 
-::: details Reference Solution
+::: details 参考答案
 
 ```cpp
 #include <iostream>
@@ -416,7 +427,7 @@ int main()
 }
 ```
 
-Compile and run:
+编译运行:
 
 ```bash
 g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
@@ -430,11 +441,11 @@ std::strlen(Hello, World)的长度是: 13
 
 :::
 
-### Exercise 2: Reversing an Array with Two Pointers
+### 练习二：双指针反转数组
 
-We already demonstrated two-pointer reversal in the practice code above. Now please wrap it into a function `void reverse_array(int* begin, int* end)`, where `end` is the one-past-the-end pointer. Note: the function body has no need to know the array length—two pointers alone are enough to complete the reversal.
+咱们已经在上面的实战代码中演示了双指针反转。现在请您把它封装成一个函数 `void reverse_array(int* begin, int* end)`，其中 `end` 是尾后指针。注意：函数内部不需要知道数组长度，只靠两个指针就能完成反转。
 
-::: details Reference Solution
+::: details 参考答案
 
 ```cpp
 #include <iostream>
@@ -471,7 +482,7 @@ int main()
 }
 ```
 
-Compile and run:
+编译运行:
 
 ```bash
 g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
@@ -486,11 +497,11 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 
 :::
 
-### Exercise 3: String Comparison via Pointers
+### 练习三：指针实现字符串比较
 
-Please implement `int my_strcmp(const char* a, const char* b)`: compare character by character; return 0 if the strings are completely identical; return a negative number if `a`'s first differing character is less than the corresponding character in `b`; otherwise return a positive number. This is a slightly harder exercise—you need to walk two strings at the same time and get the termination condition right.
+请您实现 `int my_strcmp(const char* a, const char* b)`：逐字符比较，如果完全相同返回 0，如果 `a` 的第一个不同字符小于 `b` 中对应字符则返回负数，否则返回正数。这是一个稍难的练习，需要同时遍历两个字符串并判断结束条件。
 
-::: details Reference Solution
+::: details 参考答案
 
 ```cpp
 #include <iostream>
@@ -554,13 +565,13 @@ int main()
 }
 ```
 
-Compile and run:
+编译运行:
 
 ```bash
 g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 ```
 
-> Just swap the `g` in `Hello, Worlg!` for a different letter and you will see different results
+>您只需要把 `Hello, Worlg!` 里的 `g` 换成不同的字母，就会看到不同的结果
 
 ```output:no-line-numbers
 test1>test2

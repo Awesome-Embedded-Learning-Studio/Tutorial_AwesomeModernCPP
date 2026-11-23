@@ -18,9 +18,9 @@ title: Program Structure and Compilation Basics
 translation:
   source: documents/vol1-fundamentals/c_tutorials/01-program-structure-and-compilation.md
   source_hash: c0e8c188bdfeffe7095b3f67707aceb8740f38f6e7350a92a71c59a9474ff7c6
-  translated_at: '2026-09-25T12:38:24+00:00'
-  engine: anthropic
-  token_count: 7200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8753
 ---
 # Program Structure and Compilation Basics
 
@@ -42,15 +42,15 @@ If you're on Windows without WSL, MinGW-w64 or MSVC can compile and run everythi
 The entry point of a C program is always the `main` function — that's not just convention, it's what the C standard mandates. The C standard defines two legal signatures for `main`:
 
 ```c
-// Version without command-line arguments
+// 无命令行参数版本
 int main(void) {
     return 0;
 }
 
-// Version with command-line arguments
+// 带命令行参数版本
 int main(int argc, char *argv[]) {
-    // argc: the number of arguments (at least 1, namely the program itself)
-    // argv: the array of argument strings; argv[0] is the program name
+    // argc: 参数个数（至少为 1，即程序自身）
+    // argv: 参数字符串数组，argv[0] 是程序名
     return 0;
 }
 ```
@@ -89,7 +89,7 @@ Now let's take apart how a `.c` file becomes an executable. The whole process sp
 The preprocessor handles every directive that starts with `#` — expanding macros, splicing in header contents, and processing conditional compilation:
 
 ```bash
-# Run preprocessing only; write to a file so it's easy to inspect
+# 只运行预处理，输出到文件方便查看
 gcc -E hello.c -o hello.i
 ```
 
@@ -137,8 +137,8 @@ gcc -c hello.c -o hello.o
 The `.o` file is a binary format (ELF on Linux) containing machine instructions, a symbol table, and relocation information. You can view the disassembly with `objdump` and the symbol table with `nm`:
 
 ```bash
-objdump -d hello.o    # inspect the disassembly
-nm hello.o            # inspect the symbol table
+objdump -d hello.o    # 反汇编查看
+nm hello.o            # 查看符号表
 ```
 
 Inside the object file, the addresses of function calls (such as the call to `printf`) are still left blank at this point, waiting for the link stage to fill them in.
@@ -148,10 +148,10 @@ Inside the object file, the addresses of function calls (such as the call to `pr
 The linker combines one or more object files together with whatever libraries they need into the final executable, resolving all references to external symbols:
 
 ```bash
-# Full compilation (all four stages in one go)
+# 完整编译（四阶段一步到位）
 gcc hello.c -o hello
 
-# Or step by step
+# 也可以分步
 gcc -c hello.c -o hello.o
 gcc hello.o -o hello
 ```
@@ -161,11 +161,11 @@ This stage is the key to understanding multi-file programming. Each `.c` file is
 ### The Compilation Pipeline at a Glance
 
 ```text
-hello.c → [preprocess] → hello.i → [compile] → hello.s → [assemble] → hello.o → [link] → hello
-              ↑                                                  ↑
-         #include expansion                             merge .o files + libraries
-         #define substitution                          resolve external symbols
-         conditional compilation                        emit the executable
+hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → hello.o → [链接] → hello
+              ↑                                              ↑
+         #include 展开                                   合并 .o + 库
+         #define 替换                                    解析外部符号
+         条件编译                                        生成可执行文件
 ```
 
 ## Step 3 — Figuring Out How Headers Work
@@ -173,8 +173,8 @@ hello.c → [preprocess] → hello.i → [compile] → hello.s → [assemble] �
 `#include` comes in two syntactic forms, with different search paths:
 
 ```c
-#include <stdio.h>    // Angle brackets: search only system/standard-library directories
-#include "myheader.h" // Quotes: search the current file's directory first, then system directories if not found
+#include <stdio.h>    // 尖括号：只在系统/标准库目录搜索
+#include "myheader.h" // 引号：先搜索当前文件所在目录，找不到再搜索系统目录
 ```
 
 The logic is intuitive — angle brackets are for "stuff the system provides", quotes are for "stuff you wrote yourself". The compiler carries a set of default search paths (view them with `gcc -E -Wp,-v - < /dev/null`), and the `-I` option adds extra search paths.
@@ -187,7 +187,7 @@ Every header should carry an include guard to prevent being included multiple ti
 #ifndef MYHEADER_H
 #define MYHEADER_H
 
-// header file contents
+// 头文件内容
 
 #endif /* MYHEADER_H */
 ```
@@ -197,7 +197,7 @@ Or use `#pragma once`:
 ```c
 #pragma once
 
-// header file contents
+// 头文件内容
 ```
 
 `#pragma once` is terser, but it can hit compatibility issues in certain edge cases (symlinked files, network path mappings). Just pick one scheme and stay consistent across the project — and if you're unsure, go with the traditional `#ifndef` scheme, which the standard guarantees.
@@ -218,17 +218,17 @@ int main(void) {
     const char* s = "Hello";
     int* p = &i;
 
-    printf("整数: %d\n", i);             // Decimal: 42
-    printf("十六进制: %x / %X\n", u, u); // Lowercase dead / uppercase DEAD
-    printf("浮点: %f\n", f);             // 6 decimal places by default: 3.141593
-    printf("浮点精度: %.2f\n", f);       // 2 decimal places: 3.14
+    printf("整数: %d\n", i);             // 十进制：42
+    printf("十六进制: %x / %X\n", u, u); // 小写 dead / 大写 DEAD
+    printf("浮点: %f\n", f);             // 默认 6 位小数：3.141593
+    printf("浮点精度: %.2f\n", f);       // 2 位小数：3.14
     printf("字符串: %s\n", s);           // Hello
-    printf("指针: %p\n", (void*)p);      // Pointer address
+    printf("指针: %p\n", (void*)p);      // 指针地址
 
-    // Width and alignment
-    printf("[%10d]\n", i);    // Right-aligned, width 10: [        42]
-    printf("[%-10d]\n", i);   // Left-aligned, width 10: [42        ]
-    printf("[%010d]\n", i);   // Zero-padded: [0000000042]
+    // 宽度与对齐
+    printf("[%10d]\n", i);    // 右对齐宽度 10：[        42]
+    printf("[%-10d]\n", i);   // 左对齐宽度 10：[42        ]
+    printf("[%010d]\n", i);   // 前导零填充：[0000000042]
     return 0;
 }
 ```
@@ -261,8 +261,8 @@ char name[32];
 printf("请输入姓名 年龄 体重: ");
 scanf("%31s %d %f", name, &age, &weight);
 
-// name is an array, so no & needed (the array name is already an address)
-// age and weight are ordinary variables, so you must pass their addresses
+// name 是数组，不需要 &（数组名即地址）
+// age 和 weight 是普通变量，必须传地址
 ```
 
 `scanf`'s `%s` stops at the first whitespace character and performs no buffer-size checking. If the input exceeds the buffer's length, you get a buffer overflow, plain and simple. The safe approach is to specify a maximum width (`%63s`), or replace it with an `fgets` + `sscanf` combination. Real-world projects rarely use `scanf`, but understanding how it works still matters at the learning stage.
@@ -273,9 +273,9 @@ Let's build a small multi-file project and get a feel for the payoff of separate
 
 ```text
 calc/
-├── main.c      // main program
-├── math_ops.h  // declarations of the math operation functions
-└── math_ops.c  // implementations of the math operation functions
+├── main.c      // 主程序
+├── math_ops.h  // 数学运算函数声明
+└── math_ops.c  // 数学运算函数实现
 ```
 
 **math_ops.h** — the header, the module's "public interface":
@@ -328,7 +328,7 @@ int main(void) {
 Compile and run:
 
 ```bash
-# Compile each source file into an object file, then link
+# 分别编译各源文件为目标文件，再链接
 gcc -c main.c -o main.o
 gcc -c math_ops.c -o math_ops.o
 gcc main.o math_ops.o -o calc

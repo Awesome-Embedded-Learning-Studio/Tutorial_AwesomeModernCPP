@@ -17,9 +17,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/vol1-fundamentals/ch11/01-try-catch.md
   source_hash: bc67c23671aa8cc6c9ae651e5c3a5ed2e28f00abca12e37d7eada4f565ca25a9
-  translated_at: '2026-09-27T04:03:53+00:00'
-  engine: anthropic
-  token_count: 7700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10798
 ---
 
 # Exception Basics: There Is More Than One Way to Report an Error
@@ -41,8 +41,8 @@ The exception mechanism's core operations involve just three keywords. `throw` i
 int main()
 {
     try {
-        // ... you wrote a long stretch of code; at runtime—bam, oh dear, it blew up
-        throw std::runtime_error("Something went wrong"); // Oops. Dropped an error. Something went wrong!
+        // ... 您写了一大串代码，程序执行的时候，啪嗒一下，哦莫炸掉惹
+        throw std::runtime_error("Something went wrong"); // 哎呀。丢个错误。出问题了！
     }
     catch (const std::runtime_error& e) {
         std::cout << "Caught: " << e.what() << "\n";
@@ -133,7 +133,7 @@ int main()
 {
     try {
         std::vector<int> v = {1, 2, 3};
-        std::cout << v.at(10) << "\n";  // at() throws out_of_range when the index is out of bounds
+        std::cout << v.at(10) << "\n";  // at() 越界抛出 out_of_range
     }
     catch (const std::out_of_range& e) {
         std::cout << "Out of range: " << e.what() << "\n";
@@ -163,14 +163,14 @@ The order of `catch` clauses matters: always put the most specific exception typ
 A best practice widely accepted in the C++ community: **throw by value, catch by const reference**. We throw by value because the value of the `throw` expression is copied (or moved) into a special storage area managed by the compiler, so even if the original object is destroyed during stack unwinding, the exception object itself remains valid. Catching by `const` reference avoids **object slicing**: if we catch `std::exception` by value while what was actually thrown is a `std::runtime_error`, the derived-class part gets sliced off, and `what()` invokes the base-class version instead of the derived one.
 
 ```cpp
-// Wrong: catching by value slices
-catch (std::exception e) {           // the runtime_error part is lost!
-    std::cout << e.what() << "\n";   // the error message may be completely wrong
+// 错误：按值捕获会切片
+catch (std::exception e) {           // runtime_error 部分丢失！
+    std::cout << e.what() << "\n";   // 错误信息可能完全不对
 }
 
-// Correct: catch by const reference
-catch (const std::exception& e) {    // polymorphism fully preserved
-    std::cout << e.what() << "\n";   // prints the original message correctly
+// 正确：按 const 引用捕获
+catch (const std::exception& e) {    // 多态完整保留
+    std::cout << e.what() << "\n";   // 正确输出原始信息
 }
 ```
 
@@ -192,7 +192,7 @@ void wrapper()
     }
     catch (const std::exception& e) {
         std::fprintf(stderr, "[wrapper] Logging: %s\n", e.what());
-        throw;  // rethrow the original exception, preserving full type information
+        throw;  // 重新抛出原始异常，保持完整类型信息
     }
 }
 
@@ -205,7 +205,7 @@ int main()
         std::cout << "Caught: " << e.what() << "\n";
     }
     catch (...) {
-        // catch exceptions of all other types
+        // 捕获所有其他类型的异常
         std::cout << "Caught unknown exception\n";
     }
     return 0;
@@ -228,7 +228,7 @@ Since C++11 we've had the `noexcept` keyword, used to declare that a function **
 ```cpp
 int safe_computation(int a, int b) noexcept
 {
-    return a + b;  // pure computation, genuinely cannot throw
+    return a + b;  // 纯计算，确实不会抛异常
 }
 ```
 
@@ -240,7 +240,7 @@ Now let's integrate the knowledge points from earlier into one complete program,
 
 ```cpp
 // exceptions.cpp
-// A comprehensive demo of try/catch/throw, the standard exception hierarchy, and noexcept
+// 演示 try/catch/throw、标准异常层次、noexcept 的综合应用
 
 #include <cstdio>
 #include <fstream>
@@ -249,7 +249,7 @@ Now let's integrate the knowledge points from earlier into one complete program,
 #include <string>
 #include <vector>
 
-/// @brief Safe integer division; throws when the divisor is zero
+/// @brief 安全的整数除法，除数为零时抛出异常
 int safe_divide(int dividend, int divisor)
 {
     if (divisor == 0) {
@@ -258,8 +258,8 @@ int safe_divide(int dividend, int divisor)
     return dividend / divisor;
 }
 
-/// @brief Parse the integer lines in a file
-/// @throws std::runtime_error when the file cannot be opened
+/// @brief 解析文件中的整数行
+/// @throws std::runtime_error 文件无法打开
 std::vector<int> parse_int_file(const std::string& path)
 {
     std::ifstream file(path);
@@ -284,13 +284,13 @@ std::vector<int> parse_int_file(const std::string& path)
         catch (const std::exception& e) {
             std::cerr << "[parse_int_file] Error at line "
                       << line_num << ": " << e.what() << "\n";
-            throw;  // rethrow and let the caller decide how to handle it
+            throw;  // 重新抛出，让调用者决定怎么处理
         }
     }
     return result;
 }
 
-/// @brief Format and print the parse results (noexcept example)
+/// @brief 格式化并打印解析结果（noexcept 示例）
 void print_results(const std::vector<int>& values) noexcept
 {
     std::cout << "Parsed " << values.size() << " values: ";
@@ -303,7 +303,7 @@ void print_results(const std::vector<int>& values) noexcept
 
 int main()
 {
-    // Safe division demo
+    // 安全除法演示
     std::cout << "=== Safe Divide Demo ===\n";
     struct { int a, b; const char* label; } cases[] = {
         {10, 3, "normal"}, {7, 0, "zero"}, {-20, 4, "negative"},
@@ -318,7 +318,7 @@ int main()
         }
     }
 
-    // File parsing demo
+    // 文件解析演示
     std::cout << "\n=== File Parser Demo ===\n";
     const char* test_path = "/tmp/exception_test_data.txt";
     {
@@ -333,7 +333,7 @@ int main()
         std::cout << "  Caught: " << e.what() << "\n";
     }
 
-    // catch-all demo
+    // catch-all 演示
     std::cout << "\n=== Catch-all Demo ===\n";
     try { throw 42; }
     catch (const std::exception&) { std::cout << "  Standard\n"; }

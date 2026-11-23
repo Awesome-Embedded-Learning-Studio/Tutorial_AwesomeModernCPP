@@ -25,9 +25,9 @@ tags:
 translation:
   source: documents/vol3-standard-library/error-utils/63-any.md
   source_hash: 360d15a562af55913704d41e8a9504efce6bb9b6aa10c084a5df1931b02963ca
-  translated_at: '2026-09-26T00:53:47+00:00'
-  engine: anthropic
-  token_count: 10000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14221
 ---
 
 # any: Holds Any Type — And Why You Probably Won't Need It
@@ -47,11 +47,11 @@ Let's say this up front: the tone of this article is not "go use `any`" — quit
 
 int main()
 {
-    std::any a = 1;           // holds an int
+    std::any a = 1;           // 装 int
     std::cout << a.type().name() << ": " << std::any_cast<int>(a) << '\n';
-    a = 3.14;                 // the same a, now holds a double
+    a = 3.14;                 // 同一个 a，现在装 double
     std::cout << a.type().name() << ": " << std::any_cast<double>(a) << '\n';
-    a = std::string("hi");    // now holds a string
+    a = std::string("hi");    // 现在装 string
     std::cout << a.type().name() << ": " << std::any_cast<std::string>(a) << '\n';
 }
 ```
@@ -82,7 +82,7 @@ struct MoveOnly {
 
 int main()
 {
-    std::any a = MoveOnly{};   // compile error: MoveOnly is not copyable
+    std::any a = MoveOnly{};   // 编译失败：MoveOnly 不可拷贝
     (void)a;
 }
 ```
@@ -91,7 +91,7 @@ GCC 16.1.1 rejects it on the spot:
 
 ```text
 error: conversion from ‘MoveOnly’ to non-scalar type ‘std::any’ requested
-   12 |     std::any a = MoveOnly{};   // compile error: MoveOnly is not copyable
+   12 |     std::any a = MoveOnly{};   // 编译失败：MoveOnly 不可拷贝
 ```
 
 The error is blunt — `MoveOnly` cannot be converted to `std::any`. This foreshadows an essential difference between `any` and `variant`: `variant` only needs each of its candidate types to be destructible (copying/moving is on demand), while `any` demands copyability just to get in the door. So for move-only types like `unique_ptr`, `any` flat-out cannot do it, and you need another way out (for example, more recent erasure components like `std::move_only_function`).
@@ -110,14 +110,14 @@ int main()
 {
     std::any b = std::string("hello");
 
-    // value form: throws std::bad_any_cast on type mismatch
-    auto* sp = std::any_cast<std::string>(&b);   // pointer overload: returns nullptr on failure, doesn't throw
+    // 值形式：类型不符抛 std::bad_any_cast
+    auto* sp = std::any_cast<std::string>(&b);   // 指针重载：失败返回 nullptr，不抛
     auto* ip = std::any_cast<int>(&b);
     std::cout << "any_cast<string>(&b) = " << (sp ? sp->c_str() : "nullptr") << '\n';
     std::cout << "any_cast<int>(&b)    = " << (ip ? "non-null" : "nullptr") << '\n';
 
     try {
-        [[maybe_unused]] auto v = std::any_cast<double>(b);  // value overload: b holds a string
+        [[maybe_unused]] auto v = std::any_cast<double>(b);  // 值重载：b 里是 string
     } catch (const std::bad_any_cast& e) {
         std::cout << "caught bad_any_cast: " << e.what() << '\n';
     }
@@ -200,7 +200,7 @@ void probe()
 {
     std::any a = Blob<N>{};
     auto* p = std::any_cast<Blob<N>>(&a);
-    // small delta => value lives inside the any object (SBO); large/heap-looking delta => heap allocation
+    // delta 小 => 值在 any 对象内部(SBO)；delta 大/像堆地址 => 堆分配
     long delta = (long)((char*)p - (char*)&a);
     std::printf("N=%3zu  sizeof(Blob)=%3zu  -> %s\n",
                 N, sizeof(Blob<N>),
@@ -250,11 +250,11 @@ int main()
     {
         std::vector<std::any> as;
         as.reserve(N);
-        for (int i = 0; i < N; ++i) as.emplace_back(i);   // int -> SBO, should involve no extra allocations
+        for (int i = 0; i < N; ++i) as.emplace_back(i);   // int -> SBO，不该有额外分配
     }
     std::cout << "any(int)  [SBO]:  allocs during build = " << g_alloc_count << '\n';
 
-    struct Big { std::int64_t d[8]; };   // 64 bytes, guaranteed to hit the heap
+    struct Big { std::int64_t d[8]; };   // 64 字节，必上堆
     g_alloc_count = 0;
     {
         std::vector<std::any> as;
@@ -269,9 +269,9 @@ Running it:
 
 ```text
 any(int)  [SBO]:  allocs during build = 1
-    (that 1 allocation is the vector's own capacity reserve)
+    （那 1 次是 vector 自己 reserve 容量）
 any(Big64)[heap]: allocs during build = 1000001
-    (1 reserve + 1 heap allocation per element)
+    （reserve 1 次 + 每个元素堆分配 1 次）
 ```
 
 Numbers don't lie. With `int`, a million elements cost 0 extra allocations (SBO inlined them all); with 64-byte objects, **every single element gets its own heap allocation** — one million of them. That's the real cost of storing large objects in `any`: it's not just slower access — construction alone hammers the allocator flat. If you're putting large objects in `any` on a hot path, that's a genuine performance problem.
@@ -336,7 +336,7 @@ int main()
     auto get_int = [&](const std::string& key) -> int {
         auto it = props.find(key);
         if (it == props.end()) return -1;
-        auto* p = std::any_cast<int>(&it->second);   // pointer overload, safe retrieval
+        auto* p = std::any_cast<int>(&it->second);   // 指针重载，安全取值
         return p ? *p : -1;
     };
 

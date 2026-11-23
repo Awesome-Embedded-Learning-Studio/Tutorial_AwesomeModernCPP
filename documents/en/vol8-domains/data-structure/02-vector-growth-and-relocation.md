@@ -21,9 +21,9 @@ related:
 translation:
   source: documents/vol8-domains/data-structure/02-vector-growth-and-relocation.md
   source_hash: 82717191918134d1d719b34074fca365bcf78e385d483b14b8abf0fa1391f86e
-  translated_at: '2026-09-25T08:50:58+00:00'
-  engine: anthropic
-  token_count: 1700
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5223
 ---
 
 # mini STL in Practice (Part 2): Vector — Growth and Relocation
@@ -70,7 +70,7 @@ There are three constructors. The default constructor does nothing: a `RawBuffer
         const auto sz = init_lists_src.size();
         reserve(sz);
         for (const Sources& v : init_lists_src) {
-            emplace_back(v); // In it goes! In it goes!
+            emplace_back(v); // 往里进!往里进!
         }
     }
 ```
@@ -84,7 +84,7 @@ Folks, when the author writes this by hand, it is genuinely error-prone — ever
 ```cpp
     template <typename... Args> Sources& emplace_back(Args&&... args) {
         if (current_cnt_ == buffer_.capacity()) {
-            /* Why 4? Honestly an arbitrary pick — we haven't done any serious profiling here */
+            /* 为什么给4,实际上是随意给的,我们这里没有做严肃的profile */
             grow_to(std::max<size_t>(4, buffer_.capacity() * 2));
         }
 

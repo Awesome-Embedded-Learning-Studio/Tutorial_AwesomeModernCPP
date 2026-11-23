@@ -18,10 +18,10 @@ tags:
 title: std::atomic
 translation:
   source: documents/cpp-reference/concurrency/01-atomic.md
-  source_hash: 59abadaa327489d53b2aad1a01181393ca926fdba9127dd63fe3e0f54fe7fb7c
-  translated_at: '2026-09-26T17:08:12+00:00'
-  engine: anthropic
-  token_count: 750
+  source_hash: 96c52cdc0c5404014d06f43297add0d3ba49fdaa0ebb59f2dac7360e20309f29
+  translated_at: '2026-11-22T16:40:07.922458+00:00'
+  engine: glm-5.3-refresh
+  token_count: 2027
 ---
 # std::atomic (C++11)
 
@@ -62,7 +62,7 @@ int main() {
     std::vector<std::jthread> pool;
     for (int i = 0; i < 10; ++i)
         pool.emplace_back([] { for (int n = 0; n < 10000; ++n) cnt++; });
-    std::cout << cnt << '\n'; // outputs 100000
+    std::cout << cnt << '\n'; // 输出 100000
 }
 ```
 
@@ -81,7 +81,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: the corresponding chapter](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [Tutorial: the corresponding chapter](../../vol5-concurrency/chapter05-atomic-memory-model/01-what-atomics-solve.md)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
 
 ---

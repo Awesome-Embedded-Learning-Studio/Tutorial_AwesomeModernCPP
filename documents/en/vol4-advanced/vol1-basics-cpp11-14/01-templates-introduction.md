@@ -28,9 +28,9 @@ title: 'Templates, From Scratch: A Code Recipe with Placeholders'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/01-templates-introduction.md
   source_hash: 9490d4a03a987e2b3c3a7ffa6e76091cfaef5bdfdcf4948a001276b4cb26d0c8
-  translated_at: '2026-09-26T03:58:20+00:00'
-  engine: anthropic
-  token_count: 6500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6737
 ---
 # Templates, From Scratch: A Code Recipe with Placeholders
 
@@ -50,8 +50,8 @@ T max_value(T a, T b) {
 For these few lines the compiler generates no machine code. It simply writes the recipe down. What actually brings machine code into existence is **instantiation**. When we write `max_value(3, 5)`, the compiler sees that both `3` and `5` are `int`, copies the recipe out with every `T` replaced by `int`, and ends up with a real `int max_value(int, int)` function—only that copy gets compiled into machine code.
 
 ```cpp
-int x = max_value(3, 5);        // T=int: the compiler copies out an int version
-double y = max_value(1.0, 2.0); // T=double: another copy, the double version
+int x = max_value(3, 5);        // T=int,编译器抄出一份 int 版本
+double y = max_value(1.0, 2.0); // T=double,再抄一份 double 版本
 ```
 
 From these two calls the compiler produces two completely independent functions, each compiled separately. The effect is indistinguishable from handwriting two overloads ourselves.
@@ -83,7 +83,7 @@ A function template defines a family of functions—`std::max` and `std::sort` a
 Variable templates answer a very plain need: give "each type" its own constant. Before C++14, people emulated that with a class template's static member:
 
 ```cpp
-// The old pre-C++14 way: emulate a "parameterized constant" with a class template's static member
+// C++14 之前的老写法:用类模板的静态成员模拟「参数化的常量」
 template <typename T>
 struct pi_trait {
     static constexpr T value = T(3.1415926535897932385L);
@@ -95,9 +95,9 @@ C++14 brought variable templates: write it directly as one parameterized variabl
 
 ```cpp
 template <typename T>
-constexpr T pi = T(3.1415926535897932385L);  // variable template
+constexpr T pi = T(3.1415926535897932385L);  // 变量模板
 
-double r = pi<double> * 2.0;  // reads like an ordinary constant, just with a <T>
+double r = pi<double> * 2.0;  // 用起来像普通常量,只是带个 <T>
 ```
 
 Part of the reason `std::numeric_limits<T>::max()` in the standard library is a function rather than a variable is that variable templates did not exist when it was born. `std::tuple_size`, `std::extent`, and their kin later all gained matching `_v` variable-template versions (`std::extent_v<T>`, since C++17), precisely so that everyone writes one less `::value`. On cppreference, the feature-test macro for variable templates is `__cpp_variable_templates = 201304L`, corresponding to C++14.
@@ -105,15 +105,15 @@ Part of the reason `std::numeric_limits<T>::max()` in the standard library is a 
 Alias templates answer "give a family of types one short name":
 
 ```cpp
-// Before alias templates, naming vector<T> meant going through a class template's nested using
+// 没有 alias template 的年代,要给 vector<T> 起别名得借助类模板的嵌套 using
 template <typename T>
 struct vec_alias { using type = std::vector<T>; };
-typename vec_alias<int>::type v;  // typename and ::type all over again—verbose
+typename vec_alias<int>::type v;  // 又是 typename 又是 ::type,啰嗦
 
-// C++11 alias template: one line and done
+// C++11 alias template,一行搞定
 template <typename T>
 using vec = std::vector<T>;
-vec<int> v;  // clean
+vec<int> v;  // 干净
 ```
 
 A later part of this volume is dedicated to alias templates; for now, just keep the impression: **in C++, it is not only functions and classes that can be parameterized**.
@@ -125,12 +125,12 @@ A template's "placeholders" come in three kinds, one per kind of parameter.
 The type parameter, written `typename T` or `class T`, stands for a type—the most common kind. The non-type parameter, written in forms like `template <int N>`, stands for a **value** already known at compile time: an integer, a pointer, a reference, plus—since C++20—floating-point numbers and class types satisfying certain conditions. The template template parameter stands for a template itself.
 
 ```cpp
-template <typename T, std::size_t N>   // T is a type parameter, N is a non-type parameter
+template <typename T, std::size_t N>   // T 是类型参数,N 是非类型参数
 struct array {
     T data[N];
 };
 
-template <template <typename> class Container>  // Container is a template template parameter
+template <template <typename> class Container>  // Container 是模板模板参数
 struct wrapper {
     Container<int> c;
 };
@@ -151,12 +151,12 @@ struct Factorial {
 };
 
 template <>
-struct Factorial<0> {              // recursion terminates: 0! = 1
+struct Factorial<0> {              // 递归终止:0! = 1
     static constexpr unsigned value = 1;
 };
 
 template <unsigned N>
-constexpr unsigned factorial_v = Factorial<N>::value;  // C++14 variable template, put to use while we're here
+constexpr unsigned factorial_v = Factorial<N>::value;  // C++14 变量模板,顺手用上
 ```
 
 Run it, and every multiplication happens at compile time:
@@ -168,7 +168,7 @@ $ g++ -std=c++14 factorial.cpp -o factorial && ./factorial
 ```
 
 ```cpp
-static_assert(Factorial<5>::value == 120, "");      // already verified at compile time
+static_assert(Factorial<5>::value == 120, "");      // 编译期就验过
 static_assert(factorial_v<10> == 3628800, "");
 ```
 
@@ -185,15 +185,15 @@ template <typename T>
 struct Demo {
     void used_function() { T t{}; /* ... */ }
     void unused_function() {
-        // Even code using members that don't exist on T at all wouldn't error here
-        // This function is never called, so it is never instantiated
+        // 这里哪怕写了 T 上根本不存在的成员,也不会报错
+        // 因为这个函数从没被调用,根本不会被实例化
     }
 };
 
 int main() {
     Demo<int> d;
-    d.used_function();   // only this one gets instantiated
-    // unused_function() is never called, so it is never instantiated and the compiler never sees the garbage inside
+    d.used_function();   // 只实例化这一个
+    // 没调用 unused_function(),所以它不会被实例化,里面的胡写编译器看不见
 }
 ```
 

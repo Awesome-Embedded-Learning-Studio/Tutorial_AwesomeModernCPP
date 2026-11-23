@@ -34,9 +34,9 @@ title: 'CRTP: Static Polymorphism with the Curiously Recurring Template Pattern'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/09-crtp.md
   source_hash: 80e9ad7057a9fe050d09a08a46770574e39805307427e7464893ba30635da17a
-  translated_at: '2026-09-26T04:14:20+00:00'
-  engine: anthropic
-  token_count: 5400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7296
 ---
 # CRTP: Static Polymorphism with the Curiously Recurring Template Pattern
 
@@ -52,14 +52,14 @@ First, the minimal example. The base class `Shape` is a template, and its templa
 template <typename Derived>
 struct Shape {
     const char* name() {
-        return static_cast<Derived*>(this)->name_impl();   // cast this to a pointer to the derived class
+        return static_cast<Derived*>(this)->name_impl();   // 把 this 转成派生类指针
     }
     double area() {
         return static_cast<Derived*>(this)->area_impl();
     }
 };
 
-struct Circle : Shape<Circle> {        // Circle passes itself, Circle, to Shape
+struct Circle : Shape<Circle> {        // Circle 把自己 Circle 传给 Shape
     double r;
     explicit Circle(double r_) : r(r_) {}
     const char* name_impl() { return "Circle"; }
@@ -99,7 +99,7 @@ This is the core value of CRTP: **when the concrete type can be pinned down at c
 Talk is cheap; let's look at the assembly. Write a CRTP version and a virtual-function version that do the same thing (return 42), compile with `-O2`, and compare the disassembly of the `use` functions.
 
 ```cpp
-// crtp_asm.cpp — the CRTP version
+// crtp_asm.cpp —— CRTP 版
 template <typename D>
 struct Base {
     int compute() { return static_cast<D*>(this)->compute_impl(); }
@@ -114,7 +114,7 @@ The complete disassembly of the CRTP `use_crtp` is just two instructions:
 
 ```text
 0000000000000000 <_Z8use_crtpv>:
-   0:   b8 2a 00 00 00   mov    $0x2a,%eax    ; 0x2a = 42, the result goes straight into the return value
+   0:   b8 2a 00 00 00   mov    $0x2a,%eax    ; 0x2a = 42,直接把结果放进返回值
    5:   c3               ret
 ```
 
@@ -123,7 +123,7 @@ The complete disassembly of the CRTP `use_crtp` is just two instructions:
 Now the virtual-function version (called through a reference, to force virtual dispatch):
 
 ```cpp
-// vtable_asm.cpp — the virtual-function version
+// vtable_asm.cpp —— 虚函数版
 struct Base {
     virtual int compute() = 0;
     virtual ~Base() = default;
@@ -131,19 +131,19 @@ struct Base {
 struct Concrete : Base {
     int compute() override { return 42; }
 };
-int use_virtual(Base& b) { return b.compute(); }   // through a reference, the compiler cannot devirtualize
+int use_virtual(Base& b) { return b.compute(); }   // 通过引用,编译器无法去虚化
 ```
 
 The disassembly of `use_virtual` is much longer:
 
 ```text
 0000000000000000 <_Z11use_virtualR4Base>:
-   0:   48 8b 07         mov    (%rdi),%rax        ; load the vtable pointer from the object
-   3:   48 8d 15 ...     lea    ...(%rip),%rdx     ; the address of Concrete's vtable
-   a:   48 8b 00         mov    (%rax),%rax        ; load compute's function pointer from the vtable
-   d:   48 39 d0         cmp    %rdx,%rax          ; speculative devirtualization: is it Concrete?
-  10:   75 0e            jne    20                 ; only take the indirect call if it is not
-  12:   b8 2a 00 00 00   mov    $0x2a,%eax         ; it is Concrete, return 42 directly
+   0:   48 8b 07         mov    (%rdi),%rax        ; 从对象取 vtable 指针
+   3:   48 8d 15 ...     lea    ...(%rip),%rdx     ; Concrete 的 vtable 地址
+   a:   48 8b 00         mov    (%rax),%rax        ; 从 vtable 取 compute 的函数指针
+   d:   48 39 d0         cmp    %rdx,%rax          ; 推测去虚化:是不是 Concrete?
+  10:   75 0e            jne    20                 ; 不是才走间接 call
+  12:   b8 2a 00 00 00   mov    $0x2a,%eax         ; 是 Concrete,直接返回 42
   17:   c3               ret
 ```
 
@@ -174,7 +174,7 @@ struct Point : Comparable<Point> {
     friend bool operator<(const Point& a, const Point& b) { return a.x < b.x; }
     friend bool operator==(const Point& a, const Point& b) { return a.x == b.x; }
 };
-// Point now automatically has > <= >= !=; you only implement < and ==
+// Point 现在自动有了 > <= >= !=,只需实现 < 和 ==
 ```
 
 Run it, to confirm the mixin-injected operators really work:
@@ -211,17 +211,17 @@ CRTP is powerful, but there are a few pitfalls to steer around.
 CRTP is a bit roundabout to write (`static_cast<Derived*>(this)`), and C++23 offers a more intuitive replacement called **deducing this** (the explicit object parameter). It lets a member function explicitly take a `this` parameter, which the compiler deduces from the type of the calling object:
 
 ```cpp
-// C++23 deducing this style: Shape is no longer a template
+// C++23 deducing this 写法:Shape 不再是模板
 struct Shape {
-    // self's type is deduced from the calling object, no longer a hardcoded Derived
+    // self 的类型由调用对象推导,不再是硬编码的 Derived
     double area(this auto const& self) { return self.area_impl(); }
 };
 
-struct Circle : Shape {   // Circle still inherits Shape, but no longer passes Shape<Circle> as a template argument
+struct Circle : Shape {   // Circle 仍继承 Shape,但不用再把 Shape<Circle> 这样传模板参数
     double r;
     double area_impl() const { return 3.14159 * r * r; }
 };
-// in Circle c; c.area(), self deduces to Circle const&, calling Circle::area_impl
+// Circle c; c.area() 里 self 推导为 Circle const&,调 Circle::area_impl
 ```
 
 deducing this lets static polymorphism be written much more like ordinary functions — no `static_cast`, no passing the derived class to itself. It is a major C++23 feature, and Part 3 of this volume (metaprogramming) and vol2's coverage of modern features will cover it in detail. Before that, CRTP remains the standard way to do static polymorphism in C++17-and-earlier projects — read Eigen, read Boost, and you will find it everywhere.

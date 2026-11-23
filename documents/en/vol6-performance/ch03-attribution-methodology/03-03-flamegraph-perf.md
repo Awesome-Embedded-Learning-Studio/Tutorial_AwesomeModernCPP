@@ -23,9 +23,9 @@ title: "Flame graphs, the perf workflow, and COZ / eBPF"
 translation:
   source: documents/vol6-performance/ch03-attribution-methodology/03-03-flamegraph-perf.md
   source_hash: f796606cd5abf9b17dbccb7becf8329a0fcf9325e2f1077d5d9f5bf4826f94d3
-  translated_at: '2026-09-26T06:07:40+00:00'
-  engine: anthropic
-  token_count: 2100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5412
 ---
 # Flame graphs, the perf workflow, and COZ / eBPF
 
@@ -40,16 +40,16 @@ The **flame graph**, invented by Brendan Gregg, is the most readable of these to
 The whole flow is three steps: sample → fold the stacks → draw the chart. Sampling uses `perf record`:
 
 ```bash
-# Standard on-CPU sampling: 99Hz, DWARF call stacks (no frame-pointer dependency)
+# 标准 on-CPU 采样:99Hz、用 DWARF 调用栈(不依赖 frame pointer)
 perf record -F 99 --call-graph dwarf -- ./app
 
-# Export after sampling
+# 采样完后导出
 perf script > out.perf
 
-# Fold + draw (Brendan Gregg's FlameGraph repo scripts)
+# 折叠 + 画图(Brendan Gregg 的 FlameGraph 仓库脚本)
 ./stackcollapse-perf.pl out.perf > out.folded
 ./flamegraph.pl out.folded > out.svg
-# Open out.svg in a browser; hover / click to zoom
+# 用浏览器打开 out.svg,鼠标可悬停/点击放大
 ```
 
 A few **key parameters and gotchas** (all extensions of ch01-03's "measurement pitfalls"):
@@ -100,7 +100,7 @@ Why should performance analysis care about eBPF? Because a whole pile of the ear
 For C++ backend work, the most practical one is **bpftrace**, a "one-line DSL purpose-built for performance analysis." For example, a single command traces the latency distribution of calls to a userspace function:
 
 ```bash
-# Trace the latency (us) of a function in mysqld, as a histogram
+# 追踪 mysqld 的某函数延迟(us),直方图
 bpftrace -e 'uprobe:/path/to/bin:my_func { @start[tid] = nsecs; }
              uretprobe:/path/to/bin:my_func /@start[tid]/ {
                @lat = hist((nsecs - @start[tid]) / 1000); delete(@start[tid]);

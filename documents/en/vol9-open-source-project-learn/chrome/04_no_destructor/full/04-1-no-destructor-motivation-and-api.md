@@ -24,9 +24,9 @@ title: "NoDestructor hands-on (I): motivation and API design"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/04-1-no-destructor-motivation-and-api.md
   source_hash: 11e5e37134ad91751dbda14e801df94ef16b2bfbe457d37c3af0fa99311247be
-  translated_at: '2026-09-26T03:07:51+00:00'
-  engine: anthropic
-  token_count: 5100
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6845
 ---
 # NoDestructor hands-on (I): motivation and API design
 
@@ -38,14 +38,14 @@ Say we have a "default config table" that everything in the program reads, with 
 
 ```cpp
 const std::map<std::string, Config>& DefaultConfig() {
-    // how do we implement this global?
+    // 怎么实现这个全局?
 }
 ```
 
 The most instinctive move is to throw out a global variable:
 
 ```cpp
-const std::map<std::string, Config> g_default = LoadDefault();   // ❌ banned in Chromium
+const std::map<std::string, Config> g_default = LoadDefault();   // ❌ Chromium 禁
 ```
 
 It reads nicely, but it forces a global constructor to run before `main` (calling `LoadDefault` plus constructing the `std::map`), and at program exit a global destructor still has to run to tear the map down. Chromium keeps `-Wglobal-constructors` / `-Wexit-time-destructors` switched on, and either one rejects this outright. So what else can we do?
@@ -58,7 +58,7 @@ It reads nicely, but it forces a global constructor to run before `main` (callin
 
 ```cpp
 const std::map<...>& DefaultConfig() {
-    static const std::map<std::string, Config> g = LoadDefault();   // magic statics: thread-safe construction
+    static const std::map<std::string, Config> g = LoadDefault();   // magic statics:线程安全构造
     return g;
 }
 ```
@@ -121,22 +121,22 @@ namespace tamcpp::chrome {
 template <typename T>
 class NoDestructor {
 public:
-    // construct from arbitrary arguments (forwarded to T's constructor)
+    // 从任意参数构造(转发给 T 的构造函数)
     template <typename... Args>
     explicit NoDestructor(Args&&... args);
 
-    // copy/move construct directly from a T (handy for initializer_list, etc.)
+    // 从 T 直接拷贝/移动构造(方便 initializer_list 等)
     explicit NoDestructor(const T& x);
     explicit NoDestructor(T&& x);
 
-    // non-copyable
+    // 不可拷贝
     NoDestructor(const NoDestructor&) = delete;
     NoDestructor& operator=(const NoDestructor&) = delete;
 
-    // destructor: defaulted (the key! does not call ~T())
+    // 析构:默认(关键!不调 ~T())
     ~NoDestructor() = default;
 
-    // use it like a T
+    // 像 T 一样用
     const T& operator*() const;
     T&       operator*();
     const T* operator->() const;
@@ -167,7 +167,7 @@ If we didn't mind the bother and wrote `~NoDestructor() { reinterpret_cast<T*>(s
 **Why not the `[[clang::no_destroy]]` attribute.** Clang actually has such an attribute: mark a variable with it and its destructor doesn't run:
 
 ```cpp
-[[clang::no_destroy]] static const std::string s = "...";   // no destruction
+[[clang::no_destroy]] static const std::string s = "...";   // 不析构
 ```
 
 We muttered the same question at first: if the attribute does the job, why wrap a class around it? Digging through Chromium's comments settled the accounting. The attribute is Clang-exclusive — it doesn't budge on GCC or MSVC, so the portability gate fails right there. And it only handles the single job of skipping destruction: it can't add `static_assert` gating, and it can't stop misuse on trivial types. Worse, the LSan-compatibility hack (see [04-4]) and the type-safe API facade can only be stuffed in if this is packaged as a class. The attribute is lower-level and lighter, but industrial code is steadier with a packaged tool, and easier to diagnose when something goes wrong.
@@ -204,13 +204,13 @@ GCC 11+ or Clang 12+, with `-std=c++20`.
 #include <new>
 #include <type_traits>
 
-// verify alignas + placement new are usable
+// 验证 alignas + placement new 可用
 struct Foo { int x; };
 alignas(Foo) char buf[sizeof(Foo)];
 
 int main() {
-    new (buf) Foo{42};                                   // placement new constructs on buf
-    return reinterpret_cast<Foo*>(buf)->x - 42;          // 0, verifies the access is correct
+    new (buf) Foo{42};                                   // placement new 在 buf 上构造
+    return reinterpret_cast<Foo*>(buf)->x - 42;          // 0,验证访问正确
 }
 ```
 

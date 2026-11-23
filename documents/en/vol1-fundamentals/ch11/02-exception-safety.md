@@ -21,9 +21,9 @@ title: Exception Safety
 translation:
   source: documents/vol1-fundamentals/ch11/02-exception-safety.md
   source_hash: 430cc3404666248e61d069658562ee423da06ec84f7c3604125e9c31f60fff74
-  translated_at: '2026-09-27T04:03:59+00:00'
-  engine: anthropic
-  token_count: 3100
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8611
 ---
 # Exception Safety: When an Exception Flies Through, the Program Must Not Fall Apart
 
@@ -40,9 +40,9 @@ This is the worst case: if an exception occurs, objects may be left in an incons
 ```cpp
 void no_guarantee() {
     int* data = new int[100];
-    fill_data(data, 100);     // if this throws...
-    process_data(data, 100);  // ...or this one...
-    delete[] data;            // this line never runs: memory leak
+    fill_data(data, 100);     // 如果这里抛异常...
+    process_data(data, 100);  // ...或者这里...
+    delete[] data;            // 这行永远不会执行，内存泄漏
 }
 ```
 
@@ -75,12 +75,12 @@ Now let's circle back to why RAII is the **core mechanism** behind the basic gua
 Let's look at a before-and-after comparison. First, the "dangerous" version:
 
 ```cpp
-// Dangerous: raw pointers + exceptions = leaks
+// 危险：裸指针 + 异常 = 泄漏
 void unsafe_process() {
     int* buffer = new int[1024];
     double* temp  = new double[512];
 
-    do_work(buffer, temp);  // what if this throws?
+    do_work(buffer, temp);  // 如果这里抛异常呢？
 
     delete[] temp;
     delete[] buffer;
@@ -90,15 +90,15 @@ void unsafe_process() {
 If `do_work` throws an exception, both `buffer` and `temp` leak. You might think of wrapping things in a `try-catch`, but what if there are three or four resources? The code quickly bloats into spaghetti. Now the RAII rewrite:
 
 ```cpp
-// Safe: RAII guards clean up automatically when an exception flies by
+// 安全：RAII 守卫，异常发生时自动清理
 void safe_process() {
     auto buffer = std::make_unique<int[]>(1024);
     auto temp   = std::make_unique<double[]>(512);
 
     do_work(buffer.get(), temp.get());
 
-    // Whether or not do_work throws, buffer and temp get
-    // automatically released when the scope ends
+    // 不管 do_work 是否抛异常，buffer 和 temp 都会在
+    // 离开作用域时被自动释放
 }
 ```
 
@@ -119,11 +119,11 @@ int g_counter = 0;
 void increment_unsafe() {
     g_mutex.lock();
     ++g_counter;
-    // if do_something() throws...
+    // 如果 do_something() 抛异常...
     do_something();
-    // ...this unlock never executes
+    // ...这行 unlock 永远不会执行
     g_mutex.unlock();
-    // Result: the mutex stays locked forever, and every subsequent thread deadlocks
+    // 结果：互斥量永远被锁住，所有后续线程死锁
 }
 ```
 
@@ -133,10 +133,10 @@ If `do_something()` throws an exception, `unlock()` never executes and the mutex
 #include <mutex>
 
 void increment_safe() {
-    std::lock_guard<std::mutex> lock(g_mutex);  // lock() at construction
+    std::lock_guard<std::mutex> lock(g_mutex);  // 构造时 lock()
     ++g_counter;
-    do_something();  // even if this throws...
-    // unlock() in the destructor — runs no matter what
+    do_something();  // 即使抛异常...
+    // 析构时 unlock()，无论如何都会执行
 }
 ```
 
@@ -156,17 +156,17 @@ private:
     std::vector<std::string> entries_;
 
 public:
-    // Strong exception guarantee: either everything is updated, or nothing changes
+    // 强异常保证：要么全部更新，要么完全不变
     void update_entries(const std::vector<std::string>& new_entries) {
-        std::vector<std::string> temp = new_entries;  // the copy; may throw
+        std::vector<std::string> temp = new_entries;  // 拷贝，可能抛异常
 
-        // Run the validation and modification steps on temp
-        validate_and_normalize(temp);  // may throw
+        // 在 temp 上做各种校验和修改
+        validate_and_normalize(temp);  // 可能抛异常
 
-        // Getting this far means all went well: swap — noexcept, cannot fail
+        // 到这里说明一切正常，交换——noexcept，不会失败
         using std::swap;
         swap(entries_, temp);
-    }  // temp (the old entries_) is destroyed automatically at end of scope
+    }  // temp（原来的 entries_）在作用域结束时自动销毁
 };
 ```
 
@@ -180,7 +180,7 @@ Now let's string the previous pieces together and write a complete side-by-side 
 
 ```cpp
 // safety.cpp
-// Demonstrates how exception-safe and unsafe code behave differently
+// 演示异常安全与不安全代码的行为对比
 
 #include <cstdio>
 #include <memory>
@@ -193,34 +193,34 @@ void might_throw(bool should_fail) {
     std::puts("  Operation succeeded.");
 }
 
-// ---- Unsafe version ----
+// ---- 不安全版本 ----
 void unsafe_version() {
     std::puts("[Unsafe] Allocating resources...");
     int* data = new int[100];
     double* temp = new double[50];
     std::puts("[Unsafe] Resources allocated. Starting work...");
 
-    might_throw(true);  // deliberately trigger the exception
+    might_throw(true);  // 故意触发异常
 
     delete[] temp;
     delete[] data;
     std::puts("[Unsafe] Resources released.");
 }
 
-// ---- Safe version ----
+// ---- 安全版本 ----
 void safe_version() {
     std::puts("[Safe] Allocating resources...");
     auto data = std::make_unique<int[]>(100);
     auto temp = std::make_unique<double[]>(50);
     std::puts("[Safe] Resources allocated. Starting work...");
 
-    might_throw(true);  // trigger the exception here as well
+    might_throw(true);  // 同样触发异常
 
     std::puts("[Safe] Resources released.");
 }
 
 int main() {
-    // Test the unsafe version
+    // 测试不安全版本
     std::puts("=== Testing unsafe version ===");
     try {
         unsafe_version();
@@ -229,7 +229,7 @@ int main() {
     }
     std::puts("  Note: memory leaked! data and temp were never freed.\n");
 
-    // Test the safe version
+    // 测试安全版本
     std::puts("=== Testing safe version ===");
     try {
         safe_version();
@@ -267,7 +267,7 @@ void process_file(const char* path) {
     FILE* f = std::fopen(path, "r");
     char* buffer = new char[4096];
 
-    read_and_process(f, buffer);  // may throw
+    read_and_process(f, buffer);  // 可能抛异常
 
     delete[] buffer;
     std::fclose(f);

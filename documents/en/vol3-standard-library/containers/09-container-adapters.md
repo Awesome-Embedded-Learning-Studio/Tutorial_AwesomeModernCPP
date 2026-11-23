@@ -23,9 +23,9 @@ title: 'Container Adapters: How stack, queue, and priority_queue Are "Wrapped"'
 translation:
   source: documents/vol3-standard-library/containers/09-container-adapters.md
   source_hash: 408ba324d603586059e2a72f5f9c08bc4ae2ed73b4cbabc735ff569d1855f30e
-  translated_at: '2026-09-26T02:34:27+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6573
 ---
 # Container Adapters: How stack, queue, and priority_queue Are "Wrapped"
 
@@ -67,7 +67,7 @@ Just saying "max-heap by default" is not concrete enough — let's run it and se
 
 int main()
 {
-    // Default: vector + less = max heap, top() returns the maximum
+    // 默认：vector + less = 最大堆，top() 返回最大值
     std::priority_queue<int> pq;
     for (int x : {5, 1, 9, 3, 7}) {
         pq.push(x);
@@ -79,7 +79,7 @@ int main()
     }
     std::printf("\n");
 
-    // Swap in greater = min heap, top() returns the minimum
+    // 换 greater = 最小堆，top() 返回最小值
     std::priority_queue<int, std::vector<int>, std::greater<int>> min_pq;
     for (int x : {5, 1, 9, 3, 7}) {
         min_pq.push(x);
@@ -121,9 +121,9 @@ int main()
     std::priority_queue<int> pq;
 
 #if __cplusplus >= 202302L
-    pq.push_range(data);   // C++23: bulk append_range + make_heap, O(n)
+    pq.push_range(data);   // C++23：整体 append_range + make_heap，O(n)
 #else
-    for (int x : data) {   // C++20 fallback: push in a loop, O(n log n)
+    for (int x : data) {   // C++20 退路：循环 push，O(n log n)
         pq.push(x);
     }
 #endif
@@ -138,7 +138,7 @@ This needs C++23 library support (a reasonably recent libstdc++/libc++); compile
 Almost always, the defaults are the right call — `deque` for `stack`/`queue`, `vector` for `priority_queue`; the committee already picked the optimal defaults for you. When you do swap, it is usually for one of two purposes. One: you want a `priority_queue` to avoid the default `vector`'s reallocation copies, so you reserve the underlying vector up front — but the adapter does not expose `reserve` directly, so you have to construct the underlying container yourself and then move it in (`std::priority_queue<int> pq{less{}, my_reserved_vector}`). The other: your element type does not get along with `vector` (very large objects, expensive moves), in which case `priority_queue` can switch its underlying container to `deque`. Swapping the underlying container of `stack`/`queue` comes up even less often — unless you specifically want to save memory (use `list` to avoid pre-allocation), the `deque` default is perfectly fine.
 
 ```cpp
-// Reserving capacity for a priority_queue: reserve the underlying vector first, then move it in
+// 给 priority_queue 预留容量：先 reserve 底层 vector，再 move 进去
 std::vector<int> buf;
 buf.reserve(10'000);
 std::priority_queue<int> pq{std::less<int>{}, std::move(buf)};

@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/06-c-macro-led.md
   source_hash: 725ea04cd0c8ed9b7adae5650fbd975cc5d57f998dd0b21ed0ab221341cf0d48
-  translated_at: '2026-09-27T05:45:10+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5772
 ---
 
 # An LED driver from the C-macro era: it runs, but let's put the costs on the table
@@ -36,7 +36,7 @@ It runs, sure, but magic numbers are scattered all over the floor. What is `0xF 
 ## Version one: packing the address and the bits into names
 
 ```c
-// led.h — the first LED wrapper of the C-macro era
+// led.h —— C 宏时代的第一版 LED 封装
 #define LED_PORT        GPIOC
 #define LED_PIN         13
 #define LED_CLK_EN()    do { RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; } while (0)
@@ -71,14 +71,14 @@ Honestly, this version **is better**: the intent has a name, changing the pin me
 The requirement arrives: add one more LED, LED2, on PA5. The macro problem shows itself immediately: this set of macros **was born to serve exactly one LED**. You have exactly two routes:
 
 ```c
-// Route A: copy the whole set and rename
+// 路线 A:整套复制改名
 #define LED2_PORT       GPIOA
 #define LED2_PIN        5
 #define LED2_CLK_EN()   do { RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; } while (0)
 #define LED2_MODE_OUT() do { LED2_PORT->CRL = \
-        (LED2_PORT->CRL & ~(0xFu << 20)) | (0x2u << 20); } while (0)   // ← the offset 20 was copied over as-is
+        (LED2_PORT->CRL & ~(0xFu << 20)) | (0x2u << 20); } while (0)   // ← 偏移 20 是照抄的
 #define LED2_ON()       do { LED2_PORT->BRR  = (1u << LED2_PIN); } while (0)
-// ...the five lines below are copied the same way
+// ...以下五条同理复制
 ```
 
 Route A copies a dozen-odd lines, and the flaw sits right on the flagged line: the offset `20` was copied over unchanged from the PC13 set (`(13-8)×4=20`). PA5's offset happens to be `(5-0)×4=20` too, so this time the guess lands — pure luck, two formulas colliding on the same number. The day LED2 moves to PA6 (`6×4=24`), the copied `<< 20` pairs with the wrong pin, the compiler lets it through without a word, and all we can do is watch the fourth piece's wreck happen again in a new costume.
@@ -92,7 +92,7 @@ Let's stage one act that is sneakier still. The boss has spoken: LED2 moves to P
 ```c
 #define LED2_PORT       GPIOB
 #define LED2_PIN        12
-// done — compile, flash, run: LED2 does not light up
+// 改完了,编译,烧录,运行 —— LED2 不亮
 ```
 
 Why? The `IOPAEN` in `LED2_CLK_EN()` never got changed to `IOPBEN`: GPIOA's clock switch is on while GPIOB's is still off. This code is **flawless in the compiler's eyes**: the macros expand into legal C expressions; we check types, check syntax, count warnings — and not one of them turns up a fault. Yet at runtime it is wrong, and wrong in silence: no crash, no error, no printout — the LED simply ignores you.

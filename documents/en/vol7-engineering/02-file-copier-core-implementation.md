@@ -13,9 +13,9 @@ description: ''
 translation:
   source: documents/vol7-engineering/02-file-copier-core-implementation.md
   source_hash: 176618fe345c1af6325c50718efa24271dc56ac27db362223760dbb494f72252
-  translated_at: '2026-09-27T02:31:25+00:00'
-  engine: anthropic
-  token_count: 8000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11207
 ---
 # Modern C++ in Practice — Building a File Copier from Scratch (Part 2): Core Implementation and Practical Testing
 
@@ -44,7 +44,7 @@ while (in) {
 
   copied += static_cast<std::uintmax_t>(read_bytes);
 
-  // Progress update logic...
+  // 进度更新逻辑...
 }
 
 ```
@@ -302,9 +302,9 @@ Suppose your files are laid out like this:
 
 ```cpp
 
-fcopy.h        // FileCopier class declaration
-fcopy.cpp      // FileCopier implementation (including ProgressBar)
-main.cpp       // test program
+fcopy.h        // FileCopier类声明
+fcopy.cpp      // FileCopier实现(包括ProgressBar)
+main.cpp       // 测试程序
 
 ```
 

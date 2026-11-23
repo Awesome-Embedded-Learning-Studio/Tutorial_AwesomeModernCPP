@@ -20,10 +20,10 @@ tags:
 title: 'Operator Basics: Making Data Move'
 translation:
   source: documents/vol1-fundamentals/c_tutorials/03A-operators-basics.md
-  source_hash: dbf8b30611f1b0a36ac4fcae88057af4bf2cd28c58bc98bfa713a6a100defca0
-  translated_at: '2026-09-25T12:41:22+00:00'
-  engine: anthropic
-  token_count: 5400
+  source_hash: 17831520615ce9b0a42e473504b9fe89dd41f91e2739a14d691049e077071e29
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6710
 ---
 # Operator Basics: Making Data Move
 
@@ -41,8 +41,8 @@ C provides five basic arithmetic operators: `+` (addition), `-` (subtraction), `
 int a = 10 + 3;    // 13
 int b = 10 - 3;    // 7
 int c = 10 * 3;    // 30
-int d = 10 / 3;    // 3 (integer division; the fractional part is simply discarded)
-int e = 10 % 3;    // 1 (the remainder of 10 divided by 3)
+int d = 10 / 3;    // 3（整数除法，小数部分直接丢弃）
+int e = 10 % 3;    // 1（10 除以 3 的余数）
 ```
 
 Here is a trap beginners fall into very easily: **when two integers are divided, the result is still an integer**. `10 / 3` is not `3.333...`—it is `3`. The fractional part is discarded outright, not rounded.
@@ -55,8 +55,8 @@ The C99 standard states it explicitly: integer division truncates toward zero. I
 
 ```c
 int a = 7 / 2;    // 3
-int b = -7 / 2;   // -3 (truncation toward zero)
-int c = -7 % 2;   // -1 (the remainder takes the dividend's sign)
+int b = -7 / 2;   // -3（向零取整）
+int c = -7 % 2;   // -1（余数符号与被除数相同）
 ```
 
 Let's verify:
@@ -83,8 +83,8 @@ Here's an analogy: prefix `++x` is like "raise the price first, then check out"�
 
 ```c
 int x = 5;
-int a = ++x;  // x becomes 6 first, and a gets 6
-int b = x++;  // b gets 6 first, then x becomes 7
+int a = ++x;  // x 先变成 6，a 得到 6
+int b = x++;  // b 先得到 6，然后 x 变成 7
 printf("a=%d, b=%d, x=%d\n", a, b, x);
 ```
 
@@ -100,7 +100,7 @@ There is something very important we need to remind you of—**do not apply `++`
 
 ```c
 int i = 3;
-int a = i++ + ++i;  // undefined behavior!
+int a = i++ + ++i;  // 未定义行为！
 ```
 
 The C standard classifies this kind of code as **undefined behavior** (UB for short). Simply put, the standard says "you may not write this," and the compiler is free to handle it in any way it likes—different compilers may give completely different results. As for why it is UB, we will explain in detail in the next post when we discuss sequence points. For now, just remember: **do not use `++` or `--` twice on the same variable in one expression**.
@@ -114,10 +114,10 @@ The C standard classifies this kind of code as **undefined behavior** (UB for sh
 Relational operators compare the magnitude relationship between two values, and the result is "true" or "false". In C, "true" is represented by the integer `1`, and "false" by the integer `0`.
 
 ```c
-int a = (5 > 3);    // 1 (true)
-int b = (5 < 3);    // 0 (false)
-int c = (5 == 5);   // 1 (equal)
-int d = (5 != 5);   // 0 (not equal)
+int a = (5 > 3);    // 1（真）
+int b = (5 < 3);    // 0（假）
+int c = (5 == 5);   // 1（相等）
+int d = (5 != 5);   // 0（不相等）
 ```
 
 One common typo is writing `==` (equality comparison) as `=` (assignment). `if (x = 5)` is always true (because the value of the assignment expression is 5, and non-zero counts as true), and `x` gets accidentally modified along the way. Good compilers will warn about this pattern, so it is a good idea to enable `-Wall` and let the compiler keep watch for you.
@@ -128,13 +128,13 @@ There are three logical operators: `&&` (logical AND), `||` (logical OR), and `!
 
 ```c
 if (age >= 18 && age <= 65) {
-    // age is between 18 and 65
+    // age 在 18 到 65 之间
 }
 if (score < 0 || score > 100) {
-    // score is outside the valid range
+    // score 不在合法范围
 }
 if (!is_valid) {
-    // runs when is_valid is false
+    // is_valid 为假时执行
 }
 ```
 
@@ -145,10 +145,10 @@ if (!is_valid) {
 This property is extremely useful in real programming. The most classic scenario is checking whether a pointer is null before accessing what it points to:
 
 ```c
-// Dereference the pointer safely
+// 安全地解引用指针
 if (ptr != NULL && ptr->value > 0) {
-    // If ptr is NULL, ptr->value is never accessed
-    // This avoids the crash a null-pointer dereference would cause
+    // 如果 ptr 是 NULL，ptr->value 不会被访问
+    // 避免了空指针解引用导致的崩溃
 }
 ```
 
@@ -170,10 +170,10 @@ int increment(void)
 
 int main(void)
 {
-    int result = (0 && increment());  // the left side is 0 (false); the right side never runs
+    int result = (0 && increment());  // 左边为 0（假），右边不会执行
     printf("result = %d, counter = %d\n", result, counter);
 
-    result = (1 || increment());      // the left side is 1 (true); the right side never runs
+    result = (1 || increment());      // 左边为 1（真），右边不会执行
     printf("result = %d, counter = %d\n", result, counter);
 
     return 0;
@@ -198,8 +198,8 @@ The conditional operator is the only ternary operator in C, with the syntax `con
 You can think of it as a "condensed if-else"—especially handy when you need to pick a value based on a condition but don't want to write a full if-else statement:
 
 ```c
-int max = (a > b) ? a : b;                  // pick the larger value
-const char* label = (count == 1) ? "item" : "items";  // singular vs. plural
+int max = (a > b) ? a : b;                  // 取较大值
+const char* label = (count == 1) ? "item" : "items";  // 单复数
 ```
 
 The conditional operator can be nested, but past two levels readability starts to suffer:
@@ -215,7 +215,7 @@ const char* grade = (score >= 90) ? "A" :
 The comma operator `,` has the lowest precedence of any operator in C. It evaluates its two operands from left to right, and the value of the whole expression is the value of the right operand:
 
 ```c
-int a = (1, 2, 3);  // evaluate 1, then 2, then 3; a = 3
+int a = (1, 2, 3);  // 先求值 1，再求值 2，最后求值 3，a = 3
 ```
 
 You will rarely use this operator on its own; its most common use is maintaining multiple variables at once in a `for` loop:
@@ -255,11 +255,11 @@ printf("%d\n", -7 % 2);
 ::: details Reference solution
 
 ```text
- 3    //  7 / 2 = 3.5; integer division truncates toward zero, chopping off the fractional part → 3
--3    // -7 / 2 = -3.5; same truncation toward zero → -3 (not -4)
--3    //  7 / -2 = -3.5; truncation toward zero → -3
- 1    //  7 % 2 = 1: 7 = 3×2 + 1
--1    // -7 % 2 = -1: the remainder follows the dividend's sign; -7 = (-3)×2 + (-1)
+ 3    //  7 / 2 = 3.5，整数除法向零取整，砍掉小数部分 → 3
+-3    // -7 / 2 = -3.5，同样向零取整 → -3（不是 -4）
+-3    //  7 / -2 = -3.5，向零取整 → -3
+ 1    //  7 % 2 = 1：7 = 3×2 + 1
+-1    // -7 % 2 = -1：余数符号跟被除数走，-7 = (-3)×2 + (-1)
 ```
 
 Key point: since C99, both `/` and `%` truncate toward zero (truncation toward zero)—the rule is the same for positive and negative numbers, and the fractional part is simply dropped. That is why `-7 / 2` gives `-3` rather than `-4`, and why the sign of `-7 % 2` turns negative along with the dividend.
@@ -273,11 +273,11 @@ Key point: since C99, both `/` and `%` truncate toward zero (truncation toward z
 Write a function that safely finds the first element in an array greater than a given value. Use short-circuit evaluation to make sure it never goes out of bounds:
 
 ```c
-/// @brief Find the first element in the array greater than threshold
-/// @param arr the array
-/// @param len the array length
-/// @param threshold the threshold value
-/// @return the index of the element found, or -1 if not found
+/// @brief 在数组中查找第一个大于 threshold 的元素
+/// @param arr 数组
+/// @param len 数组长度
+/// @param threshold 阈值
+/// @return 找到的元素的索引，未找到返回 -1
 int find_first_above(const int* arr, size_t len, int threshold);
 ```
 
@@ -287,19 +287,19 @@ int find_first_above(const int* arr, size_t len, int threshold);
 #include <stddef.h>
 
 int find_first_above(const int* arr, size_t len, int threshold) {
-    // If the array is NULL or the length is 0, return -1 right away
+    // 数组为空或长度为 0，直接返回 -1
     if (arr == NULL || len == 0) {
         return -1;
     }
 
     size_t i = 0;
 
-    // Short-circuit evaluation guards the bound: check i < len first, and only then access arr[i]
+    // 利用短路求值防越界：先判 i < len，成立才访问 arr[i]
     while (i < len && arr[i] <= threshold) {
         i++;
     }
 
-    // After the loop, i < len means we found one; otherwise we scanned the whole array without a hit
+    // 退出循环后，i < len 说明找到了，否则就是遍历完没找到
     return (i < len) ? (int)i : -1;
 }
 ```

@@ -23,9 +23,9 @@ title: C Pitfalls and Common Errors
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/03-c-traps-and-pitfalls.md
   source_hash: c2cf83473e9389f60c9531c1e27d131da5ba1b8a86de3befcfd7c2bac87a449d
-  translated_at: '2026-09-25T13:41:33+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11430
 ---
 # C Pitfalls and Common Errors
 
@@ -36,10 +36,10 @@ In this article we will systematically walk through the traps C sets most often�
 Every code example in this article compiles and runs in a standard C environment. To show what compiler warnings can catch, we recommend always compiling with `-Wall -Wextra`—you will find that many of these traps are actually detectable through modern compiler warnings, provided you have not ignored those warnings.
 
 ```text
-Platform: Linux / macOS / Windows (MSVC/MinGW)
-Compiler: GCC >= 9 or Clang >= 12
-Standard: -std=c11 (C parts) / -std=c++17 (C++ comparison parts)
-Dependencies: none
+平台：Linux / macOS / Windows (MSVC/MinGW)
+编译器：GCC >= 9 或 Clang >= 12
+标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
+依赖：无
 ```
 
 ## Step 1 — Understand How the Compiler "Reads" Your Code
@@ -52,7 +52,7 @@ C's lexical analyzer follows the "maximal munch" principle—it always tries to 
 
 ```c
 int a = 5;
-int b = a+++b;  // How does this get parsed, exactly?
+int b = a+++b;  // 这到底怎么解析的？
 ```
 
 Your intuition might say `a + (++b)`, but the compiler actually parses it as `(a++) + b`. As the lexer scans from left to right, it first grabs `a++` (a legal postfix increment), and the remaining `+b` becomes an addition. The compiler does not "look back" to consider `a + (++b)`—it just keeps greedily munching forward.
@@ -73,16 +73,16 @@ Here is an even sneakier example:
 ```c
 int x = 10;
 int* p = &x;
-int result = x/*p;  // The intent was x / (*p)
+int result = x/*p;  // 本意是 x / (*p)
 ```
 
 The code intends to divide `x` by the value of `*p`. But per greedy matching, `/*` is parsed as the start of a comment, so `x/*p;` becomes `x` followed by a comment that never ends. If your source file is fairly large, this comment may swallow several lines of code after it, and you will just be puzzled by "why are all the variables below undefined?"
 
 ```c
-// Correct version: use parentheses or an intermediate variable to remove the ambiguity
-int result = x / (*p);     // The parentheses block the greedy match
+// 正确写法：用括号或中间变量消除歧义
+int result = x / (*p);     // 括号阻断了贪婪匹配
 int divisor = *p;
-int result = x / divisor;  // Clearer
+int result = x / divisor;  // 更清晰
 ```
 
 ## Step 2 — Dodge the Hidden Traps of Operator Precedence
@@ -94,20 +94,20 @@ C has 15 precedence levels and dozens of operators—honestly, nobody can rememb
 This is, in our opinion, the most sinister precedence trap of all:
 
 ```c
-// Check whether bit 3 of flags is set
+// 检查 flags 的第 3 位是否被设置
 if (flags & 0x04 == 0) {
-    // The intent was (flags & 0x04) == 0
-    // It actually parses as flags & (0x04 == 0)
-    // i.e. flags & 0, which is always 0!
+    // 本意是 (flags & 0x04) == 0
+    // 实际被解析为 flags & (0x04 == 0)
+    // 也就是 flags & 0，永远是 0！
 }
 ```
 
 Because `==` has higher precedence than `&`—yes, bitwise AND really does bind more loosely than equality comparison. In `flags & 0x04 == 0`, the compiler first evaluates `0x04 == 0` (which is 0), then `flags & 0` (which is 0), so the condition is always true. What makes this bug especially insidious is that whether or not bit 3 of `flags` is set, the outcome is identical—you can never catch it through testing.
 
 ```c
-// Correct version
+// 正确写法
 if ((flags & 0x04) == 0) {
-    // Now we really are checking bit 3
+    // 现在才是真正检查第 3 位
 }
 ```
 
@@ -116,13 +116,13 @@ if ((flags & 0x04) == 0) {
 ```c
 int values[5] = {10, 20, 30, 40, 50};
 int* p = values;
-int product = *p * *p++;  // Undefined behavior!
+int product = *p * *p++;  // 未定义行为！
 ```
 
 This code has a double problem. In `*p++`, because postfix `++` binds tighter than the dereference `*`, it actually means `*(p++)`—take the value first, then increment, which is roughly what you would expect. But the second problem is the real disaster: reading and writing the same variable `p` within one expression is undefined behavior under the C standard, and the compiler is legally allowed to produce any result.
 
 ```c
-// Correct version: split the operations apart
+// 正确写法：把操作拆开
 int val = *p;
 int product = val * val;
 p++;
@@ -140,7 +140,7 @@ Nearly every C/C++ programmer has fallen into this pit—confusing `=` and `==`.
 int x = 0;
 int y = 42;
 if (x = y) {
-    printf("x equals y\n");  // Always executes!
+    printf("x equals y\n");  // 一定会执行！
 }
 ```
 
@@ -165,11 +165,11 @@ while (c = ' ' || c == '\t' || c == '\n') {
 The intent is to skip whitespace characters in the input. But `c = ' '` is an assignment, not a comparison: `' '` (ASCII 32) is nonzero, so after `||` short-circuit evaluation the whole expression is 1 (true), and `c` gets assigned 1—an infinite loop.
 
 ```c
-// Correct version
+// 正确写法
 #include <ctype.h>
 int c;
 while ((c = getchar()) != EOF && isspace(c)) {
-    // Skip whitespace characters
+    // 跳过空白字符
 }
 ```
 
@@ -178,7 +178,7 @@ while ((c = getchar()) != EOF && isspace(c)) {
 There is a classic defensive trick—put the constant on the left of the comparison operator:
 
 ```c
-if (42 = x) { /* Compile error! You cannot assign to a constant */ }
+if (42 = x) { /* 编译错误！不能给常量赋值 */ }
 ```
 
 If your fingers slip and write `=` instead of `==`, the compiler will immediately report an error, because `42` is not an lvalue. This trick does feel a bit awkward to write (it reads like "if 42 equals x"), but it works. The better practice, though: **always enable `-Wall -Wextra`, and treat warnings as errors (`-Werror`).**
@@ -194,8 +194,8 @@ int max_value(int* x, int n)
 {
     int big = x[0];
     for (int i = 1; i < n; i++)
-        if (x[i] > big);   // ← This semicolon turns the if body into an empty statement!
-            big = x[i];     // Executes unconditionally
+        if (x[i] > big);   // ← 这个分号让 if 的 body 变成空语句！
+            big = x[i];     // 无条件执行
     return big;
 }
 ```
@@ -203,13 +203,13 @@ int max_value(int* x, int n)
 The semicolon after the `if` condition turns the if body into an empty statement, so `big = x[i]` no longer belongs to the if—it executes unconditionally. In the end `big` equals the last element, not the maximum. This bug does not crash, does not report an error, and can even return the "correct" result for an ascending array. We tested it in practice: one counterexample exposes it—
 
 ```text
-Input: {50, 20, 30, 10, 40}
-Expected output: 50
-Actual output: 40 (the last element, not the maximum)
+输入：{50, 20, 30, 10, 40}
+期望输出：50
+实际输出：40（最后一个元素，不是最大值）
 ```
 
 ```c
-// Correct version: always use braces
+// 正确写法：始终使用大括号
 int max_value(int* x, int n)
 {
     int big = x[0];
@@ -230,8 +230,8 @@ The other way around, a missing semicolon causes just as much trouble, and the e
 
 ```c
 extern int count
-                     // ← Missing semicolon
-void process(void) { // The compiler reports the error here!
+                     // ← 缺分号
+void process(void) { // 编译器在这里报错！
     count++;
 }
 ```
@@ -245,7 +245,7 @@ C's declaration syntax is complicated enough on its own, but in certain situatio
 ### The "Most Vexing Parse"
 
 ```c
-int x();  // Is this a variable or a function?
+int x();  // 这是变量还是函数？
 ```
 
 If your intuition says "an int variable `x` initialized to a default value", you have stepped into the trap. Under C's grammar rules, `int x()` is parsed as a function declaration—a function named `x`, taking no parameters, returning `int`. In C++ this ambiguity is even more serious:
@@ -256,8 +256,8 @@ public:
     Timer() {}
 };
 
-Timer t();  // A function declaration! Returns Timer, takes no parameters
-            // Not a variable t of type Timer
+Timer t();  // 函数声明！返回 Timer，不接受参数
+            // 而不是 Timer 类型的变量 t
 ```
 
 Later, if you write `t.something()`, the compiler will give you a baffled look and tell you "t is a function and cannot be used like this".
@@ -274,7 +274,7 @@ The first time we saw this declaration, only three words formed in our heads: wh
 
 ```c
 typedef void (*SignalHandler)(int);
-// Much clearer now
+// 现在清楚多了
 SignalHandler signal(int sig, SignalHandler func);
 ```
 
@@ -284,13 +284,13 @@ There is a classic technique called the "Right-Left Rule" for decoding complex C
 
 ```c
 int (*arr)[10];
-// arr → left: * (pointer) → right: [10] (10-element array) → left: int
-// Conclusion: a pointer to an array of 10 ints
+// arr → 向左 *（指针）→ 向右 [10]（10 元素数组）→ 向左 int
+// 结论：指向含 10 个 int 的数组的指针
 
 int (*func_array[5])(double);
-// func_array → right: [5] (5-element array) → left: * (pointer)
-// → right: (double) (function taking a double) → left: int (returns int)
-// Conclusion: a 5-element array of function pointers, each pointing to an int(double) function
+// func_array → 向右 [5]（5 元素数组）→ 向左 *（指针）
+// → 向右 (double)（接受 double 的函数）→ 向左 int（返回 int）
+// 结论：5 个元素的函数指针数组，每个指向 int(double) 函数
 ```
 
 Although the Right-Left Rule can help you decode complex declarations, in actual coding please use `typedef` to simplify them as much as possible. Do not show off by writing a declaration that takes half a minute to read—you will feel clever writing it today, and three months later even you will not be able to read it.
@@ -305,7 +305,7 @@ C performs no array bounds checking. This is a design-philosophy choice—bounds
 
 ```c
 int arr[5] = {1, 2, 3, 4, 5};
-for (int i = 0; i <= 5; i++) {  // Out of bounds when i=5!
+for (int i = 0; i <= 5; i++) {  // i=5 时越界！
     printf("%d\n", arr[i]);
 }
 ```
@@ -313,7 +313,7 @@ for (int i = 0; i <= 5; i++) {  // Out of bounds when i=5!
 `arr` has 5 elements, with valid indices 0 through 4. When `i = 5`, `arr[5]` accesses memory past the end of the array—reading it is undefined, and writing it is even more dangerous: it can overwrite other variables, corrupt the stack frame, cause a segfault, or even become a security vulnerability (the basic mechanism of buffer overflow attacks is precisely deliberate out-of-bounds writes).
 
 ```c
-// Correct version: compute the array size with sizeof, so it adapts automatically if the length changes
+// 正确写法：用 sizeof 计算数组大小，即使改了长度也能自动适配
 int arr[] = {1, 2, 3, 4, 5};
 int len = sizeof(arr) / sizeof(arr[0]);
 for (int i = 0; i < len; i++) {
@@ -326,11 +326,11 @@ for (int i = 0; i < len; i++) {
 In C, local variables are not automatically initialized to zero—their initial value is whatever garbage happens to remain in that stack memory, and it may differ from run to run:
 
 ```c
-int count;  // Uninitialized
+int count;  // 未初始化
 if (some_condition) {
     count = 0;
 }
-// If some_condition is false, count is garbage
+// 如果 some_condition 为假，count 是垃圾值
 printf("count = %d\n", count);
 ```
 
@@ -343,7 +343,7 @@ Overflow of unsigned integers is well-defined (modular arithmetic), but overflow
 ```c
 int a = 2000000000;
 int b = 2000000000;
-if (a + b < 0) {  // The compiler may delete this check outright!
+if (a + b < 0) {  // 编译器可能直接删除这个判断！
     printf("Overflow detected!\n");
 }
 ```
@@ -351,7 +351,7 @@ if (a + b < 0) {  // The compiler may delete this check outright!
 That's right: the compiler may delete this if check during the optimization stage, because it "knows" signed addition never overflows (per the C standard, an overflow would be UB, and the compiler may assume UB does not happen).
 
 ```c
-// Correct overflow check: test the operands before the addition
+// 正确的溢出检查：在加法之前检查操作数
 #include <limits.h>
 if (a > INT_MAX - b) {
     printf("Overflow!\n");
@@ -366,23 +366,23 @@ C strings end with `\0` (the null byte). Forgetting this terminator is a classic
 
 ```c
 char greeting[5] = {'H', 'e', 'l', 'l', 'o'};
-// No '\0' terminator!
-printf("%s\n", greeting);  // Undefined behavior
+// 没有 '\0' 终止符！
+printf("%s\n", greeting);  // 未定义行为
 ```
 
 `printf`'s `%s` keeps reading until it encounters a `\0`. If the memory after `greeting` happens to be zero, you may get away with it; if not, printf will print a pile of garbage characters or even segfault.
 
 ```c
-// Correct version
-char greeting[6] = {'H', 'e', 'l', 'l', 'o', '\0'};  // Terminated manually
-char greeting[] = "Hello";  // A string literal adds '\0' automatically; the size is 6
+// 正确写法
+char greeting[6] = {'H', 'e', 'l', 'l', 'o', '\0'};  // 手动终止
+char greeting[] = "Hello";  // 字符串字面量自动添加 '\0'，大小为 6
 ```
 
 There is another classic off-by-one: forgetting to leave room for the `\0` when `malloc`-ing a string buffer:
 
 ```c
-char* result = malloc(strlen(s) + strlen(t));     // BUG! Missing the +1
-char* result = malloc(strlen(s) + strlen(t) + 1); // OK: the +1 is for the '\0'
+char* result = malloc(strlen(s) + strlen(t));     // BUG！少了 +1
+char* result = malloc(strlen(s) + strlen(t) + 1); // OK，+1 给 '\0'
 ```
 
 `strlen` returns the string length (excluding the `\0`), and `strcpy` and `strcat` copy the terminator, so the buffer needs `strlen(s) + strlen(t) + 1` bytes.
@@ -410,42 +410,42 @@ Several key C++ improvements deserve special mention. Brace initialization (`Tim
 Below are several exercises; the code deliberately contains traps—please find and fix them. All six are **difficulty: basic**, and each corresponds to a pitfall covered in this article (greedy matching, precedence, assignment vs. comparison, the extra semicolon, integer overflow, and a comprehensive one).
 
 ```c
-/// @brief Exercise 1: Fix the lexical analysis trap
-/// The code below intends to compute the value of a / b, but the compiler disagrees
-/// Hint: think about what greedy matching makes of the /*
-/// @param a The dividend
-/// @param b Pointer to the divisor
+/// @brief 练习 1：修复词法分析陷阱
+/// 下面的代码本意是计算 a / b 的值，但编译器不这么认为
+/// 提示：思考贪婪匹配会把 /* 解析成什么
+/// @param a 被除数
+/// @param b 除数的指针
 /// @return a / (*b)
 int fix_lexical_trap(int a, int* b)
 {
-    // Exercise: fix the trap in the code
+    // 练习： 修复代码中的陷阱
     return a/*b;
 }
 ```
 
 ```c
-/// @brief Exercise 2: Fix the precedence trap
-/// The code below intends to check whether the low 4 bits of flags are all zero
-/// Hint: bitwise AND has lower precedence than ==
-/// @param flags The flag bits to check
-/// @return 1 means the low 4 bits are all zero, 0 means at least one bit is nonzero
+/// @brief 练习 2：修复优先级陷阱
+/// 下面的代码本意是检查 flags 的低 4 位是否全部为零
+/// 提示：位运算 AND 的优先级低于 ==
+/// @param flags 待检查的标志位
+/// @return 1 表示低 4 位全为零，0 表示至少有一位非零
 int fix_priority_trap(unsigned int flags)
 {
-    // Exercise: fix the trap in the code
+    // 练习： 修复代码中的陷阱
     return flags & 0x0F == 0;
 }
 ```
 
 ```c
-/// @brief Exercise 3: Fix the assignment-vs-comparison trap
-/// The code below intends to check whether x equals the target value
-/// Hint: = and == in an if condition are different things
-/// @param x The current value
-/// @param target The target value
-/// @return 1 means equal, 0 means not equal
+/// @brief 练习 3：修复赋值与比较陷阱
+/// 下面的代码本意是检查 x 是否等于目标值
+/// 提示：if 条件中的 = 和 == 是不同的
+/// @param x 当前值
+/// @param target 目标值
+/// @return 1 表示相等，0 表示不等
 int fix_assignment_trap(int x, int target)
 {
-    // Exercise: fix the trap in the code
+    // 练习： 修复代码中的陷阱
     if (x = target)
         return 1;
     return 0;
@@ -453,15 +453,15 @@ int fix_assignment_trap(int x, int target)
 ```
 
 ```c
-/// @brief Exercise 4: Fix the semicolon trap
-/// The function below intends to find the maximum value in the array
-/// Hint: check whether there is an extra semicolon after the if
-/// @param arr An array of integers
-/// @param n The length of the array
-/// @return The maximum value in the array
+/// @brief 练习 4：修复分号陷阱
+/// 下面的函数本意是找到数组中的最大值
+/// 提示：检查 if 后面是否有多余的分号
+/// @param arr 整数数组
+/// @param n 数组长度
+/// @return 数组中的最大值
 int fix_semicolon_trap(int* arr, int n)
 {
-    // Exercise: fix the trap in the code
+    // 练习： 修复代码中的陷阱
     int max_val = arr[0];
     for (int i = 1; i < n; i++)
         if (arr[i] > max_val);
@@ -471,15 +471,15 @@ int fix_semicolon_trap(int* arr, int n)
 ```
 
 ```c
-/// @brief Exercise 5: Fix the integer overflow check
-/// The code below tries to detect whether a + b overflows
-/// Hint: the result after overflow is undefined, so you cannot rely on the result to decide whether overflow happened
-/// @param a The first addend (positive)
-/// @param b The second addend (positive)
-/// @return 1 means it will overflow, 0 means it is safe
+/// @brief 练习 5：修复整数溢出检查
+/// 下面的代码试图检测 a + b 是否溢出
+/// 提示：溢出后结果是未定义的，不能依赖结果来判断是否溢出
+/// @param a 第一个加数（正数）
+/// @param b 第二个加数（正数）
+/// @return 1 表示会溢出，0 表示安全
 int fix_overflow_check(int a, int b)
 {
-    // Exercise: fix the trap in the code
+    // 练习： 修复代码中的陷阱
     if (a + b < 0)
         return 1;
     return 0;
@@ -487,15 +487,15 @@ int fix_overflow_check(int a, int b)
 ```
 
 ```c
-/// @brief Exercise 6: Comprehensive challenge — fix the string concatenation function
-/// The function below intends to concatenate two strings and return the new string
-/// Hint: watch the allocation size, the string terminator, and null pointer checks
-/// @param s The first string
-/// @param t The second string
-/// @return A newly allocated concatenated string; the caller is responsible for freeing it
+/// @brief 练习 6：综合挑战——修复字符串拼接函数
+/// 下面的函数本意是将两个字符串拼接后返回新字符串
+/// 提示：注意内存分配大小、字符串终止符、空指针检查
+/// @param s 第一个字符串
+/// @param t 第二个字符串
+/// @return 新分配的拼接字符串，调用者负责释放
 char* fix_string_concat(const char* s, const char* t)
 {
-    // Exercise: fix all the traps in the code
+    // 练习： 修复代码中的所有陷阱
     char* result = malloc(strlen(s) + strlen(t));
     strcpy(result, s);
     strcat(result, t);

@@ -21,9 +21,9 @@ title: 'C++20 Ranges: Pipelines in Practice'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/08-ranges-pipeline-in-practice.md
   source_hash: 354c3dc5cd404b3a730c2d5aecf36527811b6f985251678cacf3ee443901080c
-  translated_at: '2026-09-26T03:31:33+00:00'
-  engine: anthropic
-  token_count: 5500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7580
 ---
 # C++20 Ranges: Pipelines in Practice
 
@@ -38,12 +38,12 @@ Let's get the semantics precise first. These two snippets are equivalent:
 ```cpp
 std::vector<int> data{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-// Pipe style: read top to bottom, like a sentence
+// 管道写法:从上往下读,像句子
 auto pipe = data
     | std::views::filter(is_even)
     | std::views::transform(times10);
 
-// Nested-call style: read inside out, gets ugly as layers pile up
+// 嵌套调用写法:从里往外读,层级一多就难看
 auto nested = std::views::transform(std::views::filter(data, is_even), times10);
 ```
 
@@ -97,7 +97,7 @@ The most common way this goes wrong is building a local vector inside a function
 
 ```cpp
 auto make_dangling_view() {
-    std::vector<int> local{1, 2, 3, 4, 5};   // destroyed when the function returns
+    std::vector<int> local{1, 2, 3, 4, 5};   // 函数返回时销毁
     return local | std::views::filter([](int x){ return x > 2; });
 }
 ```
@@ -105,7 +105,7 @@ auto make_dangling_view() {
 This code compiles (the view type can be deduced), but the view you get points into freed vector memory, and iterating it is **undefined behavior**. By the same token, building a view on a temporary dangles too:
 
 ```cpp
-auto bad = std::vector<int>{1, 2, 3}        // temporary, destroyed at the end of this line
+auto bad = std::vector<int>{1, 2, 3}        // 临时量,这行结束就销毁
     | std::views::filter([](int x){ return x > 1; });
 ```
 
@@ -120,17 +120,17 @@ The most natural landing spot for the pipeline style is multi-stage cleaning of 
 ```cpp
 struct AdcSample { std::uint16_t raw; };
 
-std::vector<AdcSample> samples = fetch_samples();   // one frame of samples
+std::vector<AdcSample> samples = fetch_samples();   // 一帧采样
 
 auto pipeline = samples
     | std::views::filter([](const AdcSample& s){
-        return s.raw >= 64 && s.raw <= 4000;       // drop out-of-range noise
+        return s.raw >= 64 && s.raw <= 4000;       // 丢掉越界噪声
     })
     | std::views::transform([](const AdcSample& s){
-        return s.raw * 3.3f / 4095.0f;             // raw value -> voltage
+        return s.raw * 3.3f / 4095.0f;             // 原始值 -> 电压
     })
     | std::views::transform([](float v){
-        return 1.001f * v + 0.0002f * v * v;        // second-order calibration curve
+        return 1.001f * v + 0.0002f * v * v;        // 二阶校准曲线
     });
 ```
 
@@ -158,9 +158,9 @@ Of the 8 raw samples, 4 were filtered out as out-of-range, and the remaining 4 w
 Another common job is assembling 16-bit words out of a byte stream. One C++20 boundary has to be made clear first: the way you often see it written is `std::views::chunk(2)` to group the bytes two at a time, but `chunk` only entered the standard in **C++23** and does not compile under `-std=c++20` (on GCC 16 it actually reports `'chunk' is not a member of 'std::views'`). In C++20 we switch to a form that does not depend on `chunk`: generate indices with `iota` and take them two at a time:
 
 ```cpp
-std::vector<std::uint8_t> bytes = receive_spi_data();   // big-endian byte stream
+std::vector<std::uint8_t> bytes = receive_spi_data();   // 大端字节流
 
-// Pair up adjacent bytes into 16-bit words (C++20-friendly, no chunk)
+// 配对相邻字节,拼成 16 位字(C++20 友好,不用 chunk)
 auto words = std::views::iota(std::size_t{0}, bytes.size() / 2)
     | std::views::transform([&](std::size_t i){
         std::uint16_t hi = bytes[i * 2];
@@ -168,7 +168,7 @@ auto words = std::views::iota(std::size_t{0}, bytes.size() / 2)
         return static_cast<std::uint16_t>((hi << 8) | lo);
     });
 
-// Drop the 0xFFFF padding word
+// 丢掉 0xFFFF 填充字
 auto valid = words | std::views::filter([](std::uint16_t w){ return w != 0xFFFF; });
 ```
 
@@ -188,7 +188,7 @@ The following defines an `IntWindow` whose internals are nothing more than a poi
 class IntWindow {
 public:
     IntWindow(const int* p, std::size_t n) : p_(p), n_(n) {}
-    const int* begin() const { return p_; }      // these two are enough
+    const int* begin() const { return p_; }      // 这两个就够了
     const int* end()   const { return p_ + n_; }
     std::size_t size() const { return n_; }
 private:
@@ -199,7 +199,7 @@ private:
 int raw[] = {10, 15, 20, 25, 30, 35, 40};
 IntWindow window(raw, 7);
 
-// A custom type plugs straight into the pipeline
+// 自定义类型直接接进管道
 auto out = window
     | std::views::filter([](int x){ return x > 18; })
     | std::views::transform([](int x){ return x / 5; });

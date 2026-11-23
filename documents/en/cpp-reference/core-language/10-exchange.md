@@ -16,10 +16,10 @@ tags:
 title: std::exchange
 translation:
   source: documents/cpp-reference/core-language/10-exchange.md
-  source_hash: 835d27d86d82597a3b19ef0f0f1d8ff827e6520aa2d0fca593bc3a73bfcf7865
-  translated_at: '2026-09-27T01:40:50+00:00'
-  engine: anthropic
-  token_count: 380
+  source_hash: ee1f9528e38a19244359428cb49beac0a6a314c14e7c63ef9be332ad2eca77fc
+  translated_at: '2026-11-22T16:41:57.266510+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1240
 ---
 # std::exchange (C++14)
 
@@ -46,11 +46,11 @@ Assigns a new value to a variable and hands you its old value at the same time, 
 
 int main() {
     int a = 10, b = 20;
-    // Swap a and b without a temporary variable
+    // 交换 a 和 b，无需临时变量
     a = std::exchange(b, a);
-    std::cout << a << " " << b << "\n"; // Output: 20 10
+    std::cout << a << " " << b << "\n"; // 输出: 20 10
 
-    // Print the first few Fibonacci numbers
+    // 打印斐波那契数列前几项
     for (int x{0}, y{1}; x < 50; x = std::exchange(y, x + y))
         std::cout << x << " ";
 }

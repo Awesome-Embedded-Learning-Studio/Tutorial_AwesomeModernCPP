@@ -22,9 +22,9 @@ title: A First Look at the Algorithms Library
 translation:
   source: documents/vol1-fundamentals/ch10/03-algorithms-intro.md
   source_hash: ab5313b0f6f5d9fef26d85d88375db6310c9cc969170ce5b9d3c7074ec613b1f
-  translated_at: '2026-09-27T06:59:37+00:00'
-  engine: anthropic
-  token_count: 1709
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9157
 ---
 # A First Look at the Algorithms Library
 
@@ -46,12 +46,12 @@ The full lambda syntax is `[capture](parameters) -> return_type { body }`. The r
 std::vector<int> data = {5, 3, 1, 4, 2};
 int threshold = 3;
 
-// Capture threshold by value
+// 按值捕获 threshold
 auto is_above = [threshold](int x) { return x > threshold; };
 int count = std::count_if(data.begin(), data.end(), is_above);
 // count == 2
 
-// Capture by reference and accumulate into an outside variable
+// 引用捕获，累加到外部变量
 int sum = 0;
 std::for_each(data.begin(), data.end(), [&sum](int x) { sum += x; });
 // sum == 15
@@ -66,11 +66,11 @@ Sorting is probably the most frequently used operation in the algorithms library
 ```cpp
 std::vector<int> v = {5, 2, 8, 1, 9, 3};
 
-// Ascending order by default
+// 默认升序
 std::sort(v.begin(), v.end());
 // v: {1, 2, 3, 5, 8, 9}
 
-// Descending order—pass a comparison lambda as the third argument
+// 降序——传第三个参数，一个比较 lambda
 std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
 // v: {9, 8, 5, 3, 2, 1}
 ```
@@ -90,14 +90,14 @@ The comparison function we pass to `sort` must establish a strict weak ordering.
 ```cpp
 std::vector<std::string> names = {"Alice", "Bob", "Charlie", "David"};
 
-// find: locate an element equal to a specified value
+// find：查找等于指定值的元素
 auto it1 = std::find(names.begin(), names.end(), "Charlie");
-// it1 points to "Charlie"
+// it1 指向 "Charlie"
 
-// find_if: locate the first element satisfying a condition
+// find_if：查找满足条件的第一个元素
 auto it2 = std::find_if(names.begin(), names.end(),
     [](const std::string& s) { return s.size() > 4; });
-// it2 points to "Alice"
+// it2 指向 "Alice"
 ```
 
 Linear search has O(n) time complexity and works whether or not the data is sorted.
@@ -111,7 +111,7 @@ std::vector<int> v = {1, 3, 5, 7, 9, 11};
 
 bool found = std::binary_search(v.begin(), v.end(), 7);  // true
 auto it = std::lower_bound(v.begin(), v.end(), 6);
-// *it == 7, the first element >= 6
+// *it == 7，即第一个 >= 6 的元素
 ```
 
 Calling `lower_bound` or `binary_search` on unsorted data produces no error, but the behavior is undefined. It is the sort of bug that compiles, does not crash at runtime, and still gives us a result we cannot trust—especially painful to debug.
@@ -128,13 +128,13 @@ std::vector<int> dst;
 std::copy(src.begin(), src.end(), std::back_inserter(dst));
 // dst: {1, 2, 3, 4, 5}
 
-// transform: multiply each element by 10
+// transform：每个元素乘以 10
 std::vector<int> multiplied;
 std::transform(src.begin(), src.end(), std::back_inserter(multiplied),
     [](int x) { return x * 10; });
 // multiplied: {10, 20, 30, 40, 50}
 
-// replace: replace every 3 with 99
+// replace：把所有 3 替换成 99
 std::vector<int> v = {1, 3, 5, 3, 7};
 std::replace(v.begin(), v.end(), 3, 99);
 // v: {1, 99, 5, 99, 7}
@@ -150,8 +150,8 @@ In the previous chapter on `vector`, we used the remove-erase idiom. Now let us 
 std::vector<int> v = {1, 2, 3, 2, 4, 2, 5};
 
 auto new_end = std::remove(v.begin(), v.end(), 2);
-// v's contents may be: {1, 3, 4, 5, ?, ?, ?}
-//                       ^new_end         ^v.end()
+// v 的内容可能是: {1, 3, 4, 5, ?, ?, ?}
+//                   ^new_end         ^v.end()
 
 v.erase(new_end, v.end());
 // v: {1, 3, 4, 5}
@@ -212,33 +212,33 @@ int main()
         {"Grace",   71.5},
     };
 
-    // --- 1. Sort by score from highest to lowest ---
+    // --- 1. 按成绩从高到低排序 ---
     std::sort(students.begin(), students.end(),
         [](const Student& a, const Student& b) { return a.score > b.score; });
 
     std::cout << "=== Ranking (high to low) ===\n";
     for (const auto& s : students) { print_student(s); }
 
-    // --- 2. Find the student with the highest score ---
+    // --- 2. 查找最高分的学生 ---
     auto top = std::max_element(students.begin(), students.end(),
         [](const Student& a, const Student& b) { return a.score < b.score; });
     std::cout << "\nTop student: " << top->name
               << " (" << top->score << ")\n";
 
-    // --- 3. Calculate the average score ---
+    // --- 3. 计算平均分 ---
     double sum = std::accumulate(students.begin(), students.end(), 0.0,
         [](double acc, const Student& s) { return acc + s.score; });
     std::cout << "Average score: "
               << sum / static_cast<double>(students.size()) << "\n";
 
-    // --- 4. Count passing and failing students ---
+    // --- 4. 统计及格和不及格的人数 ---
     int passing = std::count_if(students.begin(), students.end(),
         [](const Student& s) { return s.score >= 60.0; });
     std::cout << "Passing: " << passing
               << ", Failing: " << static_cast<int>(students.size()) - passing
               << "\n";
 
-    // --- 5. Filter out failing students (remove-erase) ---
+    // --- 5. 过滤不及格的学生（remove-erase）---
     std::vector<Student> filtered = students;
     auto it = std::remove_if(filtered.begin(), filtered.end(),
         [](const Student& s) { return s.score < 60.0; });

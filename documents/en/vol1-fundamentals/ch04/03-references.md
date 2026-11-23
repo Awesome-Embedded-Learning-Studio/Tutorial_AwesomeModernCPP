@@ -19,12 +19,23 @@ tags:
 - 入门
 - 基础
 title: References
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #211)"
+      en: "Contributed exercise solutions and article revisions (PR #211)"
 translation:
   source: documents/vol1-fundamentals/ch04/03-references.md
-  source_hash: d0a29a3bed69e2dec9388efca6987ead652180a5e9fd9622a5e447489f6adec7
-  translated_at: '2026-09-25T10:38:02+00:00'
-  engine: anthropic
-  token_count: 7500
+  source_hash: 28fc70e8266ae30798598bf02ac0c860a1c919544b113449e4d36a7912eeefc9
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9994
 ---
 # References: Give a Variable an Alias, Suffer Less Pointer Pain
 
@@ -45,7 +56,7 @@ int value = 42;
 int& ref = value;
 
 int other = 200;
-ref = other;  // This is NOT "making ref point to other"!
+ref = other;  // 这不是"让 ref 指向 other"！
 ```
 
 What `ref = other;` actually does is assign `other`'s value, 200, to the object `ref` refers to—namely `value`. After it runs, `value` holds 200, `ref` is still a reference to `value`, and `other` is out of the picture. A reference's binding is a one-time deal: every later assignment to `ref` merely modifies the value of the referred-to object. If you need "re-pointing" semantics, the tool for the job is a pointer.
@@ -61,7 +72,7 @@ There's one practical restriction you might overlook: references can't be stored
 The differences show up most clearly in function calls. Take the old task of "swapping two variables" and write it once with pointers, once with references. C-style code can only pass pointers:
 
 ```cpp
-// C-style: the pointer version
+// C 风格：指针版本
 void swap_by_pointer(int* a, int* b)
 {
     int temp = *a;
@@ -70,13 +81,13 @@ void swap_by_pointer(int* a, int* b)
 }
 
 int x = 10, y = 20;
-swap_by_pointer(&x, &y);  // The caller must take addresses
+swap_by_pointer(&x, &y);  // 调用时需要取地址
 ```
 
 Rewritten with references, the world goes quiet:
 
 ```cpp
-// C++-style: the reference version
+// C++ 风格：引用版本
 void swap_by_reference(int& a, int& b)
 {
     int temp = a;
@@ -85,7 +96,7 @@ void swap_by_reference(int& a, int& b)
 }
 
 int x = 10, y = 20;
-swap_by_reference(x, y);  // The caller passes variables directly; no & needed
+swap_by_reference(x, y);  // 调用时直接传变量，不需要 &
 ```
 
 No `*` dereferencing inside the function body, no `&` address-taking at the call site. The standard library's `std::swap` is implemented with references too, on exactly the same principle as `swap_by_reference`. Back in Chapter 3 when we wrote it, references were still a "memorize-how-to-use-it tool"; now we can supply the full explanation: `a` and `b` are simply aliases for the caller's two variables.
@@ -104,16 +115,15 @@ class Sensor {
 public:
     Sensor(float t, float h) : temperature_(t), humidity_(h) {}
 
-    // Returns a reference to the member, allowing external code
-    // to read and modify it directly
+    // 返回成员的引用，允许外部直接读取和修改
     float& temperature() { return temperature_; }
 
-    // const version: read-only access
+    // const 版本：只读访问
     const float& temperature() const { return temperature_; }
 };
 
 Sensor s(25.0f, 60.0f);
-s.temperature() = 26.5f;  // Modify the internal member directly through the reference
+s.temperature() = 26.5f;  // 直接通过引用修改内部成员
 ```
 
 The other is **chained calls**: have the member function return a reference to `*this`, and the caller can string several operations into a single line. `std::cout << a << b << c;` prints in sequence precisely because every `<<` returns a reference to `std::cout`—a mechanism we use every day.
@@ -132,8 +142,8 @@ A const reference can bind to a temporary object and **extend its lifetime**—a
 std::string get_name();
 
 const std::string& name = get_name();
-// The by-value temporary string is caught directly by name;
-// its lifetime extends to the end of name's scope—safe
+// 按值返回的临时 string 被 name 直接接住
+// 生命周期延长到 name 的作用域结束，安全
 ```
 
 But "directly" is the load-bearing word: once the reference changes hands, nobody's minding the store. Here's an example that compiles, runs, and is already dangling:
@@ -141,10 +151,10 @@ But "directly" is the load-bearing word: once the reference changes hands, nobod
 ```cpp
 const std::string& pick(const std::string& a, const std::string& b)
 {
-    return a.size() > b.size() ? a : b;  // Returns one of the reference parameters as-is
+    return a.size() > b.size() ? a : b;  // 把引用参数原样返回
 }
 
-const std::string& best = pick("hello", "hi");  // Dangling!
+const std::string& best = pick("hello", "hi");  // 悬垂！
 ```
 
 When `"hello"` and `"hi"` are passed as arguments to `pick`'s reference parameters, those two temporaries live only until the end of the full expression; `pick` returns a reference to one of them, and by the time `best` catches it they are already destroyed. We actually ran this code: GCC 16.2 with `-Wall` emits a `-Wdangling-reference` warning, while Clang 22.1 with `-Wall -Wextra` says nothing at all; and even carrying that warning, the program still compiles and still prints `hello`. A coincidentally correct result doesn't make the behavior defined—that's exactly what makes dangling references scary: they don't crash for your viewing pleasure.
@@ -169,7 +179,7 @@ struct SensorData {
     float pressure;
 };
 
-/// @brief Swap the values of two variables via references
+/// @brief 通过引用交换两个变量的值
 void swap_by_ref(int& a, int& b)
 {
     int temp = a;
@@ -177,7 +187,7 @@ void swap_by_ref(int& a, int& b)
     b = temp;
 }
 
-/// @brief Print a SensorData via const reference (no copy, no modification)
+/// @brief 通过 const 引用打印 SensorData（不拷贝，不修改）
 void print_sensor(const SensorData& data)
 {
     std::cout << "温度: " << data.temperature << "°C, "
@@ -186,7 +196,7 @@ void print_sensor(const SensorData& data)
               << std::endl;
 }
 
-/// @brief Return a member reference, allowing external modification
+/// @brief 返回成员引用，允许外部修改
 class Sensor {
     SensorData data_;
 
@@ -202,18 +212,18 @@ public:
 
 int main()
 {
-    // --- Swapping variables ---
+    // --- 交换变量 ---
     int x = 10, y = 20;
     std::cout << "交换前: x=" << x << ", y=" << y << std::endl;
     swap_by_ref(x, y);
     std::cout << "交换后: x=" << x << ", y=" << y << std::endl;
 
-    // --- Passing a big object by const reference ---
+    // --- const 引用传递大对象 ---
     SensorData reading{25.5f, 60.0f, 1013.25f};
     std::cout << "\n传感器读数: ";
     print_sensor(reading);
 
-    // --- Returning a member reference ---
+    // --- 返回成员引用 ---
     Sensor s(22.0f, 55.0f, 1000.0f);
     std::cout << "\n修改前: ";
     print_sensor(s.reading());
@@ -222,7 +232,7 @@ int main()
     std::cout << "修改后: ";
     print_sensor(s.reading());
 
-    // --- A const reference binding a temporary ---
+    // --- const 引用绑定临时对象 ---
     const std::string& label = std::string("温度传感器 #1");
     std::cout << "\n标签: " << label << std::endl;
 
@@ -332,13 +342,13 @@ void process(int& ref) { ref += 10; }
 
 int main()
 {
-    int& r = get_value(); // Line A
-    int& uninit;          // Line B
+    int& r = get_value(); // 行 A
+    int& uninit;          // 行 B
     int a = 10;
     int& ref = a;
     int b = 20;
-    ref = &b;             // Line C
-    process(5);           // Line D
+    ref = &b;             // 行 C
+    process(5);           // 行 D
 }
 ```
 
@@ -361,7 +371,7 @@ Line A is the one we most easily get confused about: strictly speaking, **a dang
 
 ```cpp
 int &r = get_value();
-std::cout << r;  // Undefined behavior: the x that r points to has already ended its lifetime
+std::cout << r;  // 未定义行为：r 指向的 x 已经结束生命周期
 ```
 
 Here is one safe corrected version: have `get_value` return by value, and give each reference an initial object at declaration; if you genuinely must return a reference, it may only be to an object whose lifetime is long enough (for example a static object, or one handed in by the caller):

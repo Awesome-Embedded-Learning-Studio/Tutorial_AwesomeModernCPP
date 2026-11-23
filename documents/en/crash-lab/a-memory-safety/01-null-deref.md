@@ -21,9 +21,9 @@ cpp_standard: [11, 17]
 translation:
   source: documents/crash-lab/a-memory-safety/01-null-deref.md
   source_hash: cdc694429bc131b283a3a3973c9e8312280f55975c8215c77db7145071d28726
-  translated_at: '2026-09-27T03:03:24+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4795
 ---
 
 # Every Endeavor Has a Bootstrap — Good News, We Have One Too: Null Pointer Dereference
@@ -44,7 +44,7 @@ int* find_value(int* arr, int size, int target) {
         if (arr[i] == target)
             return &arr[i];
     }
-    return nullptr;  // not found, return a null pointer
+    return nullptr;  // 没找到,返回空指针
 }
 ```
 
@@ -53,10 +53,10 @@ Unfortunately, the habits were not great: nobody ever said what to do if the val
 ```cpp
 
 int main() {
-    int check_value = ... // your good colleague reads the user's input
-    int data[] = {10, 20, 30, 40, 50}; // your backend buddy tells you these come back
-    int* result = find_value(data, 5, 999);   // shit, the user's cute little trick input: 999, sorry, does not exist — enjoy your nullptr
-    printf("*result = %d\n", *result);        // ← Boom! dereferenced without checking
+    int check_value = ... // 你的好同事读取用户的输入
+    int data[] = {10, 20, 30, 40, 50}; // 你的后端好哥们告诉你返回这些
+    int* result = find_value(data, 5, 999);   // shit，你的用户输入小巧思：999 ，不好意思不存在，喜提 nullptr
+    printf("*result = %d\n", *result);        // ← Boom! 没检查就解引用
 }
 ```
 
@@ -127,17 +127,17 @@ To the compiler, `p->member_func()` is really `member_func(p)`: `this=(nil)` get
 The most rudimentary fix is a null check, but null checks run on self-discipline — you remember this time and forget the next. The road that truly cures the root is encoding "there may be a value, or there may not" into the type system, and C++17's answer is `std::optional`:
 
 ```cpp
-// Returning a pointer: the caller may forget to check, and it blows up at runtime
+// 返回指针:调用方可能忘检查,崩在运行期
 int* find_value(int* arr, int size, int target);
 
-// Returning optional: the type itself is the reminder that "there may be nothing here"
+// 返回 optional:类型本身就在提醒"这里可能没有"
 std::optional<int> find_value(const int* arr, int size, int target);
 
 auto result = find_value(data, 5, 999);
-if (result.has_value()) {          // checking is part of the flow
+if (result.has_value()) {          // 检查是流程的一部分
     printf("%d\n", *result);
 }
-int val = result.value_or(-1);     // or just give a default value
+int val = result.value_or(-1);     // 或直接给默认值
 ```
 
 See that? Write the hint into the type system, and everything gets better! The culprit in the next case will not be nearly this polite: **after the free, the pointer is still alive**. And if you have accidentally guessed it already — yes, it is the big-name one that has made my scalp tingle countless times: Use After Free!

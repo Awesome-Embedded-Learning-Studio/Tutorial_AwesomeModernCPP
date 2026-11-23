@@ -19,10 +19,10 @@ tags:
 title: A Deep Dive into Arrays
 translation:
   source: documents/vol1-fundamentals/c_tutorials/10-arrays-deep-dive.md
-  source_hash: dacf3c03513e9820a853ee8eeff0dd15f8dbd1592c7fd7be1f85b8402bf8fb6f
-  translated_at: '2026-09-25T13:05:18+00:00'
-  engine: anthropic
-  token_count: 12500
+  source_hash: 023b3a93541decc5813b825597d3aefafab50005c4faf8ac0f7a70de961171cb
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 16464
 ---
 # A Deep Dive into Arrays
 
@@ -37,14 +37,14 @@ Everyone knows how to declare an array—`int arr[10];` and you're done. But the
 ### Basic Initialization
 
 ```c
-// Full initialization—every element gets a value
-int primes[] = {2, 3, 5, 7, 11};  // size deduced automatically as 5
+// 完全初始化——每个元素都给了值
+int primes[] = {2, 3, 5, 7, 11};  // 大小自动推导为 5
 
-// Partial initialization—elements without a value are filled with 0
+// 部分初始化——没给值的元素自动填 0
 int data[10] = {1, 2, 3};  // data[0]=1, data[1]=2, data[2]=3, data[3..9]=0
 
-// All-zero initialization—the cleanest way to zero out an array
-int zeros[100] = {0};  // the first element is explicitly 0, the rest are filled with 0 automatically
+// 全零初始化——这是把数组清零最干净利落的写法
+int zeros[100] = {0};  // 第一个元素显式为 0，其余自动填 0
 ```
 
 This partial-initialization behavior matters a lot—the C standard says that once an array is initialized (even if only a single element is), every element not explicitly assigned is automatically initialized to the zero value of its type. That's why `{0}` has become the idiomatic way to zero out an array, far cleaner than hand-writing a loop.
@@ -54,17 +54,17 @@ This partial-initialization behavior matters a lot—the C standard says that on
 C99 introduced a very practical feature: designated initializers. They let you specify "which position gets which value", and the remaining positions are filled with zero automatically. This is especially handy for sparse arrays, configuration tables, and register maps:
 
 ```c
-// Initialize only specific positions; the rest are automatically 0
+// 只初始化特定的位置，其余自动为 0
 int sparse[100] = {[5] = 10, [20] = 30, [99] = -1};
-// sparse[5] = 10, sparse[20] = 30, sparse[99] = -1, everything else 0
+// sparse[5] = 10, sparse[20] = 30, sparse[99] = -1, 其余全部 0
 
-// Order can be arbitrary, and later initializers override earlier ones
+// 可以乱序，也可以覆盖——后面的初始化覆盖前面的
 int config[10] = {[3] = 100, [7] = 200, [3] = 999};
-// config[3] = 999 (overridden), config[7] = 200
+// config[3] = 999（被覆盖了）, config[7] = 200
 
-// Regular initializers can follow a designated initializer and continue from there
+// 指定初始化器之后可以跟连续的普通初始化
 int seq[10] = {[3] = 10, 20, 30};
-// seq[3] = 10, seq[4] = 20, seq[5] = 30, the rest 0
+// seq[3] = 10, seq[4] = 20, seq[5] = 30, 其余 0
 ```
 
 Honestly, designated initializers see heavy use in embedded development. Say you have an interrupt vector table or a command dispatch table where most entries are empty and only a few need filling—code written with designated initializers is both cleaner and less error-prone. C++ only officially gained designated initializers in C++20 (with some restrictions), so the advantage of this feature is even more pronounced in pure C code.
@@ -78,13 +78,13 @@ A multidimensional array is essentially an "array of arrays". `int matrix[3][4]`
 Multidimensional arrays in C are stored in **row-major** order, meaning the rightmost subscript varies fastest. For `int matrix[3][4]`, the memory arrangement looks like this:
 
 ```text
-direction of increasing addresses →
+地址递增方向 →
 
-matrix[0][0] matrix[0][1] matrix[0][2] matrix[0][3]   ← row 0
-matrix[1][0] matrix[1][1] matrix[1][2] matrix[1][3]   ← row 1
-matrix[2][0] matrix[2][1] matrix[2][2] matrix[2][3]   ← row 2
+matrix[0][0] matrix[0][1] matrix[0][2] matrix[0][3]   ← 第 0 行
+matrix[1][0] matrix[1][1] matrix[1][2] matrix[1][3]   ← 第 1 行
+matrix[2][0] matrix[2][1] matrix[2][2] matrix[2][3]   ← 第 2 行
 
-The whole array is 12 contiguous ints, with no gaps
+整个数组是连续的 12 个 int，没有间隙
 ```
 
 Let's verify:
@@ -99,12 +99,12 @@ int main(void) {
         {20, 21, 22, 23}
     };
 
-    // Walk the entire 2D array with a single flat pointer
+    // 用一维指针遍历整个二维数组
     int* flat = &matrix[0][0];
     for (int i = 0; i < 12; i++) {
         printf("%d ", flat[i]);
     }
-    // Output: 0 1 2 3 10 11 12 13 20 21 22 23
+    // 输出: 0 1 2 3 10 11 12 13 20 21 22 23
 
     return 0;
 }
@@ -117,26 +117,26 @@ As you can see, the memory is completely linear—`matrix[1][0]` sits immediatel
 Multidimensional arrays are initialized much like one-dimensional ones, just with extra nested braces:
 
 ```c
-// Full initialization
+// 完全初始化
 int m1[2][3] = {
     {1, 2, 3},
     {4, 5, 6}
 };
 
-// Partial initialization—omitted elements are automatically 0
+// 部分初始化——未给的元素自动为 0
 int m2[2][3] = {
-    {1},       // row 0: {1, 0, 0}
-    {4, 5}     // row 1: {4, 5, 0}
+    {1},       // 第 0 行: {1, 0, 0}
+    {4, 5}     // 第 1 行: {4, 5, 0}
 };
 
-// Designated initializers work too
+// 也可以用指定初始化器
 int m3[3][4] = {
     [0] = {1, 2, 3, 4},
     [2] = {20, 21, 22, 23}
-    // row 1 is all zeros
+    // 第 1 行全部为 0
 };
 
-// And they can be nested
+// 甚至可以嵌套指定
 int m4[3][4] = {
     [0] = {[1] = 99},
     [2] = {[0] = 88, [3] = 77}
@@ -148,7 +148,7 @@ int m4[3][4] = {
 When you pass a 2D array to a function, the compiler must know the size of the second (and any higher) dimension to compute address offsets correctly. The reason: the address of `matrix[i][j]` follows the formula `base + i * cols + j`, where `cols` is the size of the second dimension. Without knowing `cols`, the compiler has no way to generate correct addressing code:
 
 ```c
-// The column count must be specified
+// 必须指定列数
 void print_matrix(int rows, int m[][4]) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < 4; j++) {
@@ -158,9 +158,9 @@ void print_matrix(int rows, int m[][4]) {
     }
 }
 
-// Equivalent form—using a pointer to an array
+// 等价写法——用数组指针
 void print_matrix_v2(int rows, int (*m)[4]) {
-    // Exactly the same effect
+    // 完全一样的效果
 }
 ```
 
@@ -178,7 +178,7 @@ int main(void) {
     printf("Enter array size: ");
     scanf("%d", &n);
 
-    int vla[n];  // size determined at runtime
+    int vla[n];  // 大小在运行时确定
     for (int i = 0; i < n; i++) {
         vla[i] = i * i;
     }
@@ -190,7 +190,7 @@ int main(void) {
 VLAs also work in two dimensions, and they are especially convenient as function parameters:
 
 ```c
-// VLA as a function parameter—both row count and column count are determined at runtime
+// VLA 作为函数参数——行数和列数都是运行时确定的
 void print_vla_matrix(int rows, int cols, int m[rows][cols]) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
@@ -202,8 +202,8 @@ void print_vla_matrix(int rows, int cols, int m[rows][cols]) {
 
 int main(void) {
     int rows = 3, cols = 4;
-    int matrix[rows][cols];  // a 2D VLA
-    // ... fill in data
+    int matrix[rows][cols];  // VLA 二维数组
+    // ... 填充数据
     print_vla_matrix(rows, cols, matrix);
     return 0;
 }
@@ -236,7 +236,7 @@ After declaring two arrays, you cannot assign one directly to the other:
 ```c
 int a[3] = {1, 2, 3};
 int b[3];
-// b = a;  // compile error! arrays cannot be assigned directly
+// b = a;  // 编译错误！数组不能直接赋值
 ```
 
 The reason is that in an assignment expression the array name decays into a pointer to its first element, and the left side of an assignment must be a modifiable lvalue—the decayed pointer is an rvalue and cannot be assigned to. So to copy an array, your only options are element-by-element copying or `memcpy`:
@@ -246,7 +246,7 @@ The reason is that in an assignment expression the array name decays into a poin
 
 int a[3] = {1, 2, 3};
 int b[3];
-memcpy(b, a, sizeof(a));  // the correct way to copy an array
+memcpy(b, a, sizeof(a));  // 正确的数组拷贝方式
 ```
 
 ### Arrays Cannot Be Function Return Values
@@ -260,7 +260,7 @@ typedef struct {
 
 IntArray10 make_array(void) {
     IntArray10 result = {.data = {1, 2, 3, 4, 5}};
-    return result;  // legal! structs can be returned
+    return result;  // 合法！结构体可以返回
 }
 ```
 
@@ -281,16 +281,16 @@ An array name decays into a pointer to its first element in these situations: be
 ```c
 int arr[10] = {0};
 
-// sizeof on an array name—yields the size of the entire array
-printf("%zu\n", sizeof(arr));  // 40 (10 * sizeof(int), assuming a 4-byte int)
+// sizeof 对数组名——得到整个数组的大小
+printf("%zu\n", sizeof(arr));  // 40（10 * sizeof(int)，假设 int 为 4 字节）
 
-// & on an array name—yields a pointer to the entire array, of type int (*)[10]
+// & 对数组名——得到指向整个数组的指针，类型是 int (*)[10]
 int (*ptr_to_array)[10] = &arr;
-// Note: ptr_to_array + 1 skips the entire array (40 bytes)
+// 注意：ptr_to_array + 1 跳过整个数组（40 字节）
 
-// An array name in an expression—decays to int*
-int* p = arr;  // equivalent to int* p = &arr[0];
-printf("%zu\n", sizeof(p));  // 8 (the size of the pointer itself, on a 64-bit system)
+// 数组名在表达式中——退化为 int*
+int* p = arr;  // 等价于 int* p = &arr[0];
+printf("%zu\n", sizeof(p));  // 8（指针本身的大小，64 位系统）
 ```
 
 `sizeof(arr)` returns 40 while `sizeof(p)` returns 8—that is the most direct evidence that an array is not a pointer.
@@ -305,14 +305,14 @@ This is a truly classic point of confusion. `int m[3][4]` and `int** pp` both lo
 
 ```text
 int m[3][4]:
-  12 contiguous ints
-  address of m[i][j] = base + i*4 + j
+  连续的 12 个 int
+  m[i][j] 的地址 = base + i*4 + j
 
 int** pp:
-  pp → [ptr0, ptr1, ptr2]   ← array of pointers (not contiguous)
+  pp → [ptr0, ptr1, ptr2]   ← 指针数组（不连续）
          │      │      │
          ▼      ▼      ▼
-       [....] [....] [....]  ← each row's own memory
+       [....] [....] [....]  ← 每行各自的内存
 ```
 
 A 2D array is one contiguous block of memory, and the compiler computes addresses directly from the row-column formula. An array of pointers adds a level of indirection—first find the pointer to row `i`, then use that pointer to reach element `j`. That's why `int m[3][4]` cannot be passed to a function taking `int**`, and the reverse holds too. The types are incompatible, and forcing a conversion leads to undefined behavior.
@@ -335,15 +335,15 @@ int main() {
     std::array<int, 5> a = {1, 2, 3, 4, 5};
     std::array<int, 5> b;
 
-    b = a;  // direct assignment! C arrays can't do this
+    b = a;  // 直接赋值！C 数组做不到
 
-    // Knows its own size
+    // 知道自己的大小
     for (std::size_t i = 0; i < b.size(); i++) {
         // b[i] ...
     }
 
-    // Also supports fill, swap, comparison operators, and more
-    b.fill(0);  // fill everything with 0
+    // 还支持 fill、swap、比较运算等
+    b.fill(0);  // 全部填 0
 }
 ```
 
@@ -360,13 +360,13 @@ int main() {
     int n;
     std::cin >> n;
 
-    std::vector<int> vec(n);  // size determined at runtime, like a VLA but far safer
+    std::vector<int> vec(n);  // 运行时确定大小，类似 VLA 但安全得多
     for (int i = 0; i < n; i++) {
         vec[i] = i * i;
     }
 
-    vec.push_back(999);  // can append elements too
-    // memory is released automatically on leaving the scope
+    vec.push_back(999);  // 还能追加元素
+    // 离开作用域自动释放内存
 }
 ```
 
@@ -384,13 +384,13 @@ int main() {
     std::array<int, 5> arr = {10, 20, 30, 40, 50};
     std::vector<int> vec = {1, 2, 3};
 
-    // Range-based for—no indices to manage
+    // 范围 for——不需要管下标
     for (const auto& elem : arr) {
-        // elem is a const reference to each element of arr
+        // elem 是 arr 中每个元素的 const 引用
     }
 
     for (auto& elem : vec) {
-        elem *= 2;  // elements can be modified
+        elem *= 2;  // 可以修改元素
     }
 }
 ```
@@ -409,31 +409,31 @@ Implement the following three functions to complete basic matrix operations. The
 #define kMaxRows 10
 #define kMaxCols 10
 
-/// @brief Transpose a matrix, writing the transpose of src into dst
-/// @param rows number of rows in src
-/// @param cols number of columns in src
-/// @param src the source matrix
-/// @param dst the destination matrix (the caller guarantees a size of cols x rows)
+/// @brief 转置矩阵，将 src 的转置结果写入 dst
+/// @param rows src 的行数
+/// @param cols src 的列数
+/// @param src 源矩阵
+/// @param dst 目标矩阵（调用者保证大小为 cols x rows）
 void matrix_transpose(int rows, int cols,
                       const int src[rows][cols],
                       int dst[cols][rows]);
 
-/// @brief Matrix multiplication, compute a x b and write the result into c
-/// @param m number of rows in a
-/// @param n number of columns in a / number of rows in b
-/// @param p number of columns in b
-/// @param a the left matrix (m x n)
-/// @param b the right matrix (n x p)
-/// @param c the result matrix (m x p)
+/// @brief 矩阵乘法，计算 a x b 的结果写入 c
+/// @param m a 的行数
+/// @param n a 的列数 / b 的行数
+/// @param p b 的列数
+/// @param a 左矩阵 (m x n)
+/// @param b 右矩阵 (n x p)
+/// @param c 结果矩阵 (m x p)
 void matrix_multiply(int m, int n, int p,
                      const int a[m][n],
                      const int b[n][p],
                      int c[m][p]);
 
-/// @brief Print a matrix
-/// @param rows number of rows
-/// @param cols number of columns
-/// @param mat the matrix
+/// @brief 打印矩阵
+/// @param rows 行数
+/// @param cols 列数
+/// @param mat 矩阵
 void matrix_print(int rows, int cols, const int mat[rows][cols]);
 ```
 
@@ -452,7 +452,7 @@ enough space.
 ```c
 #include <stdio.h>
 
-// Write row i, column j of src into row j, column i of dst.
+// 将 src 的第 i 行第 j 列写到 dst 的第 j 行第 i 列。
 void matrix_transpose(int rows, int cols,
                       const int src[rows][cols],
                       int dst[cols][rows])
@@ -465,7 +465,7 @@ void matrix_transpose(int rows, int cols,
         }
     }
 }
-// c[i][j] is the dot product of row i of a and column j of b.
+// c[i][j] 是 a 的第 i 行和 b 的第 j 列的点积。
 void matrix_multiply(int m, int n, int p,
                      const int a[m][n],
                      const int b[n][p],
@@ -483,7 +483,7 @@ void matrix_multiply(int m, int n, int p,
         }
     }
 }
-// Print a rows x cols matrix.
+// 打印一个 rows x cols 的矩阵。
 void matrix_print(int rows, int cols, const int mat[rows][cols])
 {
     for (int i = 0; i < rows; ++i)
@@ -513,10 +513,10 @@ int main(void)
     };
     int product[2][2] = {0};
 
-    //When a 2D array is passed as an argument, it decays into "a pointer to a row array".
+    //二维数组传参时，会退化为“指向一行数组的指针”。
     matrix_transpose(rows, cols, source, transposed);
     printf("Transpose:\n");
-    //A pointer to an array containing rows const int elements
+    //指向一个包含 rows 个 const int 元素的数组的指针
     matrix_print(cols, rows, (const int (*)[rows])transposed);
 
     matrix_multiply(rows, cols, product_cols, source, multiplier, product);
@@ -559,14 +559,14 @@ Write a program that allocates an int array—its size decided by user input—o
 #include <stdio.h>
 #include <stdlib.h>
 
-/// @brief Allocate and fill an array the VLA way
-/// @param n the array size
-/// @param arr the VLA array provided by the caller
+/// @brief 用 VLA 方式分配并填充数组
+/// @param n 数组大小
+/// @param arr 调用者提供的 VLA 数组
 void fill_with_vla(int n, int arr[n]);
 
-/// @brief Allocate and fill an array the malloc way
-/// @param n the array size
-/// @return pointer to the dynamically allocated array, NULL on failure
+/// @brief 用 malloc 方式分配并填充数组
+/// @param n 数组大小
+/// @return 指向动态分配数组的指针，失败返回 NULL
 int *fill_with_malloc(int n);
 
 ```
@@ -586,9 +586,8 @@ should re-evaluate that cap against the actual stack size.
 #include <stdlib.h>
 
 /*
- * The VLA's storage is provided by the caller. This function only fills in the
- * data; it does not free the array, because the VLA usually lives on the caller's
- * stack.
+ * VLA 的空间由调用者提供。本函数只负责填充数据，
+ * 不负责释放数组，因为 VLA 通常位于调用者的栈上。
  */
 void fill_with_vla(int n, int arr[n])
 {
@@ -604,8 +603,8 @@ void fill_with_vla(int n, int arr[n])
 }
 
 /*
- * malloc requests the array on the heap and fills it with 1, 2, 3, ... n.
- * The returned memory belongs to the caller, who must call free after use.
+ * malloc 在堆上申请数组，并填充 1, 2, 3, ... n。
+ * 返回的内存归调用者所有，调用者使用完后必须调用 free。
  */
 int *fill_with_malloc(int n)
 {
@@ -628,7 +627,7 @@ int *fill_with_malloc(int n)
     return arr;
 }
 
-// Print only the first 10 elements, so a large input can't blow up the demo output.
+// 这里只打印前 10 个元素，避免大输入让示例输出失控。
 static void print_array(const char *name, int n, const int arr[n])
 {
     const int count = n < 10 ? n : 10;
@@ -658,13 +657,11 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    /* VLA: the array size is decided by n at runtime and released automatically on
-       leaving the scope. */
+    /* VLA：数组大小由运行时的 n 决定，离开作用域后自动释放。 */
     int vla_array[n];
     fill_with_vla(n, vla_array);
 
-    /* malloc: request an array of the same size on the heap; it must be freed
-       manually after use. */
+    /* malloc：在堆上申请同样大小的数组，使用完后必须手动释放。 */
     int *malloc_array = fill_with_malloc(n);
     if (malloc_array == NULL)
     {

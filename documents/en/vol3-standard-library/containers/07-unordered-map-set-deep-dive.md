@@ -27,9 +27,9 @@ title: 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, an
 translation:
   source: documents/vol3-standard-library/containers/07-unordered-map-set-deep-dive.md
   source_hash: 99e24b989cc0f15825bfe5b0f3939f6caad91139a9602606db0a3454dff0789d
-  translated_at: '2026-09-26T02:30:22+00:00'
-  engine: anthropic
-  token_count: 5100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8242
 ---
 # Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and Custom Hashing
 
@@ -54,11 +54,11 @@ In one sentence: if you need ordered traversal, or range operations like "predec
 Underneath, `unordered_map` is a hash table, and the vast majority of implementations use **separate chaining**: an array of buckets, with each bucket holding a linked list (or something similar). When you insert an element, the hash function first computes the key's hash value, then takes it modulo the bucket count to decide which bucket it lands in; if that bucket already has elements, the new one is appended to the chain, and a lookup linearly scans that short chain.
 
 ```cpp
-// Simplified skeleton of a separate-chaining hash table (standard library internals; details vary by vendor)
+// 链地址法哈希表的简化骨架（标准库内部，各厂细节不同）
 struct HashTable {
-    std::vector<Bucket> buckets;   // bucket array; inside each bucket is a chain of elements with the same hash
+    std::vector<Bucket> buckets;   // bucket 数组，每个桶内部是同 hash 元素的链表
 };
-// Insert/lookup positioning: bucket_index = hash(key) % buckets.size();
+// 插入/查找定位：bucket_index = hash(key) % buckets.size();
 ```
 
 Here is a key concept: the **load factor**. It equals `size() / bucket_count()` — on average, how many elements hang off each bucket. The more crowded the buckets, the longer the chains, the slower the lookup. The standard library sets an upper bound `max_load_factor()`, 1.0 by default — once the load factor exceeds that bound, the container **rehashes**: it allocates a larger bucket array (usually growing to roughly twice the size) and re-hashes every element into the new buckets.
@@ -67,7 +67,7 @@ A rehash is the most expensive operation on an `unordered_map`: it relocates eve
 
 ```cpp
 std::unordered_map<int, std::string> m;
-m.reserve(10000);   // pre-size the buckets, avoiding repeated rehashes as elements are inserted one by one
+m.reserve(10000);   // 提前开好桶，避免逐个插入时的多次 rehash
 ```
 
 Let's run it and watch how load_factor triggers a rehash:
@@ -128,14 +128,14 @@ int main()
 {
     std::unordered_map<int, std::string> m;
     m[1] = "alpha";
-    std::string& ref = m.at(1);   // hold a reference to the element
+    std::string& ref = m.at(1);   // 持有元素引用
 
-    m.reserve(1000);              // triggers a rehash; all iterators invalidated
+    m.reserve(1000);              // 触发 rehash，迭代器全失效
     for (int i = 100; i < 200; ++i) {
-        m[i] = "x";               // bulk insertion may rehash again
+        m[i] = "x";               // 大量插入可能再次 rehash
     }
 
-    std::cout << ref << '\n';     // since C++14, the reference is still valid
+    std::cout << ref << '\n';     // C++14 起，引用仍然有效
     return 0;
 }
 ```
@@ -163,13 +163,13 @@ struct Point {
     bool operator==(Point const& o) const { return x == o.x && y == o.y; }
 };
 
-// Specialize std::hash<Point>
+// 特化 std::hash<Point>
 namespace std {
 template <>
 struct hash<Point> {
     std::size_t operator()(Point const& p) const noexcept
     {
-        // Combine the two ints into one size_t; simplified — use a better mix in production
+        // 把两个 int 组合成一个 size_t；这是简化版，生产里用更好的混合
         return static_cast<std::size_t>(p.x) * 31 + static_cast<std::size_t>(p.y);
     }
 };

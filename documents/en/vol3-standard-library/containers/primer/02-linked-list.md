@@ -24,9 +24,9 @@ cpp_standard: [11]
 translation:
   source: documents/vol3-standard-library/containers/primer/02-linked-list.md
   source_hash: 6dc7f28fdba8906651bd38dec00fbaee461ec01f952892f0df0403375636e73f
-  translated_at: '2026-09-25T08:48:33+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8235
 ---
 
 # Linked Lists: Never Move House — the Cost Is Asking the Way
@@ -41,20 +41,20 @@ The linked list's building block is the **node**: one piece of data plus one poi
 
 ```cpp
 struct Node {
-    int   val;    // the data being stored
-    Node* next;   // points to the next node; the list tail stores nullptr here
+    int   val;    // 存的数据
+    Node* next;   // 指向下一个节点；链尾这里存 nullptr
 };
 ```
 
 Let's string three nodes together by hand, to get a feel for the structure:
 
 ```cpp
-Node* head = nullptr;             // entry pointer: empty list
+Node* head = nullptr;             // 入口指针：空链
 
-Node* c = new Node{30, nullptr};  // list tail: next stores nullptr
-Node* b = new Node{20, c};        // middle node: next points to c
-Node* a = new Node{10, b};        // head node: next points to b
-head = a;                         // the entry points at the head node
+Node* c = new Node{30, nullptr};  // 链尾：next 存 nullptr
+Node* b = new Node{20, c};        // 中间节点：next 指向 c
+Node* a = new Node{10, b};        // 头节点：next 指向 b
+head = a;                         // 入口指向头节点
 ```
 
 ![The head pointer points to the first node; each node carries val and next, and the last node points to nullptr](./02-node-chain.drawio)
@@ -69,8 +69,8 @@ Now let's come back to that hurdle. Inserting a 99 at the front of the list — 
 
 ```cpp
 void push_front(Node*& head, int x) {
-    Node* n = new Node{x, head};  // the new node's next points to the old head node
-    head = n;                     // head now points to the new node
+    Node* n = new Node{x, head};  // 新节点的 next 指向原来的头节点
+    head = n;                     // head 改指新节点
 }
 ```
 

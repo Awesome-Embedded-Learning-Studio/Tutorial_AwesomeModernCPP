@@ -10,9 +10,10 @@ description: "The vptr makes the object 8 bytes fatter, gdb digs out the Base an
 reading_time_minutes: 24
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/05-classes-in-assembly/03-virtual-functions-and-vtables.md
-  source_hash: 9e16404e03d969dd313919d5c0f830cc36028e91706724e6880be090ed6a9576
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 5a31a493b2c327687f2b24263ae345394134b1df7475110144c1cb6bd54842ff
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 13384
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -24,15 +25,15 @@ current_status:
 We keep working in exactly the environment the [first piece](01-this-pointer-and-member-offsets.md) set up. The previous two pieces both made the same point, that an object is data plus ordinary function calls; virtual functions are the last substantial thing C++ adds to an object. Let's take that same two-int struct and build it twice, once with no virtual function and once with one:
 
 ```cpp
-// e4.cc -- object layout with virtual functions: the vptr makes the object bigger
+// e4.cc —— 虚函数对象的布局：vptr 让对象变大
 #include <cstdio>
 
-struct Plain {  // no virtual functions
+struct Plain {  // 没有虚函数
     int x;
     int y;
 };
 
-struct Virt {  // one virtual function
+struct Virt {  // 有一个虚函数
     int x;
     int y;
 
@@ -43,8 +44,8 @@ struct Virt {  // one virtual function
 
 void Virt::poke() {}
 
-static_assert(sizeof(void*) == 8, "this piece assumes a 64-bit target");
-static_assert(sizeof(Plain) == 8, "two ints, packed with no alignment tail");
+static_assert(sizeof(void*) == 8, "本文只谈 64 位");
+static_assert(sizeof(Plain) == 8, "两个 int，紧凑无对齐尾巴");
 static_assert(sizeof(Virt) == 16, "vptr(8) + x(4) + y(4)");
 
 int main() {
@@ -54,13 +55,13 @@ int main() {
     std::printf("alignof(Virt) = %zu\n", alignof(Virt));
 
     Virt v(1, 2);
-    Virt* volatile vp = &v;  // volatile consumption, so the object can't be optimized away
+    Virt* volatile vp = &v;  // volatile 消费，防对象被优化掉
     return (vp->x + vp->y) - 3;
 }
 ```
 
 ```text
-$ g++ -O0 -S e4.cc -o e4.s     # the virtual function experiments keep the default flags (unwind tables included)
+$ g++ -O0 -S e4.cc -o e4.s     # 虚函数实验保持默认标志（含 unwind 表）
 $ g++ -O0 e4.cc -o e4 && ./e4
 sizeof(void*) = 8
 sizeof(Plain) = 8
@@ -85,9 +86,9 @@ _ZN4VirtC2Eii:
 	movq	%rdi, -8(%rbp)
 	movl	%esi, -12(%rbp)
 	movl	%edx, -16(%rbp)
-	leaq	16+_ZTV4Virt(%rip), %rdx   # ← address of the vtable symbol plus 16
+	leaq	16+_ZTV4Virt(%rip), %rdx   # ← vtable 符号 +16 的地址
 	movq	-8(%rbp), %rax
-	movq	%rdx, (%rax)               # ← vptr written into this+0
+	movq	%rdx, (%rax)               # ← vptr 写进 this+0
 	movq	-8(%rbp), %rax
 	movl	-12(%rbp), %edx
 	movl	%edx, 8(%rax)              # x = a → this+8
@@ -112,9 +113,9 @@ The body of the vtable lives in `e4.s` too, and the data definition we want is t
 	.type	_ZTV4Virt, @object
 	.size	_ZTV4Virt, 24
 _ZTV4Virt:
-	.quad	0                       # slot -2: offset-to-top (0 for a complete object)
-	.quad	_ZTI4Virt               # slot -1: RTTI typeinfo pointer
-	.quad	_ZN4Virt4pokeEv          # slot 0: poke -- the very slot the vptr points at
+	.quad	0                       # 槽 -2：offset-to-top（完整对象为 0）
+	.quad	_ZTI4Virt               # 槽 -1：RTTI typeinfo 指针
+	.quad	_ZN4Virt4pokeEv          # 槽 0： poke —— vptr 指的就是这里
 ```
 
 The `.size` line reports 24 bytes, exactly three quads (a quad is an 8-byte data unit, and one `.quad` directive places one of them). The first two slots hold no function pointers. The first slot holds the offset-to-top, which stores the displacement from where the vptr sits to the top of the object; in a complete object its value is 0, and it only earns its keep when multiple inheritance starts moving pointers around. The second slot holds the typeinfo pointer. Typeinfo is the runtime's type information, and `dynamic_cast` and `typeid` both depend on it. The real function pointers start at the third quad, and poke's address is registered there. This also explains the 16 in the constructor: the two slots at the head of the table take 8 bytes each, 8 plus 8 makes 16, and the vptr skips both of them to point straight at the first function pointer.
@@ -124,7 +125,7 @@ The `.size` line reports 24 bytes, exactly three quads (a quad is an 8-byte data
 In the e4 section we pasted the data definition of Virt's vtable, but that was still a static symbol inside the assembly. This section pulls the Base and Derived tables out at runtime and reads them. It also makes good on the gdb reading method promised at the end of topic 03: once the breakpoint stops, the pointer stored in the object and the slots of the vtable are ours to look at, whichever we please. The material is a small inheritance hierarchy: Base declares two virtual functions, Derived overrides second and adds a new one named third, and we build two Base objects and one Derived object as live specimens:
 
 ```cpp
-// e5.cc -- vtable dump: objects of the same class share one table
+// e5.cc —— 虚表 dump：同类对象共享同一张表
 struct Base {
     int tag;
 
@@ -138,15 +139,15 @@ const char* Base::second() { return "Base::second"; }
 
 struct Derived : Base {
     Derived() : Base(2) {}
-    const char* second() override;  // overrides only the second one
-    virtual const char* third();    // and adds a new one
+    const char* second() override;  // 只覆盖第二个
+    virtual const char* third();    // 再加一个新的
 };
 
 const char* Derived::second() { return "Derived::second"; }
 const char* Derived::third() { return "Derived::third"; }
 
 Base b1(1);
-Base b2(2);  // same class as b1: should share the same vtable
+Base b2(2);  // 与 b1 同类：应共享同一张虚表
 Derived d;
 
 int main() {
@@ -268,7 +269,7 @@ The first says that all objects of a particular most-derived class carry vptrs p
 We have read the tables; now for the call. Everything special about virtual functions is concentrated in one place: where the target address comes from. Let's write a minimal inheritance pair, Base and Derived each supplying their own `who()`, plus a function `call_who` that takes a base-class pointer and calls `who()` through it:
 
 ```cpp
-// e6.cc -- three steps of a polymorphic call: load vptr → fetch slot → indirect call
+// e6.cc —— 多态调用三步：装 vptr → 取槽位 → 间接 call
 #include <cstdio>
 
 struct Base {
@@ -279,10 +280,10 @@ struct Derived : Base {
     const char* who() override { return "Derived::who"; }
 };
 
-const char* volatile observed = nullptr;  // volatile consumes the return value, blocking a tail call
+const char* volatile observed = nullptr;  // volatile 消费返回值，防尾调用
 
 __attribute__((noinline)) const char* call_who(Base* p) {
-    const char* r = p->who();  // the only call site in the whole program, one copy of machine code
+    const char* r = p->who();  // 全程序唯一的调用点，机器码只有一份
     observed = r;
     return r;
 }
@@ -309,16 +310,16 @@ _Z8call_whoP4Base:
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
 	subq	$32, %rsp
-	movq	%rdi, -24(%rbp)         # p lands on the stack
-	movq	-24(%rbp), %rax         # read p back
-	movq	(%rax), %rax            # ① load the vptr: the 8 bytes at p+0
-	movq	(%rax), %rdx            # ② fetch the slot: vptr+0 = vtable slot [0] → rdx
+	movq	%rdi, -24(%rbp)         # p 落栈
+	movq	-24(%rbp), %rax         # 取回 p
+	movq	(%rax), %rax            # ① 装载 vptr：p+0 处的 8 字节
+	movq	(%rax), %rdx            # ② 取槽位：vptr+0 = 虚表 [0] 号槽 → rdx
 	movq	-24(%rbp), %rax
-	movq	%rax, %rdi              # this as the first argument → rdi
-	call	*%rdx                   # ③ indirect call: the target comes from a register, not an immediate
+	movq	%rax, %rdi              # this 作为第一个实参 → rdi
+	call	*%rdx                   # ③ 间接 call：目标来自寄存器，不是立即数
 	movq	%rax, -8(%rbp)
 	movq	-8(%rbp), %rax
-	movq	%rax, observed(%rip)    # volatile consumption, which also pins the tail call shut
+	movq	%rax, observed(%rip)    # volatile 消费，也压住了尾调用
 	movq	-8(%rbp), %rax
 	leave
 	.cfi_def_cfa 7, 8
@@ -352,17 +353,17 @@ main:
 	movq	%fs:40, %rax
 	movq	%rax, -8(%rbp)
 	xorl	%eax, %eax
-	leaq	16+_ZTV4Base(%rip), %rax    # b's vptr: Base's table plus 16
+	leaq	16+_ZTV4Base(%rip), %rax    # b 的 vptr：Base 的表 +16
 	movq	%rax, -24(%rbp)
-	leaq	16+_ZTV7Derived(%rip), %rax # d's vptr: Derived's table plus 16
+	leaq	16+_ZTV7Derived(%rip), %rax # d 的 vptr：Derived 的表 +16
 	movq	%rax, -16(%rbp)
 	leaq	-24(%rbp), %rax
 	movq	%rax, %rdi
-	call	_Z8call_whoP4Base          # the same call site, first time
+	call	_Z8call_whoP4Base          # 同一个调用点，第一次
 	...
 	leaq	-16(%rbp), %rax
 	movq	%rax, %rdi
-	call	_Z8call_whoP4Base          # the same call site, second time
+	call	_Z8call_whoP4Base          # 同一个调用点，第二次
 ```
 
 The two `leaq`s each mind their own business: b's vptr gets `_ZTV4Base` plus 16, and d's gets `_ZTV7Derived` plus 16. After that, the two objects are sent, one after the other, into the same `call _Z8call_whoP4Base`; not one executed instruction differs, and the only thing that differs is those 8 bytes at the head of the object. The three-step walkthrough is complete here: at the machine level, polymorphism is one data-driven branch, and the branch condition never goes through a cmp instruction; it is the address stored in the vptr. Base and Derived in this section use implicit constructors, so at -O0 there is no standalone constructor to call, and the compiler writes the vptr into the object right at the point of definition. That cross-checks what the e4 constructor did: the first real job of a constructor on entry is storing the vptr, and whichever kind you write, the vptr gets fixed in at construction time.

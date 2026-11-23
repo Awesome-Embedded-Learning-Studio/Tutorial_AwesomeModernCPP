@@ -21,10 +21,10 @@ tags:
 title: Basic Data Types
 translation:
   source: documents/vol1-fundamentals/ch01/01-basic-types.md
-  source_hash: e8b0d6f942bb3c0334f645ab5d12cc14b7b3206353ad13b8970dbea8e3757f69
-  translated_at: '2026-09-25T09:56:19+00:00'
-  engine: anthropic
-  token_count: 14000
+  source_hash: c68255aec6f6c37df249621e879178b720221df14b4676c70883c660a1c1c7b0
+  translated_at: '2026-11-22T16:41:36+00:00'
+  engine: glm-5.3-refresh
+  token_count: 21200
 ---
 # Our First Step: Basic Data Types in C++
 
@@ -40,7 +40,7 @@ Let's make the sizes of these types crystal clear with code. First, a simple pro
 
 ```cpp
 // integer-type-sizes.cpp
-// Print the sizes of C++'s basic integer types on the current platform
+// 打印 C++ 基本整数类型在当前平台上的大小
 
 #include <iostream>
 
@@ -157,7 +157,7 @@ int main()
     float b = 0.2f;
     float c = a + b;
 
-    // Print with high precision to see the true face of floating-point numbers
+    // 用高精度输出，看清楚浮点数的真面目
     std::cout << std::setprecision(20);
     std::cout << "0.1f  = " << a << std::endl;
     std::cout << "0.2f  = " << b << std::endl;
@@ -165,7 +165,7 @@ int main()
     std::cout << "0.3f  = " << 0.3f << std::endl;
     std::cout << std::endl;
 
-    // Compare the results
+    // 比较结果
     if (c == 0.3f) {
         std::cout << "a + b == 0.3f (相等)" << std::endl;
     }
@@ -201,7 +201,7 @@ int main()
     double b = 0.2;
     double c = a + b;
 
-    // Same trick, only swapping float for double
+    // 同样的套路，只把 float 换成 double
     std::cout << std::setprecision(20);
     std::cout << "0.1  = " << a << std::endl;
     std::cout << "0.2  = " << b << std::endl;
@@ -240,7 +240,7 @@ This time `a + b` is about 5.55e-17 larger than `0.3`—both `0.1` and `0.2` sit
 
 bool is_approximately_equal(double x, double y, double epsilon)
 {
-    // epsilon is usually 1e-9 or smaller, depending on your precision needs
+    // epsilon 通常取 1e-9 或更小，具体看你的精度需求
     return std::fabs(x - y) < epsilon;
 }
 ```
@@ -281,6 +281,11 @@ unsigned char 255 的整数值: 255
 You may have noticed that I used `static_cast<int>(c)` in the output rather than `std::cout << c` directly. That is because when `std::cout` sees a `char`, it prints the character itself rather than a number—if we printed `sc` directly, the terminal might well show a garbled character.
 
 Beyond the classic `char`, C++ also has several character types designed for Unicode. `wchar_t` is the "wide character"—2 bytes on Windows (UTF-16), 4 bytes on Linux (UTF-32)—so it is not cross-platform either. C++11 introduced `char16_t` (2 bytes, for UTF-16) and `char32_t` (4 bytes, for UTF-32), and C++20 added `char8_t` (1 byte, for UTF-8). For where we are at this stage of the tutorial, just knowing they exist is enough; we will dig deeper when we get to strings later on.
+
+> Note: what `char8_t` stores is a UTF-8 "code unit", not a complete Unicode character.
+> A code unit is 8 bits, but a non-ASCII character such as a Chinese character usually takes multiple `char8_t` in UTF-8 (2 to 4 of them).
+> char8_t c = u8'A'; // OK—an ASCII character is one code unit, which is 1 byte.
+> const char8_t\* s = u8"你好"; // each Chinese character actually takes 3 char8_t, that is, 3 bytes
 
 ## The Boolean Type — True and False, No Gray Zone
 
@@ -358,7 +363,7 @@ long double:   16 字节
 
 Remember these numbers—**not by rote memorization, of course; you can always write a little program to test them. We are learning programming. This is nothing more than a task: verify the sizes of our types. Don't memorize it—think about how to get it done!**
 
-What truly deserves to be carved into your brain is this insight: **a type's size is not a free-for-all; it directly affects your program's memory layout and performance.** On an embedded system, SRAM may be only a few dozen KB; there, the choice between `int` and `int8_t` is no longer a matter of style preference, but of whether the bytes can be spared at all.
+What truly deserves to be carved into your brain is this insight: **a type's size is not a free-for-all; it directly affects your program's memory layout and performance**. On an embedded system, SRAM may be only a few dozen KB; there, the choice between `int` and `int8_t` is no longer a matter of style preference, but of whether the bytes can be spared at all.
 
 ## The Wisdom of Choosing — Which Type to Use When
 
@@ -585,11 +590,11 @@ Write a program that starts a `float` variable at 0, adds 0.1 each time, ten tim
 ```cpp
 #include <iostream>
 #include <iomanip>
-//std::setw  sets the field width; it only affects the next output and expires once used
+//std::setw  设置字符宽度 只对下一个输出生效，用完即失效
 
-//std::setprecision sets the precision; it stays in effect until a later call changes it
-//In the default mode it means significant digits (20 significant digits).
-//Combined with std::fixed, it becomes digits after the decimal point: std::fixed << std::setprecision(2) → 3.14
+//std::setprecision设置精度  持续有效，直到下次调用改变它
+//默认模式下是有效数字位数（20 位有效数字）。
+//配合 std::fixed 后，变成小数点后位数：std::fixed << std::setprecision(2) → 3.14
 
 int main()
 {

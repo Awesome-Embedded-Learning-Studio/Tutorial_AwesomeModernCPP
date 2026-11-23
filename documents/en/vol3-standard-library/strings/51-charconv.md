@@ -26,9 +26,9 @@ title: 'charconv: Zero-Overhead Number-String Conversions'
 translation:
   source: documents/vol3-standard-library/strings/51-charconv.md
   source_hash: c3fd8b6c352499fbb9f6c1a3abbca2ccb3da7abbd795624841d531cbfcb2f48c
-  translated_at: '2026-09-25T23:50:30+00:00'
-  engine: anthropic
-  token_count: 9700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12112
 ---
 
 # charconv: Zero-Overhead Number-String Conversions
@@ -62,8 +62,8 @@ Integer version first. The `to_chars` signature looks like this (integers):
 ```cpp
 // Standard: C++17
 struct to_chars_result {
-    char* ptr;            // one past the last character written (past-the-end pointer)
-    std::errc ec;         // {} (i.e., 0) on success
+    char* ptr;            // 写完后的下一个位置（尾后指针）
+    std::errc ec;         // 成功时为 {}（即 0）
 };
 
 to_chars_result to_chars(char* first, char* last, int value, int base = 10);
@@ -81,8 +81,8 @@ Minimal usage—convert an `int` out and then tuck it back into a `std::string`:
 char buf[16];
 int value = 12345678;
 auto res = std::to_chars(buf, buf + sizeof(buf), value);
-// res.ptr points one past the last character written; no '\0'
-std::string out(buf, res.ptr);   // construct from the [buf, res.ptr) range: exactly 8 characters
+// res.ptr 指向写完后的下一个位置；没有 '\0'
+std::string out(buf, res.ptr);   // 用 [buf, res.ptr) 这段构造，恰好 8 个字符
 ```
 
 Run it to confirm:
@@ -102,7 +102,7 @@ The integer `to_chars` also takes a `base` parameter (2 through 36)—binary, he
 ```cpp
 // Standard: C++17
 char buf[32];
-auto r = std::to_chars(buf, buf + sizeof(buf), 255, 16);   // hexadecimal
+auto r = std::to_chars(buf, buf + sizeof(buf), 255, 16);   // 十六进制
 // [buf, r.ptr) = "ff"
 ```
 
@@ -132,8 +132,8 @@ The `from_chars` signature in the opposite direction:
 ```cpp
 // Standard: C++17
 struct from_chars_result {
-    const char* ptr;       // where parsing stopped
-    std::errc ec;          // {} on success; invalid_argument or result_out_of_range on failure
+    const char* ptr;       // 解析停下的位置
+    std::errc ec;          // 成功为 {}; 失败为 invalid_argument 或 result_out_of_range
 };
 
 from_chars_result from_chars(const char* first, const char* last,
@@ -146,10 +146,10 @@ Minimal usage:
 
 ```cpp
 // Standard: C++17
-std::string s = "42abc";   // note the trailing non-digit characters
+std::string s = "42abc";   // 注意后面跟了非数字
 int v = 0;
 auto res = std::from_chars(s.data(), s.data() + s.size(), v);
-// res.ec == {}, v == 42, res.ptr points at 'a' (s.data()+2)
+// res.ec == {}, v == 42, res.ptr 指向 'a'（s.data()+2）
 ```
 
 Verified:
@@ -184,11 +184,11 @@ Let's test `from_chars` and `stoi` side by side on `"   42"`, which carries lead
 std::string s = "   42";
 int v = -1;
 auto r = std::from_chars(s.data(), s.data() + s.size(), v);
-// r.ec == std::errc::invalid_argument, v is still -1 (unchanged)
+// r.ec == std::errc::invalid_argument, v 仍是 -1（没被改）
 
 size_t idx = 0;
 int sv = std::stoi(s, &idx);
-// sv == 42, idx == 5 — stoi actively skipped the leading whitespace
+// sv == 42, idx == 5 —— stoi 主动跳过了前导空白
 ```
 
 Side-by-side results:
@@ -250,7 +250,7 @@ enum class chars_format {
     scientific = 0x1,   // 1.234e+05
     fixed      = 0x2,   // 123456.789
     hex        = 0x4,   // 1.8p+1
-    general    = scientific | fixed   // picks automatically (to_chars default)
+    general    = scientific | fixed   // 自动挑（to_chars 默认）
 };
 ```
 

@@ -22,9 +22,9 @@ title: std::vector Quick Start
 translation:
   source: documents/vol1-fundamentals/ch10/01-vector.md
   source_hash: 05c0397224d621a6bc5fa80a541c0185f2d8062fc97a83b8236c87e61c9023d3
-  translated_at: '2026-09-27T06:59:37+00:00'
-  engine: anthropic
-  token_count: 1648
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9000
 ---
 # std::vector Quick Start
 
@@ -40,12 +40,12 @@ In this chapter, we will start from scratch and work through constructing a `vec
 #include <vector>
 #include <string>
 
-std::vector<int> v1;                    // Empty vector
-std::vector<int> v2(10);                // 10 elements, each initialized to 0
-std::vector<int> v3(10, 42);            // 10 elements, each initialized to 42
-std::vector<int> v4 = {1, 2, 3, 4, 5};  // Initializer list
-std::vector<int> v5(v4);                // Copy construction
-std::vector<int> v6(std::move(v5));     // Move construction; takes ownership of the resources
+std::vector<int> v1;                    // 空 vector
+std::vector<int> v2(10);                // 10 个元素，每个为 0
+std::vector<int> v3(10, 42);            // 10 个元素，每个为 42
+std::vector<int> v4 = {1, 2, 3, 4, 5};  // 初始化列表
+std::vector<int> v5(v4);                // 拷贝构造
+std::vector<int> v6(std::move(v5));     // 移动构造，接管资源
 ```
 
 There is one point to watch here: `v2(10)` creates 10 elements, each with the value `int()`, which is 0. It does not “reserve 10 slots without creating any elements”; those 10 elements really exist. Reserved storage and actual elements are two different concepts, and we will dig into that distinction when we discuss `reserve`.
@@ -64,8 +64,8 @@ struct Task {
 };
 
 std::vector<Task> tasks;
-tasks.push_back(Task("写代码", 1));   // Construct a temporary object first, then move it
-tasks.emplace_back("测试", 2);         // Construct in place, with no temporary object
+tasks.push_back(Task("写代码", 1));   // 先构造临时对象，再移动
+tasks.emplace_back("测试", 2);         // 原地构造，无需临时对象
 ```
 
 For simple types such as `int` and `double`, the performance difference is negligible. For classes containing `std::string` or other members that require dynamic memory allocation, however, `emplace_back` can avoid an unnecessary construction and move. Let us build the habit of preferring `emplace_back`.
@@ -83,9 +83,9 @@ Any operation that may cause a vector to reallocate its storage—including `pus
 
 ```cpp
 std::vector<int> v = {1, 2, 3};
-int* p = &v[0];       // Points to the first element
-v.push_back(4);       // May trigger a capacity increase!
-// Dereferencing p is now undefined behavior—the memory it points to may have been freed
+int* p = &v[0];       // 指向第一个元素
+v.push_back(4);       // 可能触发扩容！
+// *p 现在是未定义行为——p 指向的内存可能已经被释放了
 ```
 
 If we need to hold a pointer or reference to an element in a vector, we must either ensure that no later operation can trigger reallocation or access the element indirectly through its index instead.
@@ -96,8 +96,8 @@ If we need to hold a pointer or reference to an element in a vector, we must eit
 
 ```cpp
 std::vector<int> v = {10, 20, 30, 40, 50};
-v[0] = 100;          // No bounds checking
-int y = v.at(10);    // Throws std::out_of_range
+v[0] = 100;          // 不检查边界
+int y = v.at(10);    // 抛出 std::out_of_range
 ```
 
 We use `operator[]` more often in everyday development, but when an index comes from user input or external data, `at` provides a useful safety barrier.
@@ -144,10 +144,10 @@ If we know roughly how many elements we will store, calling `reserve` to allocat
 
 ```cpp
 std::vector<int> v;
-v.reserve(1000);  // Allocate once; capacity becomes 1000 while size remains 0
+v.reserve(1000);  // 一次性分配，capacity 变成 1000，size 仍为 0
 
 for (int i = 0; i < 1000; ++i) {
-    v.push_back(i);  // Does not trigger any reallocation
+    v.push_back(i);  // 不会触发任何扩容
 }
 ```
 
@@ -160,12 +160,12 @@ There are three common ways to traverse a vector. The one we recommend most is t
 ```cpp
 std::vector<int> v = {10, 20, 30, 40, 50};
 
-// Read-only traversal—make const auto& the default for read-only access
+// 只读遍历——养成习惯，只读一律用 const auto&
 for (const auto& elem : v) {
     std::cout << elem << " ";
 }
 
-// Drop const when elements need to be modified
+// 需要修改元素时去掉 const
 for (auto& elem : v) {
     elem *= 2;
 }
@@ -209,7 +209,7 @@ public:
 
     void remove_completed()
     {
-        // The remove-erase idiom: remove every task for which done == true
+        // remove-erase 惯用法：删除所有 done == true 的任务
         auto it = std::remove_if(tasks_.begin(), tasks_.end(),
             [](const Task& t) { return t.done; });
         int removed = static_cast<int>(tasks_.end() - it);
@@ -291,7 +291,7 @@ Given a vector of integers, count how many times each value occurs. Hint: you ca
 
 ```cpp
 std::vector<int> data = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
-// Expected output: 1 appears 2 times, 2 appears 1 times, ...
+// 预期输出：1 appears 2 times, 2 appears 1 times, ...
 ```
 
 ### Exercise 2 Removing duplicates

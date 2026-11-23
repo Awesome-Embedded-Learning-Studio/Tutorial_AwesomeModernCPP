@@ -22,9 +22,9 @@ title: 'User-Defined Literals: The Basics'
 translation:
   source: documents/vol2-modern-features/ch11-user-defined-literals/01-udl-basics.md
   source_hash: 4e4ddff2934406437f1073653139ea4834477d66b4091782985ff2935dae79d5
-  translated_at: '2026-09-25T16:55:39+00:00'
-  engine: anthropic
-  token_count: 4000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9390
 ---
 # User-Defined Literals: Letting 1000_ms Tell You Its Unit
 
@@ -39,16 +39,16 @@ When we write embedded code, we keep running into the same uncomfortable situati
 A user-defined literal is defined with the `operator""` suffix operator. Depending on the parameter type, there are a few major forms, corresponding to integer literals, floating-point literals, string literals, and character literals:
 
 ```cpp
-// Integer literal (cooked form)
+// 整数字面量（cooked 形式）
 ReturnType operator""_suffix(unsigned long long value);
 
-// Floating-point literal (cooked form)
+// 浮点数字面量（cooked 形式）
 ReturnType operator""_suffix(long double value);
 
-// String literal (raw form)
+// 字符串字面量（raw 形式）
 ReturnType operator""_suffix(const char* str, size_t length);
 
-// Character literal (cooked form)
+// 字符字面量（cooked 形式）
 ReturnType operator""_suffix(char c);
 ```
 
@@ -71,8 +71,8 @@ constexpr Milliseconds operator""_ms(unsigned long long v) {
 void delay(Milliseconds ms);
 
 void example() {
-    delay(500_ms);  // Clear: 500 milliseconds
-    // delay(500);  // Compile error! The unit must be explicit
+    delay(500_ms);  // 清晰：500 毫秒
+    // delay(500);  // 编译错误！必须明确单位
 }
 ```
 
@@ -92,19 +92,19 @@ struct Frequency {
     constexpr explicit Frequency(std::uint32_t v) : hz(v) {}
 };
 
-// Integer version: 100_Hz
+// 整数版本：100_Hz
 constexpr Frequency operator""_Hz(unsigned long long value) {
     return Frequency{static_cast<std::uint32_t>(value)};
 }
 
-// Floating-point version: 1.5_kHz
+// 浮点版本：1.5_kHz
 constexpr Frequency operator""_kHz(long double value) {
     return Frequency{static_cast<std::uint32_t>(value * 1000.0)};
 }
 
 void example() {
-    auto f1 = 100_Hz;    // Integer overload, f1.hz = 100
-    auto f2 = 1.5_kHz;   // Floating-point overload, f2.hz = 1500
+    auto f1 = 100_Hz;    // 整型版本，f1.hz = 100
+    auto f2 = 1.5_kHz;   // 浮点版本，f2.hz = 1500
 }
 ```
 
@@ -115,7 +115,7 @@ The string literal operator receives a pointer to the string plus its length, wh
 ```cpp
 #include <cstdint>
 
-/// FNV-1a hash (compile time)
+/// FNV-1a 哈希（编译期）
 constexpr std::uint32_t hash_string(
     const char* str, std::uint32_t value = 2166136261u) {
     return *str
@@ -215,7 +215,7 @@ using namespace std::complex_literals;
 
 void example() {
     auto c1 = 3.0 + 4.0i;   // std::complex<double>{3.0, 4.0}
-    auto c2 = 1.0i;          // the imaginary unit
+    auto c2 = 1.0i;          // 虚数单位
 }
 ```
 
@@ -250,7 +250,7 @@ namespace mylib::literals {
     }
 }
 
-// Usage
+// 使用时
 using namespace mylib::literals;
 auto t = 500_ms;
 ```
@@ -267,8 +267,8 @@ constexpr Milliseconds operator""_ms(unsigned long long v) {
 }
 
 constexpr auto startup_delay = 100_ms;
-// startup_delay is already constructed at compile time
-// The generated code is equivalent to writing Milliseconds{100} directly
+// startup_delay 在编译期就已经构造好了
+// 生成的代码等价于直接写 Milliseconds{100}
 ```
 
 Without the `constexpr` marker, the literal operator becomes an ordinary function call — small cost once inlined, but you lose the ability to compute at compile time, and it can no longer be used in `static_assert` or as template arguments.
@@ -280,9 +280,9 @@ consteval Milliseconds operator""_ms(unsigned long long v) {
     return Milliseconds{v};
 }
 
-constexpr auto t1 = 100_ms;   // OK, evaluated at compile time
-// Note: consteval requires the literal to be a compile-time constant
-// For example, std::stoi("123")_ms fails to compile, because stoi is not constexpr
+constexpr auto t1 = 100_ms;   // OK，编译期执行
+// 注意：consteval 要求字面量必须是编译期常量
+// 例如：std::stoi("123")_ms 会编译失败，因为 stoi 不是 constexpr
 ```
 
 ------
@@ -299,7 +299,7 @@ Floating-point UDLs can have precision problems. In floating-point arithmetic, `
 
 ```cpp
 struct Voltage {
-    std::int64_t millivolts;  // stored as an integer
+    std::int64_t millivolts;  // 用整数存储
 };
 
 constexpr Voltage operator""_V(long double value) {
@@ -336,7 +336,7 @@ To finish up, here are several commonly used literal definitions that you can dr
 
 namespace mylib::literals {
 
-// ===== Time units =====
+// ===== 时间单位 =====
 struct Milliseconds { std::uint64_t value; };
 struct Microseconds { std::uint64_t value; };
 struct Seconds      { std::uint64_t value; };
@@ -351,7 +351,7 @@ constexpr Seconds operator""_s(unsigned long long v) {
     return Seconds{v};
 }
 
-// ===== Frequency units =====
+// ===== 频率单位 =====
 struct Hertz { std::uint32_t value; };
 
 constexpr Hertz operator""_Hz(unsigned long long v) {
@@ -364,7 +364,7 @@ constexpr Hertz operator""_MHz(long double v) {
     return Hertz{static_cast<std::uint32_t>(v * 1000000.0)};
 }
 
-// ===== Memory units =====
+// ===== 内存单位 =====
 struct Bytes { std::uint64_t value; };
 
 constexpr Bytes operator""_B(unsigned long long v) {
@@ -377,7 +377,7 @@ constexpr Bytes operator""_MiB(unsigned long long v) {
     return Bytes{v * 1024 * 1024};
 }
 
-// ===== Temperature units =====
+// ===== 温度单位 =====
 struct Celsius    { double value; };
 struct Fahrenheit { double value; };
 
@@ -391,7 +391,7 @@ constexpr Celsius operator""_degK(long double v) {
     return Celsius{static_cast<double>(v - 273.15)};
 }
 
-// ===== Angle units =====
+// ===== 角度单位 =====
 struct Degrees { double value; };
 
 constexpr Degrees operator""_deg(long double v) {

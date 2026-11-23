@@ -10,9 +10,10 @@ description: "Push the out-of-bounds index up step by step: hitting the canary g
 reading_time_minutes: 7
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/04-stack-overflow-why-no-crash/02-hitting-canary-saved-rbp-and-return-address.md
-  source_hash: 2f391fa5c41e4a76050c06dac0e44460e208e82a9de5a4cdcfbbf3b53a71517f
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 66ec39a2f736a43b51ccac799d396f7978505bd58a609cc50868f6f4043e98fe
+  translated_at: '2026-11-22T16:47:39Z'
+  engine: glm-5.3-refresh
+  token_count: 8012
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -24,19 +25,18 @@ current_status:
 The out-of-bounds write in the previous piece landed close by and hurt only one data neighbor. We're using the same environment as in [the previous piece](01-stack-frame-neighbors.md), so follow that piece if you want to rerun anything. Next question: what happens when the write lands farther out? We made the index come in from the command line, compiled the same source twice, once with the defaults (canary on, where a canary is a sentinel value the stack protector plants) and once with -fno-stack-protector (protection taken off), and we measured the index conversions for both layouts straight off the disassembly:
 
 ```cpp
-// d3.cpp: out-of-bounds writes that reach the canary / saved rbp / the return address
-// the index comes from the command line. The same source is compiled twice,
-// once with the default (stack protector on) and once with -fno-stack-protector
+// d3.cpp —— 越界写直达金丝雀 / saved rbp / 返回地址
+// 下标由命令行传入。同一份源码分别用默认(带栈保护)与 -fno-stack-protector 编译
 #include <cstdio>
 #include <cstdlib>
 
 volatile int g_index   = 0;
-volatile int g_payload = 0x1234567; // the value written into the target slot, a bad address whose low 32 bits are easy to recognize
+volatile int g_payload = 0x1234567; // 写进目标槽的值，坏地址的低 32 位一眼可认
 
 __attribute__((noinline))
 void f() {
     int arr[4] = {1, 2, 3, 4};
-    arr[g_index] = g_payload; // the out-of-bounds write
+    arr[g_index] = g_payload; // 越界写
     std::fprintf(stderr, "store done (idx=%d), now return\n", (int)g_index);
 }
 
@@ -56,7 +56,7 @@ $ g++ -O0 -g -fno-stack-protector -o d3_noprot d3.cpp
 ```
 
 ```asm
-0000000000001169 <f()>:                (default build, canary on)
+0000000000001169 <f()>:                （默认构建，带金丝雀）
     1169:	push   %rbp
     116a:	mov    %rsp,%rbp
     116d:	sub    $0x20,%rsp
@@ -64,9 +64,9 @@ $ g++ -O0 -g -fno-stack-protector -o d3_noprot d3.cpp
     117a:	mov    %rax,-0x8(%rbp)
     117e:	xor    %eax,%eax
     1180:	movl   $0x1,-0x20(%rbp)
-    ... (arr[1..3] initialization, elided) ...
+    ...（arr[1..3] 初始化，删节）...
     11aa:	mov    %edx,-0x20(%rbp,%rax,4)
-    ... (fprintf argument shuffling, elided) ...
+    ...（fprintf 参数搬运，删节）...
     11d3:	mov    -0x8(%rbp),%rax
     11d7:	sub    %fs:0x28,%rax
     11e0:	je     11e7 <f()+0x7e>
@@ -76,7 +76,7 @@ $ g++ -O0 -g -fno-stack-protector -o d3_noprot d3.cpp
 ```
 
 ```asm
-0000000000001159 <f()>:                (unprotected build)
+0000000000001159 <f()>:                （去保护构建）
     1159:	push   %rbp
     115a:	mov    %rsp,%rbp
     115d:	sub    $0x10,%rsp
@@ -89,7 +89,7 @@ $ g++ -O0 -g -fno-stack-protector -o d3_noprot d3.cpp
     1189:	cltq
     118b:	mov    %edx,-0x10(%rbp,%rax,4)
     118f:	mov    0x2eb7(%rip),%edx        # 404c <g_index>
-    ... (fprintf argument shuffling, elided) ...
+    ...（fprintf 参数搬运，删节）...
     11b3:	nop
     11b4:	leave
     11b5:	ret
@@ -179,6 +179,10 @@ Backtrace stopped: previous frame identical to this frame (corrupt stack?)
 
 Let's line up the key spots. The pre-return info frame reports `saved rip = 0x555501234567`. That used to be an address inside main (somewhere in the 0x5555555552xx range). The low 32 bits have been overwritten by the payload 0x01234567, and the high 32 bits are still the original 0x00005555. This is exactly the scene a 4-byte int write leaves behind, with half the return address ruined. The memory dump shows it just as plainly. The 0x...d078 and 0x...d088 rows spell out arr's 1, 2, 3, 4. 0x...d090 is the intact saved rbp (0x00007fffffffd0b0), and right next to it, 0x...d098 is the corrupted return address slot, 0x0000555501234567. After continue the program takes a SIGSEGV, the rip at the crash site matches the written-in bad address verbatim, and bt can no longer walk the stack (`corrupt stack?`). For what hijacked control flow looks like, you will not find more direct evidence than this.
 
+In a real process this hijacking ends in SIGSEGV, and reproducing one is not cheap, so we staged a controlled version in the page: the executor below loads the unprotected build of f, where the arr[6] out-of-bounds write covers the return-address slot with boom's address, and f's ret pops something that is no longer main's next instruction. For a clean landing, main pre-pushes an exit address before the call, boom does its work and rides it down onto the guard, leaving 99 in rax. Two things differ from the article's scene: the real program corrupts only the low 32 bits and jumps to a wild address, while here the whole address is a valid boom, and the canaried build depends on fs segment addressing, which the executor does not emulate, so the scene carries only the unprotected build. Single-step to f's ret, look at the slot on top of the stack window already holding boom's address, take one more step, and see where rip lands.
+
+<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/smash_return.json" />
+
 ## Hitting saved rbp: The Crash Moves to the Caller
 
 ```text
@@ -213,8 +217,4 @@ rbp            0x7fff01234567      0x7fff01234567
 Backtrace stopped: Cannot access memory at address 0x7fff0123456f
 ```
 
-Let's reconstruct what happened. The `pop %rbp` in f's epilogue loaded the bad value 0x7fff01234567 into the rbp register. The return address was intact, so main could keep running, but from that point on main had lost the ability to address anything through rbp, and gdb could not even read argc and argv on its behalf (`Cannot access memory`). In the end it died on main's own epilogue: leave treats the corrupted rbp as rsp and pops from it, and that is where the SIGSEGV landed. The write that corrupted saved rbp was arr[4]'s out-of-bounds write. f returned normally, and the one that died is main, the function that called it. This late-crash tier is the one most likely to fool you during debugging, because the crash site sits one function return away from where the out-of-bounds write happened, and the stack data there has long since been overwritten by later frames. All three distant targets have had their turn. In a real process this hijacking ends in SIGSEGV, and reproducing one is not cheap, so we staged a controlled version in the page: the executor below loads the unprotected build of f, where the arr[6] out-of-bounds write covers the return-address slot with boom's address, and f's ret pops something that is no longer main's next instruction. For a clean landing, main pre-pushes an exit address before the call, boom does its work and rides it down onto the guard, leaving 99 in rax. Two things differ from the article's scene: the real program corrupts only the low 32 bits and jumps to a wild address, while here the whole address is a valid boom, and the canaried build depends on fs segment addressing, which the executor does not emulate, so the scene carries only the unprotected build. Single-step to f's ret, look at the slot on top of the stack window already holding boom's address, take one more step, and see where rip lands.
-
-<AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/smash_return.json" />
-
-As for the canary standing in front of the return address, how it gets planted and how it gets checked is what the next piece looks at head-on.
+Let's reconstruct what happened. The `pop %rbp` in f's epilogue loaded the bad value 0x7fff01234567 into the rbp register. The return address was intact, so main could keep running, but from that point on main had lost the ability to address anything through rbp, and gdb could not even read argc and argv on its behalf (`Cannot access memory`). In the end it died on main's own epilogue: leave treats the corrupted rbp as rsp and pops from it, and that is where the SIGSEGV landed. The write that corrupted saved rbp was arr[4]'s out-of-bounds write. f returned normally, and the one that died is main, the function that called it. This late-crash tier is the one most likely to fool you during debugging, because the crash site sits one function return away from where the out-of-bounds write happened, and the stack data there has long since been overwritten by later frames. All three distant targets have had their turn. The canary standing in front of the return address — how it is planted and how it is checked — is what the next piece faces head-on.

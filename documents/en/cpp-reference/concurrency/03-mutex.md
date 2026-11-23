@@ -18,10 +18,10 @@ tags:
 title: std::mutex
 translation:
   source: documents/cpp-reference/concurrency/03-mutex.md
-  source_hash: e75c1e68c58c38974751ac83a869d9a5fd51ad23f14eec19de01158150c75d7f
-  translated_at: '2026-09-26T17:09:45+00:00'
-  engine: anthropic
-  token_count: 450
+  source_hash: ad3622b587c66d17f0ce3019c67c2ae7e0b74aa5e62d30b3f3b70e30f2f61b0e
+  translated_at: '2026-11-22T16:41:57.097806+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1458
 ---
 # std::mutex (C++11)
 
@@ -64,7 +64,7 @@ int main() {
     std::thread t2(increment);
     t1.join();
     t2.join();
-    std::cout << counter << '\n'; // Output: 2
+    std::cout << counter << '\n'; // 输出: 2
 }
 ```
 
@@ -83,7 +83,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: mutex and RAII Locks](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
+- [Tutorial: mutex and RAII Locks](../../vol5-concurrency/chapter02-sharing-data/02-mutex-and-locks.md)
 - [cppreference: std::mutex](https://en.cppreference.com/w/cpp/thread/mutex)
 
 ---

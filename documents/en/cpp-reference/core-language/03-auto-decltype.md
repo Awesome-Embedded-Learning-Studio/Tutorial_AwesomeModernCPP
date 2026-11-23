@@ -18,9 +18,9 @@ title: auto
 translation:
   source: documents/cpp-reference/core-language/03-auto-decltype.md
   source_hash: 90651dfbcc623bb96ba4e04ffb01a7e9fda0c579f1f85b0fbfb2aa054b3f63f6
-  translated_at: '2026-09-27T01:58:13+00:00'
-  engine: anthropic
-  token_count: 450
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1565
 ---
 # auto (C++11)
 
@@ -51,7 +51,7 @@ No header required (language keyword)
 #include <iostream>
 
 auto add(int a, int b) {
-    return a + b; // return type deduced as int
+    return a + b; // 返回类型推导为 int
 }
 
 int main() {

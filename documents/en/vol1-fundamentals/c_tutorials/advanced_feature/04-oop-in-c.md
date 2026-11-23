@@ -21,9 +21,9 @@ title: Implementing Object-Oriented Programming in C
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/04-oop-in-c.md
   source_hash: 177ae62d939c91967e1f0246ea4b57a7343fea2b0c9cd8e503353521c677b12f
-  translated_at: '2026-09-25T13:54:33+00:00'
-  engine: anthropic
-  token_count: 3700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13893
 ---
 # Implementing Object-Oriented Programming in C
 
@@ -34,10 +34,10 @@ In this article we hand-roll encapsulation, inheritance, polymorphism, and inter
 All we need is GCC or Clang on the host — no third-party libraries required. The code follows C11, because it uses anonymous structs and designated initializers. If you run it on an embedded platform, these idioms are just as portable — structs and function pointers depend on no runtime features.
 
 ```text
-Platform: Linux / macOS / Windows (MSVC/MinGW)
-Compiler: GCC >= 9 or Clang >= 12
-Standard: -std=c11
-Dependencies: none
+平台：Linux / macOS / Windows (MSVC/MinGW)
+编译器：GCC >= 9 或 Clang >= 12
+标准：-std=c11
+依赖：无
 ```
 
 ## Step 1 — Encapsulation with Opaque Pointers
@@ -49,7 +49,7 @@ The core idea of encapsulation is to hide the internal implementation and expose
 We will build a dynamic string buffer that callers can manipulate only through functions and whose internal structure they never see. The header file exposes nothing but the type name and the operation functions:
 
 ```c
-// strbuf.h — public header
+// strbuf.h — 公开头文件
 typedef struct StrBuf StrBuf;
 
 StrBuf*     strbuf_create(int capacity);
@@ -64,7 +64,7 @@ The header contains just one forward declaration, `typedef struct StrBuf StrBuf`
 The complete definition appears only in the implementation file:
 
 ```c
-// strbuf.c — private implementation
+// strbuf.c — 私有实现
 #include "strbuf.h"
 #include <stdlib.h>
 #include <string.h>
@@ -101,7 +101,7 @@ void strbuf_destroy(StrBuf* sb)
 int strbuf_append(StrBuf* sb, const char* data, int len)
 {
     if (sb->length + len >= sb->capacity) {
-        return -1;  // insufficient capacity
+        return -1;  // 缓冲区不足
     }
     memcpy(sb->data + sb->length, data, len);
     sb->length += len;
@@ -127,7 +127,7 @@ typedef struct Counter {
     int min;
     int max;
 
-    // "methods" — function pointers
+    // "方法"——函数指针
     void (*increment)(struct Counter* self);
     void (*decrement)(struct Counter* self);
     int  (*get_value)(const struct Counter* self);
@@ -152,7 +152,7 @@ static int counter_get_value(const Counter* self)
     return self->value;
 }
 
-// "constructor" — initialize the object and bind the methods
+// "构造函数"——初始化对象并绑定方法
 void counter_init(Counter* self, int min, int max)
 {
     self->value = min;
@@ -160,7 +160,7 @@ void counter_init(Counter* self, int min, int max)
     self->max = max;
     self->increment = counter_increment;
     self->get_value = counter_get_value;
-    // ... bind the remaining methods
+    // ...其他方法绑定
 }
 ```
 
@@ -184,7 +184,7 @@ C has no inheritance at the syntax level, but we can simulate it with **struct n
 ### The Animal Family
 
 ```c
-// "base class" — attributes shared by all animals
+// "基类"——所有动物共有的属性
 typedef struct Animal {
     const char* name;
     int    age;
@@ -200,9 +200,9 @@ void animal_print_info(const Animal* self)
     printf("\n");
 }
 
-// "derived class" — dog
+// "派生类"——狗
 typedef struct Dog {
-    Animal base;          // base class goes first!
+    Animal base;          // 基类放第一个！
     const char* breed;
 } Dog;
 
@@ -216,7 +216,7 @@ void dog_init(Dog* self, const char* name, int age, const char* breed)
     self->breed = breed;
 }
 
-// "derived class" — cat
+// "派生类"——猫
 typedef struct Cat {
     Animal base;
     int lives_remaining;
@@ -267,7 +267,7 @@ Storing function pointers directly inside every object, as we did before, wastes
 ```c
 typedef struct Shape Shape;
 
-// vtable — the function pointer table shared by all Shape "class" objects
+// 虚函数表——所有 Shape"类"共享的函数指针表
 typedef struct ShapeVtable {
     double (*area)(const Shape* self);
     double (*perimeter)(const Shape* self);
@@ -275,13 +275,13 @@ typedef struct ShapeVtable {
     void   (*destroy)(Shape* self);
 } ShapeVtable;
 
-// base class struct
+// 基类结构体
 typedef struct Shape {
-    const ShapeVtable* vtable;  // pointer to the vtable (this is C++'s vptr)
+    const ShapeVtable* vtable;  // 指向虚函数表的指针（就是 C++ 的 vptr）
     const char* name;
 } Shape;
 
-// generic virtual function dispatch
+// 通用虚函数分派
 double shape_area(const Shape* self)
 {
     return self->vtable->area(self);
@@ -290,21 +290,21 @@ void shape_draw(const Shape* self)
 {
     self->vtable->draw(self);
 }
-// ... shape_perimeter and shape_destroy follow the same pattern
+// ... shape_perimeter、shape_destroy 同理
 ```
 
 `ShapeVtable` is the virtual function table — an array of function pointers. The `const ShapeVtable* vtable` inside `Shape` is precisely the vptr that C++ hides inside every object with virtual functions. Now let's implement a concrete shape:
 
 ```c
-// circle
+// 圆形
 typedef struct Circle {
-    Shape base;     // base class first
+    Shape base;     // 基类放第一个
     double radius;
 } Circle;
 
 static double circle_area(const Shape* self)
 {
-    const Circle* c = (const Circle*)self;  // downcast
+    const Circle* c = (const Circle*)self;  // 向下转型
     return 3.14159265358979 * c->radius * c->radius;
 }
 
@@ -316,7 +316,7 @@ static void circle_draw(const Shape* self)
 
 static void circle_destroy(Shape* self) { free(self); }
 
-// the circle vtable — const, globally unique
+// 圆形的 vtable——const，全局唯一
 static const ShapeVtable kCircleVtable = {
     .area      = circle_area,
     .perimeter = circle_perimeter,
@@ -327,7 +327,7 @@ static const ShapeVtable kCircleVtable = {
 Circle* circle_create(const char* name, double radius)
 {
     Circle* c = (Circle*)malloc(sizeof(Circle));
-    c->base.vtable = &kCircleVtable;  // bind the vtable
+    c->base.vtable = &kCircleVtable;  // 绑定 vtable
     c->base.name = name;
     c->radius = radius;
     return c;
@@ -382,22 +382,22 @@ typedef struct Serializable {
     char* (*to_string)(const struct Serializable* self);
 } Serializable;
 
-// implement both interfaces at once
+// 同时实现两个接口
 typedef struct TextShape {
-    Drawable    drawable;       // first interface — a direct cast works
-    Serializable serializable;  // second interface — you must take its address with &!
+    Drawable    drawable;       // 第一个接口——可以直接 cast
+    Serializable serializable;  // 第二个接口——必须用 & 取地址！
     char* text;
 } TextShape;
 ```
 
 ```c
-// first interface — both spellings are equivalent
-Drawable* d1 = (Drawable*)ts;       // OK, because it is the first member
-Drawable* d2 = &ts->drawable;       // also OK, and more explicit
+// 第一个接口——两种写法等价
+Drawable* d1 = (Drawable*)ts;       // OK，因为是第一个成员
+Drawable* d2 = &ts->drawable;       // 也 OK，更明确
 
-// second interface — casting directly is wrong!
-// Serializable* s = (Serializable*)ts;  // dangerous! wrong offset
-Serializable* s = &ts->serializable;    // correct
+// 第二个接口——直接 cast 是错的！
+// Serializable* s = (Serializable*)ts;  // 危险！偏移不对
+Serializable* s = &ts->serializable;    // 正确
 ```
 
 In C++, the compiler computes the offsets of multiple inheritance automatically; in hand-rolled C OOP, you must guarantee correct pointer conversions yourself. That is why many C projects (the Linux kernel, for example) prefer single inheritance plus callback functions over multiple interface inheritance. If you really must implement multiple interfaces, always obtain the pointer through `&obj->interface`; never cast directly.
@@ -409,7 +409,7 @@ Now we combine everything learned so far — encapsulation, inheritance, polymor
 ### The Shape Manager
 
 ```c
-// shape_manager.h — opaque pointer encapsulation
+// shape_manager.h — 不透明指针封装
 typedef struct ShapeManager ShapeManager;
 
 ShapeManager* shape_manager_create(int max_shapes);
@@ -422,7 +422,7 @@ Shape*        shape_manager_find_by_name(const ShapeManager* mgr,
 ```
 
 ```c
-// shape_manager.c — private implementation
+// shape_manager.c — 私有实现
 struct ShapeManager {
     Shape** shapes;
     int     count;
@@ -547,7 +547,7 @@ Add a `Triangle` type (represented by its three side lengths) to the shape frame
 ```c
 typedef struct Triangle {
     Shape  base;
-    double a, b, c;  // side lengths
+    double a, b, c;  // 三边长度
 } Triangle;
 
 Triangle* triangle_create(const char* name, int id,
@@ -563,7 +563,7 @@ Hint: use Heron's formula for the triangle's area — compute the semi-perimeter
 Add area-based sorting to the `ShapeManager`:
 
 ```c
-/// @brief Sort all shapes by area in ascending order
+/// @brief 按面积从小到大排序所有图形
 void shape_manager_sort_by_area(ShapeManager* mgr);
 ```
 

@@ -21,9 +21,9 @@ title: 'OnceCallback prerequisite (VI): Deducing this (C++23)'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-06-once-callback-deducing-this.md
   source_hash: 215c738b41d1aae64cf1e162d97bfb0144eb8d3e5bc7479e8da314453e601b29
-  translated_at: '2026-09-26T00:53:17+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6502
 ---
 # OnceCallback prerequisite (VI): Deducing this (C++23)
 
@@ -45,8 +45,8 @@ OnceCallback's core semantics come down to a single sentence: "invocable exactly
 ```cpp
 OnceCallback<int(int)> cb([](int x) { return x * 2; });
 
-cb.run(5);                  // should fail to compile: cb is an lvalue
-std::move(cb).run(5);       // should compile: std::move(cb) is an rvalue
+cb.run(5);                  // 应该编译失败：cb 是左值
+std::move(cb).run(5);       // 应该编译通过：std::move(cb) 是右值
 ```
 
 What we want is a compile-time fork: an lvalue invocation blows up in red right in front of you, and the error message has to speak plain human language; an rvalue invocation gets waved through.
@@ -56,12 +56,12 @@ What we want is a compile-time fork: an lvalue invocation blows up in red right 
 Chromium at the time had no C++23 to work with, so it had to resort to a hack — write the same thing twice as a pair of overloads:
 
 ```cpp
-// Rvalue version: the real execution
+// 右值版本：真正的执行
 R Run() && {
-    // Execute the callback...
+    // 执行回调...
 }
 
-// Lvalue version: compile error
+// 左值版本：编译报错
 R Run() const& {
     static_assert(!sizeof(*this),
         "OnceCallback::Run() may only be invoked on a non-const rvalue, "
@@ -84,7 +84,7 @@ What deducing this does boils down to a single move: take the `this` that used t
 ```cpp
 struct MyStruct {
     void f(this auto&& self) {
-        // self is this — but its type is deduced
+        // self 就是 this——但它的类型是推导出来的
     }
 };
 ```
@@ -116,9 +116,9 @@ struct Check {
 
 int main() {
     Check c;
-    c.test();                  // prints: lvalue reference
-    std::move(c).test();       // prints: rvalue (not a reference)
-    std::as_const(c).test();   // prints: lvalue reference (const)
+    c.test();                  // 输出：lvalue reference
+    std::move(c).test();       // 输出：rvalue (not a reference)
+    std::as_const(c).test();   // 输出：lvalue reference (const)
 }
 ```
 
@@ -189,8 +189,8 @@ The explicit object parameter has one hard rule: it cannot appear together with 
 
 ```cpp
 struct Bad {
-    void f(this auto&& self) const;   // compile error: an explicit object parameter cannot coexist with const
-    void g(this auto&& self) &&;      // compile error: an explicit object parameter cannot coexist with &&
+    void f(this auto&& self) const;   // 编译错误：不能同时有显式对象参数和 const
+    void g(this auto&& self) &&;      // 编译错误：不能同时有显式对象参数和 &&
 };
 ```
 

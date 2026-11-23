@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/07-hal-unwrapped.md
   source_hash: d4ffa2c49e83c1c71573bcc2aaff35b2e78d7a9839cfe2a8cbd1ca6ed46e0134
-  translated_at: '2026-09-27T05:47:27+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7608
 ---
 
 # Unwrapping the HAL: which bits GPIO_Init writes on our behalf
@@ -29,10 +29,10 @@ What goes on the scale are two firmwares we already know: `01_blinky` (the HAL h
 ```text
 $ arm-none-eabi-size blinky register_led
    text    data     bss
-   3468      12       4    blinky        (pure HAL)
-   2380      12       4    register_led  (bare registers)
+   3468      12       4    blinky        (纯 HAL)
+   2380      12       4    register_led  (裸寄存器)
    ─────────────────────────────
-   difference      1088 bytes
+   差价     1088 字节
 ```
 
 Where did the difference go? Have `arm-none-eabi-nm --size-sort` line the symbols up by size, and the answer jumps out on its own:
@@ -76,7 +76,7 @@ while (((GPIO_Init->Pin) >> position) != 0x00u)
 
 ```c
 case GPIO_MODE_OUTPUT_PP:
-    config = GPIO_Init->Speed + GPIO_CR_CNF_GP_OUTPUT_PP;  // Speed is 0/1/2/3, added on top of the CNF base
+    config = GPIO_Init->Speed + GPIO_CR_CNF_GP_OUTPUT_PP;  // Speed 是 0/1/2/3,加在 CNF 基数上
     break;
 ```
 
@@ -122,7 +122,7 @@ void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState Pin
   if (PinState != GPIO_PIN_RESET)
     GPIOx->BSRR = GPIO_Pin;
   else
-    GPIOx->BSRR = (uint32_t)GPIO_Pin << 16u;   // high half-word = the reset side
+    GPIOx->BSRR = (uint32_t)GPIO_Pin << 16u;   // 高半字 = 复位区
 }
 ```
 
@@ -137,7 +137,7 @@ Those two opening `assert_param` lines are often taken for a HAL selling point: 
 ```c
 #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
 // ...
-#define assert_param(expr) ((void)0U)      // ← the default: this one
+#define assert_param(expr) ((void)0U)      // ← 默认:这行
 #endif /* USE_FULL_ASSERT */
 ```
 

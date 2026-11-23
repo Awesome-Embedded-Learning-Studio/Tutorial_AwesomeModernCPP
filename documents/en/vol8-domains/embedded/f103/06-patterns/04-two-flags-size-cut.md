@@ -21,10 +21,10 @@ related:
   - "The logger's stack budget, measured: can a function-local LineBuffer blow the stack?"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/04-two-flags-size-cut.md
-  source_hash: 5da8e4def4281df384a61a97b23fab9127127845e332be3899b6455e77b55b0f
-  translated_at: '2026-09-27T06:00:18+00:00'
-  engine: anthropic
-  token_count: 3400
+  source_hash: fd899218cc36e0f91b7cca6adfb330318dae208c47c2ea1a8969dfa6a0caf076
+  translated_at: '2026-11-22T16:43:55+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4237
 ---
 
 # Two compiler flags cut the firmware by 64%: a field record of function-granularity reclamation with -ffunction-sections

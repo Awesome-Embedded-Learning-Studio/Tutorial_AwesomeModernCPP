@@ -12,10 +12,10 @@ title: 'Modern C++ in Practice — Building a File Copier from Scratch (Part 1):
 description: File-copier practice, part 1 - nail down the requirements and stand up the skeleton, turning last chapter's engineering habits into a real small project
 translation:
   source: documents/vol7-engineering/01-file-copier-requirements-and-framework.md
-  source_hash: 814769f28e09746b9ea21d9a4ea5b19a28046494df3658df53daa8ca122550c2
-  translated_at: '2026-09-27T02:28:02+00:00'
-  engine: anthropic
-  token_count: 5000
+  source_hash: df41a9c24d19482b22ca7bc1e33e9c602a2fd9e316d3157ee1003e94d1cf6eaf
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5415
 ---
 # Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements Analysis and Basic Framework
 
@@ -122,7 +122,7 @@ The entire copy logic is wrapped in one big `try-catch` block:
 bool FileCopier::copy(const std::string &src_path,
                       const std::string &dst_path) {
   try {
-    // actual copy logic
+    // 实际拷贝逻辑
   } catch (const fs::filesystem_error &e) {
     std::cerr << "Filesystem error: " << e.what() << "\n";
     return false;

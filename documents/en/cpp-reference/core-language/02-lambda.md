@@ -18,10 +18,10 @@ tags:
 title: Lambda Expressions
 translation:
   source: documents/cpp-reference/core-language/02-lambda.md
-  source_hash: 19d0fda53067e3da4f6f5ec5abcca449ddd5c414bfd2b71f9b1b278e14179780
-  translated_at: '2026-09-27T01:29:02+00:00'
-  engine: anthropic
-  token_count: 850
+  source_hash: 69fef48a75fc5c80fc4fae6f1f14f35179256b2a7111c21a2112f18cf61c7784
+  translated_at: '2026-11-22T16:41:57.189310+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1678
 ---
 # Lambda Expressions (C++11)
 
@@ -60,7 +60,7 @@ int main() {
     int threshold = 3;
     auto count = std::count_if(v.begin(), v.end(),
         [threshold](int x) { return x > threshold; });
-    std::cout << count << "\n"; // Output: 2
+    std::cout << count << "\n"; // 输出: 2
 }
 ```
 

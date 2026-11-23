@@ -10,9 +10,10 @@ description: "Measuring the layout of f's stack frame with objdump and gdb, seei
 reading_time_minutes: 19
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/04-stack-overflow-why-no-crash/01-stack-frame-neighbors.md
-  source_hash: 9ba0351741efaf632e23f51f7c1b331f44c30ad78ad1c0ed616de23d39b01653
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: b9f407c58a6214c491247d2ac9ce50f01f2da55143d2113d5498a4e29de0c929
+  translated_at: '2026-11-22T16:45:51Z'
+  engine: glm-5.3-refresh
+  token_count: 10398
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -26,14 +27,14 @@ In the [previous piece](../03-arguments-in-registers/01-integer-args-register-al
 The program we use is small enough to paste in full. Inside f we put an `int arr[4]` and a scalar named scalar, then use a negative index to write a 999 past the end of the array:
 
 ```cpp
-// d1.cpp -- the main source for the out-of-bounds write experiment
-// The same code gets built at -O0 and -O2, and handed to ASan again later
-// Both the index and the payload go through volatile globals, so the compiler cannot fold them
-// For how the stack layout was measured, see the end of the layout section
+// d1.cpp —— 越界写实验的主用源码
+// -O0 与 -O2 编的是同一份代码，后面还要交给 ASan 再跑一遍
+// 下标与载荷都走 volatile 全局，编译期折叠不了
+// 栈上布局怎么量，排座位一节的末尾给了方法
 #include <cstdio>
 
-volatile int g_index   = -1;  // the out-of-bounds index; why -1 becomes clear once you see the measured layout
-volatile int g_payload = 999; // the value written out of bounds
+volatile int g_index   = -1;  // 越界下标，为什么是 -1，看了实测布局才知道
+volatile int g_payload = 999; // 越界写入的值
 
 __attribute__((noinline))
 void f() {
@@ -43,7 +44,7 @@ void f() {
     std::printf("before: scalar=%d arr={%d,%d,%d,%d}\n",
                 scalar, arr[0], arr[1], arr[2], arr[3]);
 
-    arr[g_index] = g_payload; // the out-of-bounds write
+    arr[g_index] = g_payload; // 越界写
 
     std::printf("after : scalar=%d arr[g_index]=%d\n",
                 scalar, arr[g_index]);
@@ -126,13 +127,13 @@ $ objdump -d --no-show-raw-insn -C d1_o0 | sed -n '/<f()>:/,/^$/p'
     1185:	movl   $0x4,-0x14(%rbp)
     118c:	movl   $0x6f,-0x24(%rbp)
     1193:	mov    -0x14(%rbp),%r8d
-    ...(argument shuffling for printf, elided)...
+    ...（printf 参数搬运，删节）...
     11b7:	call   1030 <printf@plt>
     11bc:	mov    0x2e6a(%rip),%edx        # 402c <g_payload>
     11c2:	mov    0x2e60(%rip),%eax        # 4028 <g_index>
     11c8:	cltq
     11ca:	mov    %edx,-0x20(%rbp,%rax,4)
-    ...(argument shuffling for the second printf, elided)...
+    ...（第二次 printf 参数搬运，删节）...
     11f3:	nop
     11f4:	mov    -0x8(%rbp),%rax
     11f8:	sub    %fs:0x28,%rax
@@ -199,16 +200,16 @@ Every number from the opening scene now has its answer: arr[-1] hit scalar, chan
 Our first suspect is declaration order: if the scalar is declared before the array, does it get to live higher up? We built a four-way comparison to interrogate it. The two sources d7a and d7b differ only in that the order of the two declarations is swapped, and we compile each of them twice, once at the default level (canary on) and once with -fno-stack-protector added (protection removed):
 
 ```cpp
-// d7a.cpp -- the one that declares the array first
+// d7a.cpp —— 数组先声明的那份
 __attribute__((noinline))
 void f() {
     int arr[4];
     int scalar;
 
-    arr[0] = 0x11111111; // find movl $0x11111111,-0xXX(%rbp) in the assembly to locate the array base
-    scalar = 0x22222222; // find movl $0x22222222,-0xYY(%rbp) to locate the scalar
+    arr[0] = 0x11111111; // 汇编里找 movl $0x11111111,-0xXX(%rbp) 定位数组基址
+    scalar = 0x22222222; // 汇编里找 movl $0x22222222,-0xYY(%rbp) 定位标量
 
-    arr[1] = scalar; // use both variables
+    arr[1] = scalar; // 用一下两个变量
 }
 
 int main() {
@@ -218,7 +219,7 @@ int main() {
 ```
 
 ```text
-g++ -O0 -g -o d7a_p d7a.cpp            # default (strong)
+g++ -O0 -g -o d7a_p d7a.cpp            # 默认(strong)
 g++ -O0 -g -o d7b_p d7b.cpp
 g++ -O0 -g -fno-stack-protector -o d7a_n d7a.cpp
 g++ -O0 -g -fno-stack-protector -o d7b_n d7b.cpp
@@ -234,8 +235,8 @@ We picked the two instantly recognizable constants 0x11111111 and 0x22222222 pre
     1141:	mov    %fs:0x28,%rax
     114a:	mov    %rax,-0x8(%rbp)
     114e:	xor    %eax,%eax
-    1150:	movl   $0x11111111,-0x20(%rbp)   <- arr base rbp-0x20
-    1157:	movl   $0x22222222,-0x24(%rbp)   <- scalar at rbp-0x24, below the array
+    1150:	movl   $0x11111111,-0x20(%rbp)   <- arr 基址 rbp-0x20
+    1157:	movl   $0x22222222,-0x24(%rbp)   <- scalar 在 rbp-0x24，数组下方
     115e:	mov    -0x24(%rbp),%eax
     1161:	mov    %eax,-0x1c(%rbp)
     1164:	nop
@@ -253,8 +254,8 @@ The two builds with protection removed look like this instead (d7b_n is identica
 0000000000001119 <f()>:
     1119:	push   %rbp
     111a:	mov    %rsp,%rbp
-    111d:	movl   $0x11111111,-0x20(%rbp)   <- arr base rbp-0x20
-    1124:	movl   $0x22222222,-0x4(%rbp)    <- scalar at rbp-0x4, above the array
+    111d:	movl   $0x11111111,-0x20(%rbp)   <- arr 基址 rbp-0x20
+    1124:	movl   $0x22222222,-0x4(%rbp)    <- scalar 在 rbp-0x4，数组上方
     112b:	mov    -0x4(%rbp),%eax
     112e:	mov    %eax,-0x1c(%rbp)
     1131:	nop
@@ -273,7 +274,9 @@ The four layouts are gathered into one table (the arrow annotations in the assem
 
 The four-way comparison hands down a crisp verdict. The first part we have already spoiled: declaration order has zero effect on the -O0 layout. Within each pair the outputs match instruction for instruction and the addresses do not move by a hair, so trying to arrange things by declaring the scalar before the array accomplishes nothing on GCC 16. What does the work is whether the canary exists. With protection on, the array is placed just below the canary at the high end and the scalar is moved underneath the array, so a forward out-of-bounds write can never reach the scalar; the only way to touch it is a negative index, and the opening experiment was a product of exactly this layout. We measured the world after the canary comes off too: the scalar is repacked to rbp-0x4, wedged between the array and the saved rbp, and now a forward out-of-bounds arr[7] overwrites the scalar directly, while arr[8] reaches the saved rbp. It is the array that lives against the canary, and there lies the stack protector's design intent: the thing most likely to run out of bounds is placed closest to the control data, with a sentinel standing in between.
 
-We leave you the method for measuring offsets as well; it beats any memorized number for reliability. Once you have objdump's disassembly, look for initialization lines of the form `movl $const,-off(%rbp)` in the output: the constant names each variable's slot outright. With the array base's offset and the target's offset in hand, the index is (target offset minus array base offset) divided by 4. The GCC version, the protector level, and the shape of the function (whether it has a printf, how many arguments) all shift the offsets. Every concrete number in this piece is a measurement from GCC 16.2.1 at -O0. Whatever layout your own binary comes up with, measure it before you judge, and don't treat our offset table as a universal promise. The frame's neighborhood layout also moved into the executor. In the scene below, f sets up a 0x30 frame. Single-step through the four arr initializations and watch the stack window read, from low to high: the local sum, arr's 1 through 4, padding, the canary slot, the saved rbp, and the return address, which is the order an out-of-bounds write's reach follows. Two things differ from a real program: the executor does not emulate the fs:0x28 segment addressing for the canary, so the scene substitutes a fixed value from .data, planting and comparing it exactly the same way, and printf goes through the PLT and is not in the scene.
+We leave you the method for measuring offsets as well; it beats any memorized number for reliability. Once you have objdump's disassembly, look for initialization lines of the form `movl $const,-off(%rbp)` in the output: the constant names each variable's slot outright. With the array base's offset and the target's offset in hand, the index is (target offset minus array base offset) divided by 4. The GCC version, the protector level, and the shape of the function (whether it has a printf, how many arguments) all shift the offsets. Every concrete number in this piece is a measurement from GCC 16.2.1 at -O0. Whatever layout your own binary comes up with, measure it before you judge, and don't treat our offset table as a universal promise.
+
+The frame's neighborhood layout also moved into the executor. In the scene below, f sets up a 0x30 frame. Single-step through the four arr initializations and watch the stack window read, from low to high: the local sum, arr's 1 through 4, padding, the canary slot, the saved rbp, and the return address, which is the order an out-of-bounds write's reach follows. Two things differ from a real program: the executor does not emulate the fs:0x28 segment addressing for the canary, so the scene substitutes a fixed value from .data, planting and comparing it exactly the same way, and printf goes through the PLT and is not in the scene.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/frame_layout.json" />
 

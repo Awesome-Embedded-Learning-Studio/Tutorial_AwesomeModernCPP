@@ -21,10 +21,10 @@ tags:
 title: Linux Environment Setup
 translation:
   source: documents/vol1-fundamentals/ch00/01-setup-linux.md
-  source_hash: 508e54368ec83f140c126161c7cf9b543f3b85dca5dc546d636e9b9b40b85ffe
-  translated_at: '2026-09-27T03:54:11+00:00'
-  engine: anthropic
-  token_count: 5800
+  source_hash: f25051ddd71bd87b3d6af5c9e736332670a46739d98b5eccd1846d9bf4b5addb
+  translated_at: '2026-11-22T16:40:31+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7419
 ---
 # Linux Environment Setup
 
@@ -54,17 +54,17 @@ sudo pacman -S gcc make
 
 :::
 
-`build-essential` is a meta package: it contains no software itself, but it pulls down a whole series of tools compilation requires, such as `g++`, `gcc`, `make`, and `libc6-dev`. Once this one package is in, we have a basic C and C++ compilation environment.
+`build-essential` 是一个元包（meta package），它本身不包含任何软件，但会拉下来 `g++`、`gcc`、`make`、`libc6-dev` 等一系列编译必需的工具。咱们装完这一个包，基本的 C 和 C++ 编译环境就有了。
 
-Arch is even easier here: the default `gcc` package already includes C++ support, so we don't need to install `gcc-c++` separately.
+Arch 这边更省事，默认的 `gcc` 包已经包含 C++ 支持，咱们不用额外装 `gcc-c++`。
 
-Once it's installed, verify. Open a terminal and run:
+装好之后验证一下。打开终端，执行：
 
 ```bash
 g++ --version
 ```
 
-The output you see should look roughly like this (the exact version number varies with your distribution and its update state):
+您看到的输出大概长这样（具体版本号会因发行版和更新状态而异）：
 
 ```text
 g++ (Ubuntu 13.2.0-23ubuntu4) 13.2.0
@@ -73,9 +73,9 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-As long as a version number prints, GCC is installed. My recommendation is nothing below version 11—GCC 11 fully supports most of C++20, and the later tutorials make heavy use of C++17 and C++20 features. If the GCC that ships with your distribution is rather old (Ubuntu 20.04, for instance, defaults to GCC 9), you can upgrade through a PPA or by building from source; we won't expand on that for now.
+只要能看到版本号输出，GCC 就装好了。这里笔者建议版本不低于 11——GCC 11 支持了 C++20 的大部分特性，后续教程中咱们会大量使用 C++17 和 C++20 的功能。如果您发行版自带的 GCC 比较老（比如 Ubuntu 20.04 默认是 GCC 9），可以考虑通过 PPA 或者编译源码来升级，这个暂时不展开。
 
-If you'd like to try Clang while you're at it (some features in later tutorials will be compared against it), install it like this:
+您要是想顺便试试 Clang（后续教程中部分特性会用它做对比），可以这样装：
 
 ```bash
 # Ubuntu / Debian
@@ -92,25 +92,25 @@ Thread model: posix
 InstalledDir: /usr/bin
 ```
 
-Clang's error messages are friendlier than GCC's—when template code has me stuck, I often switch over to Clang to read the diagnostics. For day-to-day development, though, GCC is entirely sufficient; just keep both compilers installed, they don't conflict.
+Clang 的报错信息比 GCC 更友好一些，调模板代码卡住的时候，笔者经常切到 Clang 看错误提示。不过日常开发用 GCC 完全够用，两个编译器保持装好就行，不冲突。
 
-If you're inside WSL and still get `command not found` after installing, don't panic—nine times out of ten you skipped `sudo apt update`, or the WSL distribution never got properly initialized. Run `sudo apt update && sudo apt upgrade -y` once in the WSL terminal, then reinstall `build-essential`. Also, the Ubuntu image WSL pulls in by default can sometimes be on the old side; if in doubt, check your distribution's version in the Microsoft Store.
+WSL 里装完还是 `command not found`，别慌，十有八九是漏跑了 `sudo apt update`，或者 WSL 的发行版压根没初始化好——在 WSL 终端里跑一遍 `sudo apt update && sudo apt upgrade -y`，再重装一次 `build-essential` 就行。另外 WSL 默认拉的 Ubuntu 镜像有时比较旧，拿不准就去 Microsoft Store 确认一下您的发行版版本。
 
-## Get CMake Installed
+## 装好 CMake
 
-With a compiler in hand, we still need a build tool to manage the project's compilation pipeline. You might ask—doesn't `g++ hello.cpp -o hello` just work? For a single file, certainly no problem, but real projects often have dozens or hundreds of source files with dependencies between them; typing compile commands by hand is simply not realistic.
+有了编译器，还需要一个构建工具来管理项目的编译流程。咱们可能会问——直接 `g++ hello.cpp -o hello` 不就行了？单个文件当然没问题，但真实项目的源文件往往有几十上百个，彼此之间还有依赖关系，手动敲编译命令根本不现实。
 
-> What, you've never seen a CMake project? Fine—open GitHub and browse:
+> 啥，你没见过CMake项目？这样，你打开Github，翻到
 >
 > - CFBox: <https://github.com/Awesome-Embedded-Learning-Studio/CFBox>
 > - CFDesktop: <https://github.com/Awesome-Embedded-Learning-Studio/CFDesktop>
 >
-> Poke around a bit. I bet you won't be hand-typing compiler commands after that.
-> (Of course I'm not promoting my own projects again. I'm sure of it.)
+> 随便转转，我打赌你肯定不会手敲编译器命令的
+> （当然没有再推广我的项目，我确信）
 
-That is exactly the job CMake does: it reads a configuration file called `CMakeLists.txt`, then automatically generates the corresponding build scripts (a Makefile or Ninja file, say), taking the grunt work of compiling and linking off our hands.
+CMake 就是干这件事的：它读取一个叫 `CMakeLists.txt` 的配置文件，然后自动生成对应的构建脚本（比如 Makefile 或 Ninja 文件），把编译、链接这些脏活累活替咱们打理好。
 
-Installing CMake is likewise a one-command affair:
+安装 CMake 同样一行命令搞定：
 
 ```bash
 # Ubuntu / Debian
@@ -126,7 +126,7 @@ sudo pacman -S cmake
 yay -S cmake
 ```
 
-Verify the installation:
+验证安装：
 
 ```bash
 cmake --version
@@ -138,32 +138,32 @@ cmake version 3.28.3
 CMake suite maintained and supported by Kitware (kitware.com/cmake).
 ```
 
-**For CMake, my recommendation is nothing below version 3.16.** The reasoning may not mean much to you, but since you insist on knowing, my answer is: starting with 3.16, CMake introduced support for pieces of C++20 modules and presets, and the `CMakeLists.txt` we write in later tutorials will use those features. If the CMake in your distribution's repositories is on the older side, you can install a newer version from Kitware's official repository or via pip. Give up on understanding it, then—just remember to double-check repeatedly with `cmake --version`.
+**CMake 的版本笔者建议不低于 3.16**。理由你可能看不懂，非要看的话，我的回答是：从 3.16 开始 CMake 引入了一些对 C++20 模块和预设（presets）的支持，后续教程中咱们写的 `CMakeLists.txt` 会用到这些特性。如果您发行版仓库里的 CMake 版本偏低，可以从 Kitware 官方源或者 pip 安装更新的版本。放弃理解了吧，记得`cmake --version`反复确认一下。
 
-## Get VS Code Set Up
+## 配好 VS Code
 
-Editors are a matter of taste, and vim and emacs are of course fine. But if you want a C++ development environment that **works out of the box and has a mature extension ecosystem**, VS Code is the most mainstream choice today. ("Out of the box" usually means an IDE, but I suggest you skip those—face the pain of setting up the environment yourself. Knowing what's actually going on from the very start beats bumbling your way to the deep end without even knowing how to investigate problems.) Its remote development experience under WSL is also remarkably good: the code compiles and runs on Linux while the editing interface stays on Windows—best of both worlds.
+编辑器这东西见仁见智，vim 和 emacs 当然没问题，但如果您想要一个**开箱即用、插件生态成熟**的 C++ 开发环境，VS Code 是目前最主流的选择。（开箱即用是IDE，但是笔者建议别用，直面搭建环境的痛苦，从最开始就知道发生了什么，比懵懵懂懂搞到后面问题都不会查好多了）。而且它在 WSL 下的远程开发体验做得相当好：代码在 Linux 上编译运行，编辑界面留在 Windows 上，两全其美。
 
-> Yes, this very tutorial is written in VS Code! The thing is genuinely great to use—I wholeheartedly recommend it!
+> 是的，教程我就是VSCode写的！这个东西很好用，强烈安利！
 
 ![vscode text](assets/01-linux/vscode-interfaces.png)
 
-There are many ways to install VS Code; let's take the easiest: go to the [official site](https://code.visualstudio.com/), download the `.deb` package (Ubuntu/Debian) or `.rpm` package (Fedora), then double-click to install. Arch users can simply run `sudo pacman -S code`.
+安装 VS Code 的方式很多，咱们走最省事的：去[官网](https://code.visualstudio.com/)下载 `.deb` 包（Ubuntu/Debian）或 `.rpm` 包（Fedora），然后双击安装。Arch 用户可以直接 `sudo pacman -S code`。
 
-With VS Code installed, a few key extensions are still missing. Press `Ctrl+Shift+X` to open the extensions panel. First, search for C/C++ (from Microsoft)—syntax highlighting, IntelliSense, and debugging support all ride on it; it's the cornerstone of writing C++ in VS Code. Next, grab its sibling CMake Tools, which lets you configure, build, and debug CMake projects by clicking buttons right inside the editor, no terminal-switching needed. Top it off with CMake by twxs, which provides syntax highlighting and completion for `CMakeLists.txt`. With those three in place, this environment has taken shape.
+装好 VS Code 之后还差几个关键扩展。您按 `Ctrl+Shift+X` 打开扩展面板，头一个搜 C/C++（Microsoft 出品），语法高亮、智能提示、调试支持全靠它，是 VS Code 写 C++ 的基石；接着装同门的 CMake Tools，配置、构建、调试 CMake 项目都在编辑器里点按钮完成，不用切终端；再补一个 twxs 出品的 CMake，给 `CMakeLists.txt` 提供语法高亮和补全。三个装齐，这套环境就成型了。
 
-## Get Your First CMake Project Running
+## 跑通第一个 CMake 项目
 
-At this point all the tools are ready, so let's drill for real: create a CMake-managed C++ project from scratch, compile it, and run it. If this step goes through smoothly, the whole toolchain is configured correctly, and the later chapters can be pure coding with peace of mind.
+到这里工具都齐了，咱们来实际操练一把：从零创建一个 CMake 管理的 C++ 项目，编译并运行。这一步如果顺利跑通，说明整个工具链配置没有问题，后续章节就可以安心写代码了。
 
-Find a spot and create a project directory—fire up that Linux command line~
+找个地方建一个项目目录，Linux命令行刷起~
 
 ```bash
 # Recursively create ~/projects and ~/projects/hello_cmake, then switch into it.
 mkdir -p ~/projects/hello_cmake && cd ~/projects/hello_cmake
 ```
 
-Then create our first C++ source file, `hello.cpp`:
+然后创建咱们的第一个 C++ 源文件 `hello.cpp`：
 
 ```cpp
 // Create the file in VS Code, or with touch, or with echo "" > hello.cpp, whatever works~
@@ -176,9 +176,9 @@ int main()
 }
 ```
 
-Let's read this simplest of C++ programs first: `#include <iostream>` pulls in the standard input/output library; `std::cout` is C++'s standard output stream; the `<<` operator sends the string into the output stream. Besides emitting a newline, `std::endl` also flushes the output buffer, making sure the content shows up immediately.
+咱们先看这个最简单的 C++ 程序：`#include <iostream>` 引入标准输入输出库，`std::cout` 是 C++ 的标准输出流，`<<` 运算符把字符串送到输出流里。`std::endl` 除了换行之外还会刷新输出缓冲区，确保内容立刻显示。
 
-Next, create `CMakeLists.txt`; this file tells CMake how our project should be built:
+接下来创建 `CMakeLists.txt`，这个文件告诉 CMake 咱们的项目怎么构建：
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
@@ -190,14 +190,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(hello hello.cpp)
 ```
 
-Whoa there, don't run off—I'll take it slow.
+欸欸欸别跑，我慢慢说。
 
-- `cmake_minimum_required(VERSION 3.16)` declares the minimum CMake version this project needs; if your CMake is older than 3.16, the configure stage fails outright instead of producing baffling build failures later.
-- `project(hello_cmake LANGUAGES CXX)` defines the project's name and supported languages; `CXX` is CMake's code name for C++.
-- `set(CMAKE_CXX_STANDARD 20)` sets the C++ standard to C++20, and `CMAKE_CXX_STANDARD_REQUIRED ON` makes sure the build errors out if the compiler doesn't support C++20, rather than quietly downgrading.
-- `add_executable(hello hello.cpp)` declares that we are building an executable named `hello` from the source file `hello.cpp`.
+- `cmake_minimum_required(VERSION 3.16)` 声明这个项目需要的最低 CMake 版本，如果您的 CMake 版本低于 3.16，配置阶段会直接报错而不是产生莫名其妙的构建失败。
+- `project(hello_cmake LANGUAGES CXX)` 定义项目名称和支持的语言，`CXX` 是 CMake 里对 C++ 的代号。
+- `set(CMAKE_CXX_STANDARD 20)` 把 C++ 标准设为 C++20，`CMAKE_CXX_STANDARD_REQUIRED ON` 确保如果编译器不支持 C++20 就直接报错，而不是悄悄降级。
+- `add_executable(hello hello.cpp)` 声明咱们要构建一个叫 `hello` 的可执行文件，源文件是 `hello.cpp`。
 
-Now let's build. CMake's recommended practice is to build in a separate directory, keeping the generated temporary files from polluting the source directory:
+现在咱们开始构建。CMake 推荐的做法是在单独的目录里构建，避免把生成的临时文件污染源代码目录：
 
 ```bash
 mkdir build && cd build
@@ -205,7 +205,7 @@ cmake ..
 make
 ```
 
-You will see output like this:
+您会看到类似这样的输出：
 
 ```text
 -- The CXX compiler identification is GNU 13.2.0
@@ -222,7 +222,7 @@ You will see output like this:
 [100%] Built target hello
 ```
 
-Build succeeded. Now run our program:
+构建成功。现在运行咱们的程序：
 
 ```bash
 ./hello

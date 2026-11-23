@@ -29,9 +29,9 @@ title: "weak_ptr Design Guide (I): motivation, API, and the control block"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/hands_on/01-weak-ptr-design.md
   source_hash: eab94c4bb8868600ac8780b1d1d799ddd8403fb96d3473da005432a2615e435d
-  translated_at: '2026-09-26T01:55:52+00:00'
-  engine: anthropic
-  token_count: 1600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5282
 ---
 # weak_ptr Design Guide (I): motivation, API, and the control block
 
@@ -69,33 +69,33 @@ The step we find most abstract sits right here: Chromium simply peels "is the ob
 The externally visible API is just this much — we were honestly a bit surprised on our first read: such a powerful mechanism, such a plain storefront:
 
 ```cpp
-// Weak-pointer handle: no lifetime extension, can test for aliveness
+// 弱指针句柄:不延寿,能判活
 template <typename T> class [[clang::trivial_abi]] WeakPtr {
 public:
     WeakPtr() = default;
     WeakPtr(std::nullptr_t);
 
-    template <typename U> requires(std::convertible_to<U*, T*>)   // upcast
+    template <typename U> requires(std::convertible_to<U*, T*>)   // 向上转型
     WeakPtr(const WeakPtr<U>&);
 
-    T* get() const;                 // returns nullptr when invalid, no crash
-    T& operator*() const;           // invalid → CHECK/assert
+    T* get() const;                 // 失效返回 nullptr,不崩
+    T& operator*() const;           // 失效 → CHECK/assert
     T* operator->() const;
     explicit operator bool() const;
     void reset();
 
-    bool maybe_valid() const;       // cross-sequence hint: negative is trustworthy / positive is not
-    bool was_invalidated() const;   // distinguishes "invalidated" from "deliberately reset"
+    bool maybe_valid() const;       // 跨序列 hint:负面可信/正面不可信
+    bool was_invalidated() const;   // 区分"被作废"与"主动 reset"
 };
 
-// The mint: hangs on the observed object, invalidates in bulk
+// 铸币厂:挂被观察对象上,批量失效
 template <typename T> class WeakPtrFactory {
 public:
     explicit WeakPtrFactory(T* ptr);
-    WeakPtr<T> get_weak_ptr();                  // non-const overload requires(!is_const_v<T>)
+    WeakPtr<T> get_weak_ptr();                  // 非 const 重载 requires(!is_const_v<T>)
     WeakPtr<const T> get_weak_ptr() const;
-    void invalidate_weak_ptrs();                // invalidate + mint a fresh Flag
-    void invalidate_weak_ptrs_and_doom();       // invalidate + never mint again (cheaper)
+    void invalidate_weak_ptrs();                // 失效 + 铸新 Flag
+    void invalidate_weak_ptrs_and_doom();       // 失效 + 不再铸(更高效)
     bool has_weak_ptrs() const;
 };
 ```
@@ -108,12 +108,12 @@ The mechanism looks involved, but it really stacks into four layers. We'll find 
 
 ```mermaid
 flowchart TB
-    subgraph FAC["WeakPtrFactory&lt;T&gt; — minting + bulk invalidation"]
-        RO["WeakReferenceOwner<br/>the Flag's issuer (holds the flag; destroying it invalidates)"]
+    subgraph FAC["WeakPtrFactory&lt;T&gt; — 铸币 + 批量失效"]
+        RO["WeakReferenceOwner<br/>Flag 的发行方(持 flag,析构即 invalidate)"]
     end
-    subgraph WP["WeakPtr&lt;T&gt; — the user handle (TRIVIAL_ABI, 16 bytes)"]
-        subgraph WR["WeakReference — the reference side (scoped_refptr&lt;const Flag&gt;)"]
-            Flag["Flag — refcounted + atomic liveness (acquire/release)"]
+    subgraph WP["WeakPtr&lt;T&gt; — 用户句柄(TRIVIAL_ABI,16 字节)"]
+        subgraph WR["WeakReference — 引用侧(scoped_refptr&lt;const Flag&gt;)"]
+            Flag["Flag — refcounted + 原子 liveness(acquire/release)"]
         end
     end
     RO -.-> Flag

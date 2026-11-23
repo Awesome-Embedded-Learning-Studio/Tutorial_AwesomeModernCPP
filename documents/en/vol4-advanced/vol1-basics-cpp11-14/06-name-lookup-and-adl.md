@@ -26,9 +26,9 @@ title: 'Name Lookup and ADL: How Two-Phase Lookup Works'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/06-name-lookup-and-adl.md
   source_hash: c86d2a7fd3498b1c3086d03f5cb8d2db33d47d5d75ee51a3abe777997bd9b1da
-  translated_at: '2026-09-26T04:13:59+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5371
 ---
 # Name Lookup and ADL: How Two-Phase Lookup Works
 
@@ -42,7 +42,7 @@ Start with an ordinary function. When a name is used inside one, the compiler pe
 void helper(int) {}
 
 void caller() {
-    helper(42);   // At caller's definition point, the compiler looks up helper and finds ::helper(int)
+    helper(42);   // 编译器在 caller 定义点查 helper,找到 ::helper(int)
 }
 ```
 
@@ -63,19 +63,19 @@ Here is a classic example that makes the two phases visible directly.
 ```cpp
 #include <iostream>
 
-// helper that already exists before the template definition
+// 模板定义之前就存在的 helper
 void helper(int) { std::cout << "::helper(int), defined before template\n"; }
 
 template <typename T>
 void call_it(T x) {
-    helper(x);   // helper is a non-dependent name: looked up and bound in phase one (at the definition point)
+    helper(x);   // helper 是非依赖名,第一阶段(定义点)查找并绑定
 }
 
-// helper added only after the template definition
+// 模板定义之后才加的 helper
 void helper(double) { std::cout << "::helper(double), defined after template\n"; }
 
 int main() {
-    call_it(3.14);   // T=double. Intuitively, wouldn't you expect helper(double) to be called?
+    call_it(3.14);   // T=double。直觉上会不会期望走 helper(double)?
     return 0;
 }
 ```
@@ -125,7 +125,7 @@ namespace geo {
 
 int main() {
     geo::Point p{1, 2};
-    draw(p);   // No geo:: qualifier, no using namespace geo either
+    draw(p);   // 既没写 geo:: 限定,也没 using namespace geo
     return 0;
 }
 ```
@@ -151,7 +151,7 @@ ADL is not decorative; it is a load-bearing pillar of several key idioms of mode
 
 ```cpp
 using std::swap;
-swap(a, b);   // Not std::swap(a,b), but using std::swap first, then an unqualified call
+swap(a, b);   // 不写 std::swap(a,b),而是先 using std::swap 再裸调
 ```
 
 `using std::swap` pulls `std::swap` into the candidate set, and then you make the unqualified call `swap(a, b)`. That way, if the type of `a` provides a more efficient `swap` in some namespace (say `ns::swap`), ADL finds it and prefers it; if not, the call falls back to `std::swap`. This is why the standard library writes `using std::swap; swap(a,b);` everywhere instead of `std::swap(a,b)` directly—it leaves optimization room for custom types. The `std::begin`, `std::end`, `std::size`, `std::data` family follows the same idea.

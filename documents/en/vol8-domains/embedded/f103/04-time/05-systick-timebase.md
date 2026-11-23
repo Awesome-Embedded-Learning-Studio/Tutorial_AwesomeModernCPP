@@ -19,10 +19,10 @@ related:
   - 'Putting the logger to work: two ways to write it and two surfaces to read it'
 translation:
   source: documents/vol8-domains/embedded/f103/04-time/05-systick-timebase.md
-  source_hash: 901115bbc7360e4f4ea41e73151ea0d0141e3331558171b04b0f2e845b75163b
-  translated_at: '2026-11-01T03:20:13+00:00'
-  engine: anthropic
-  token_count: 3200
+  source_hash: c96802e58f62c95d199003962eda1a01bb084536da6e70742ed574c21a798e11
+  translated_at: '2026-11-22T16:43:13+00:00'
+  engine: glm-5.3-refresh
+  token_count: 15561
 ---
 
 # Who counts the millisecond: the SysTick time base
@@ -42,8 +42,8 @@ The material is still the set used by pieces 01 through 04, with our submodule p
 The chain's head sits in kernel.hpp; the two opening macros, moved out word for word<RefLink :id="1" preview="Awesome-Embedded-Learning-Studio, libestdx" />:
 
 ```c
-#define USE_RTOS 0U             /* no RTOS, the SysTick time base belongs to the HAL */
-#define TICK_INT_PRIORITY 0x0FU /* SysTick gets the lowest priority */
+#define USE_RTOS 0U             /* 不上 RTOS,SysTick 时基归 HAL */
+#define TICK_INT_PRIORITY 0x0FU /* SysTick 优先级给最低 */
 ```
 
 USE_RTOS is filled with 0, so the SysTick time base belongs to the HAL. TICK_INT_PRIORITY's 0x0F you took apart in piece 04 — the last of the sixteen levels. HAL_Init takes it and calls HAL_InitTick. We didn't dissect that function in piece 04; all we saw there was how a re-run of it writes a preemption-level change back. What really puts the number into the hardware is HAL_InitTick's body, pasted word for word from stm32f1xx_hal.c<RefLink :id="2" preview="STMicroelectronics, stm32f1xx_hal.c" />:
@@ -167,7 +167,7 @@ Now switch over to the real hardware: what should the three fields look like the
 The probe's method comes from the same family as experiment three of the 00 station's [Renode observatory: no board, so who gets the final say?](../00-env-setup/02-renode-observatory.md): two independent clocks checked head-to-head. The reference clock is Tim3, a TimBase wired for a 100ms period beat with preemption level 3; the wiring details were dissected in piece 01. Its handler does one thing — write one array slot — and exits, with all logging done back in the main loop. Piece 04's probe logged inside the ISR, a measurement privilege for timing timing itself; this side measures SysTick and doesn't even need the privilege. The reference clock's code, moved out word for word:
 
 ```cpp
-// Reference clock: one beat per 100ms; the ISR only records the beat number and the HAL millisecond count at that moment, no logging
+// 参考钟: 100ms 一拍, ISR 里只记拍号和当时的 HAL 毫秒数, 不打日志
 volatile std::uint32_t beats = 0;
 volatile std::uint32_t ring[128];
 struct OnGate {
@@ -181,8 +181,8 @@ struct OnGate {
 The main loop's job is to wait for the reference clock to walk off 20 full intervals — 2000ms of ground truth — and we take the HAL millisecond difference between the first and last samples:
 
 ```cpp
-// Wait for the reference clock to advance n more beats (n samples, n-1 intervals), return the millisecond difference between first and last samples
-// On exit beats == b0+n; the slots written are b0 .. b0+n-1
+// 等参考钟再走 n 拍(n 个样本, n-1 个间隔), 返回首尾样本的毫秒差
+// 退出时 beats == b0+n, 写过的槽是 b0 .. b0+n-1
 std::uint32_t span_over_beats(std::uint32_t n) {
     std::uint32_t b0 = beats;
     while (beats - b0 < n) {
@@ -268,11 +268,11 @@ systick probe check: PASS (快照 reg/幕A ≈2000/幕B ≈200/幕B2 ≈14222/�
 With the four acts measured, let's walk the real-hardware arithmetic by hand, skipping no step in between:
 
 ```text
-9000's intent         →  9MHz ÷ 9000 = 1ms          (9MHz = 72MHz max HCLK divided by 8)
-This board, external clock →  64MHz/8 = 8MHz, 9000@8MHz = 1.125ms  (12.5% slow)
-9000 carried verbatim →  9000@64MHz = 0.140625ms     (cross-checked by act B2's measurement)
-Generic comparison    →  10ms@9MHz = 90000           (ST ships 9000)
-The HAL's way         →  64000@64MHz = 1ms           (computed from SystemCoreClock, CALIB never read)
+9000 的本意   →  9MHz ÷ 9000 = 1ms          (9MHz = 72MHz max HCLK 的八分频)
+本板走外部钟  →  64MHz/8 = 8MHz, 9000@8MHz = 1.125ms  (慢 12.5%)
+9000 原样搬   →  9000@64MHz = 0.140625ms     (幕 B2 实测互证)
+泛义对照      →  10ms@9MHz = 90000           (ST 装的是 9000)
+HAL 的配法    →  64000@64MHz = 1ms           (SystemCoreClock 现算,不读 CALIB)
 ```
 
 With the formulas laid out, the whole piece's answer folds into a few sentences. On this 64MHz board of ours, the calibration route cannot produce an exact 1ms: on real hardware, deduction from the manuals gives 1.125ms, 12.5% slow, and on the model it is blunter still — CLKSOURCE is simply bounced back, and the external clock cannot be attached at all. The HAL's configuration is the right answer; it takes a reload value computed on the spot from the clock frequency. The title CALIB holds by the architecture is a 10ms reference configurable without knowing the clock frequency, and ST changed it on F1 into a special-purpose 1ms@9MHz value. That gap between the name and the reality is the root of wiping out when you carry the number away verbatim.

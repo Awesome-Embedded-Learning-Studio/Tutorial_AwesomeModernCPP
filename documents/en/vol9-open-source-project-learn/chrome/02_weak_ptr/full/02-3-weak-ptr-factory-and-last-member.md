@@ -25,9 +25,9 @@ title: "WeakPtr hands-on (III): WeakPtrFactory and the last-member idiom"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/02-3-weak-ptr-factory-and-last-member.md
   source_hash: 1684758694fa21aa6b5bd257d57570eb77af0e56523ff878a03f7e61088b5ec7
-  translated_at: '2026-09-26T02:20:12+00:00'
-  engine: anthropic
-  token_count: 3000
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9823
 ---
 # WeakPtr hands-on (III): WeakPtrFactory and the last-member idiom
 
@@ -40,14 +40,14 @@ In this piece we build the factory, and along the way chew through its most famo
 The factory holds exactly one thing: a single Flag, shared by every WeakPtr minted from it. So internally the factory wraps a `WeakReferenceOwner` — the Flag's issuer and holder (`weak_ptr.cc:82-89`):
 
 ```cpp
-// Issuer: holds one Flag, responsible for invalidation
+// 发行方:持有一枚 Flag,负责失效
 class WeakReferenceOwner {
 public:
-    WeakReferenceOwner() : flag_(make_ref<Flag>()) {}   // construction mints a fresh Flag
+    WeakReferenceOwner() : flag_(make_ref<Flag>()) {}   // 构造即铸一枚新 Flag
     ~WeakReferenceOwner() {
-        if (flag_) flag_->Invalidate();                 // on destruction, invalidates all WeakPtrs
+        if (flag_) flag_->Invalidate();                 // 析构时作废所有 WeakPtr
     }
-    WeakReference GetRef() const { return WeakReference(flag_); }   // minting
+    WeakReference GetRef() const { return WeakReference(flag_); }   // 铸币
     // ...
 private:
     scoped_refptr<Flag> flag_;
@@ -72,13 +72,13 @@ public:
     WeakPtrFactory(const WeakPtrFactory&) = delete;
     WeakPtrFactory& operator=(const WeakPtrFactory&) = delete;
 
-    // Minting: a const factory hands out WeakPtr<const T>
+    // 铸币:const factory 发 WeakPtr<const T>
     WeakPtr<const T> get_weak_ptr() const {
         return WeakPtr<const T>(weak_reference_owner_.GetRef(),
                                 reinterpret_cast<const T*>(ptr_));
     }
 
-    // Non-const overload: hands out WeakPtr<T> (pre-04's requires)
+    // 非 const 重载:发 WeakPtr<T>(pre-04 的 requires)
     WeakPtr<T> get_weak_ptr()
         requires(!std::is_const_v<T>)
     {
@@ -86,15 +86,15 @@ public:
                           reinterpret_cast<T*>(ptr_));
     }
 
-    // Active batch invalidation (object still alive, but you want all WeakPtrs invalid)
+    // 主动批量失效(对象还活着,但想让所有 WeakPtr 失效)
     void invalidate_weak_ptrs() {
         assert(ptr_);
-        weak_reference_owner_.Invalidate();   // invalidate the old Flag + mint a fresh one
+        weak_reference_owner_.Invalidate();   // 失效旧 Flag + 铸一枚新 Flag
     }
 
     void invalidate_weak_ptrs_and_doom() {
         assert(ptr_);
-        weak_reference_owner_.InvalidateAndDoom();   // invalidate + mint no new Flag ever again
+        weak_reference_owner_.InvalidateAndDoom();   // 失效 + 不再铸新 Flag
         ptr_ = 0;
     }
 
@@ -102,7 +102,7 @@ public:
 
 private:
     internal::WeakReferenceOwner weak_reference_owner_;
-    // ptr_ lives in the non-template base WeakPtrFactoryBase, as uintptr_t (see pre-05)
+    // ptr_ 在非模板基类 WeakPtrFactoryBase 里,uintptr_t(prec 见 pre-05)
 };
 
 }  // namespace tamcpp::chrome
@@ -117,14 +117,14 @@ The factory offers two invalidation methods, and from the names alone you may be
 ```cpp
 void WeakReferenceOwner::Invalidate() {
     assert(flag_);
-    flag_->Invalidate();                 // invalidate the old Flag
-    flag_ = make_ref<Flag>();            // mint a fresh Flag, the factory can keep minting
+    flag_->Invalidate();                 // 作废旧 Flag
+    flag_ = make_ref<Flag>();            // 铸一枚新 Flag,factory 可继续铸币
 }
 
 void WeakReferenceOwner::InvalidateAndDoom() {
     assert(flag_);
-    flag_->Invalidate();                 // invalidate the old Flag
-    flag_.reset();                       // hold no new Flag, the factory enters its "dead" state
+    flag_->Invalidate();                 // 作废旧 Flag
+    flag_.reset();                       // 不再持新 Flag,factory 进入"已死"态
 }
 ```
 
@@ -157,22 +157,22 @@ That `flag_->Invalidate()` line inside `WeakReferenceOwner::~WeakReferenceOwner(
 Put those two facts together and the conclusion pops out on its own. Suppose `Controller` has a few ordinary members plus a factory, and let's deliberately write out both declaration orders for comparison:
 
 ```cpp
-// ✗ Wrong order: factory at the front
+// ✗ 错误顺序:factory 放前面
 class BadController {
 public:
-    void on_work_done() { /* uses buf_ */ }
+    void on_work_done() { /* 用 buf_ */ }
 private:
-    WeakPtrFactory<BadController> weak_factory_{this};   // declared first → destroyed last
-    std::vector<int> buf_;                                // declared later → destroyed first
+    WeakPtrFactory<BadController> weak_factory_{this};   // 先声明 → 最后析构
+    std::vector<int> buf_;                                // 后声明 → 先析构
 };
 
-// ✓ Right order: factory last
+// ✓ 正确顺序:factory 放最后
 class GoodController {
 public:
-    void on_work_done() { /* uses buf_ */ }
+    void on_work_done() { /* 用 buf_ */ }
 private:
-    std::vector<int> buf_;                                // declared first → destroyed last
-    WeakPtrFactory<GoodController> weak_factory_{this};   // declared later → destroyed first
+    std::vector<int> buf_;                                // 先声明 → 最后析构
+    WeakPtrFactory<GoodController> weak_factory_{this};   // 后声明 → 先析构
 };
 ```
 
@@ -187,11 +187,11 @@ The last-member idiom boils down to this one sentence: let the factory be destro
 There is a detail we specifically want to make clear here, because it is the easiest one to misjudge — we confirmed it deliberately during our verification pass. Putting the factory last shields the **member destruction window**; it does **not** stop you from using WeakPtrs inside the object's own destructor body. Let's spread the timeline out:
 
 ```text
-GoodController destruction:
-  ① destructor body runs (all members still alive at this point, WeakPtrs still valid)
-  ② members destroyed in reverse order:
-       weak_factory_ destroyed first → all WeakPtrs invalidated  ← the gate fires here
-       buf_        destroyed after
+GoodController 析构:
+  ① 析构函数体执行(此时所有成员还活着,WeakPtr 仍有效)
+  ② 成员按逆序析构:
+       weak_factory_ 先析构 → 所有 WeakPtr 失效  ← 守门发生在这里
+       buf_        后析构
 ```
 
 In other words, during ①, while the destructor body is executing, the WeakPtrs are still valid. That actually matches intuition — inside the destructor body you often still want to reference the object's other members (to notify observers "I'm on my way out", say), and having WeakPtrs valid at that point is convenient. The real invalidation happens after ② begins member destruction, and its purpose is precisely to ensure that any later deref can never touch a half-destroyed member. Chromium's source comments do not spell this boundary out; we derived it ourselves while reading the code. Note it down, so that you don't someday misjudge by assuming "the moment an object enters destruction, its WeakPtrs immediately go invalid".
@@ -226,26 +226,26 @@ public:
 
     ~Controller() = default;
 private:
-    std::vector<int> buf_;                                  // declared first
-    WeakPtrFactory<Controller> weak_factory_{this};         // the last member!
+    std::vector<int> buf_;                                  // 先声明
+    WeakPtrFactory<Controller> weak_factory_{this};         // 最后成员!
 };
 
 int main() {
     using namespace tamcpp::chrome;
-    WeakPtr<Controller> wp;                                 // declared first, filled in shortly
+    WeakPtr<Controller> wp;                                 // 先声明,待会儿填
 
     {
         Controller c;
         wp = c.get_weak();
         std::cout << (wp ? "alive" : "dead") << '\n';       // alive
         if (wp) wp->on_work_done(7);                        // got 7, buf size=1
-    }   // c leaves scope: weak_factory_ destroyed first → wp invalidated → only then is buf_ destroyed
+    }   // c 离开作用域:weak_factory_ 先析构 → wp 失效 → buf_ 才析构
 
     std::cout << (wp ? "alive" : "dead") << '\n';           // dead
     if (wp) {
-        wp->on_work_done(8);                                // never gets in here
+        wp->on_work_done(8);                                // 不会进这里
     } else {
-        std::cout << "controller gone, skip\n";             // this branch runs
+        std::cout << "controller gone, skip\n";             // 走这条
     }
     return 0;
 }

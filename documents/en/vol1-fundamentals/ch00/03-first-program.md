@@ -21,10 +21,10 @@ tags:
 title: Your First C++ Program
 translation:
   source: documents/vol1-fundamentals/ch00/03-first-program.md
-  source_hash: a395f151f4ea391d10b36b3582cebb56f0461503c70d151f18e7eb63bd334d80
-  translated_at: '2026-09-25T09:46:58+00:00'
-  engine: anthropic
-  token_count: 10550
+  source_hash: 2363e86a0046b5479c080f25cdf5e3d6078eebe19e20515b0bf416e9dda70feb
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 12552
 ---
 # Your First C++ Program
 
@@ -157,7 +157,7 @@ Remove the semicolon from `hello.cpp`:
 
 int main()
 {
-    std::cout << "Hello, C++!" << std::endl  // missing semicolon here
+    std::cout << "Hello, C++!" << std::endl  // 这里少了分号
     return 0;
 }
 ```
@@ -171,7 +171,7 @@ g++ -std=c++17 -Wall -Wextra hello.cpp -o hello
 ```text
 hello.cpp: In function 'int main()':
 hello.cpp:5:44: error: expected ';' before 'return'
-    5 |     std::cout << "Hello, C++!" << std::endl  // missing semicolon here
+    5 |     std::cout << "Hello, C++!" << std::endl  // 这里少了分号
       |                                            ^
       |                                            ;
     6 |     return 0;
@@ -273,7 +273,7 @@ Start with the problem it solves. In C projects, name collisions are a chronic p
 Definitions use the `namespace` keyword; let's use a sensor module as the example:
 
 ```cpp
-// sensor.hpp — declarations
+// sensor.hpp —— 声明
 namespace sensor {
     const int MAX_READINGS = 100;
 
@@ -286,17 +286,17 @@ namespace sensor {
     Reading get_reading();
 }
 
-// sensor.cpp — the implementation goes back into the same namespace; the compiler merges the two automatically
+// sensor.cpp —— 实现放回同一个命名空间，编译器自动合并两处
 namespace sensor {
     void init()
     {
-        // initialize the sensor hardware
+        // 初始化传感器硬件
     }
 
     Reading get_reading()
     {
         Reading r{};
-        // read the sensor data
+        // 读取传感器数据
         return r;
     }
 }
@@ -307,15 +307,15 @@ One namespace can be spread across multiple files: declarations in the header, i
 ```cpp
 int main()
 {
-    // Style one: fully qualified names — more typing, but never ambiguous
+    // 姿势一：完全限定名——打字多，但绝不会歧义
     sensor::init();
     sensor::Reading data = sensor::get_reading();
 
-    // Style two: a using declaration — brings in only specific names
+    // 姿势二：using 声明——只引入特定的名字
     using sensor::Reading;
     Reading data2 = sensor::get_reading();
 
-    // Style three: a using directive — pours the whole namespace in
+    // 姿势三：using 指令——整个命名空间倒进来
     using namespace sensor;
     init();
     Reading data3 = get_reading();
@@ -340,11 +340,11 @@ namespace hardware {
     }
 }
 
-// Using it
+// 用起来
 hardware::gpio::set_mode(5, hardware::gpio::OUTPUT);
 hardware::uart::init(115200);
 
-// Too long? Give it an alias
+// 嫌长？起个别名
 namespace hw = hardware;
 hw::gpio::set_mode(5, hw::gpio::OUTPUT);
 ```
@@ -352,7 +352,7 @@ hw::gpio::set_mode(5, hw::gpio::OUTPUT);
 An alias is only visible in the current scope, so different functions can give the same namespace different short names without stepping on each other. C++17 also offers an even handier nesting syntax:
 
 ```cpp
-// Since C++17; equivalent to the two-level nesting above
+// C++17 起，等价于上面的两层嵌套
 namespace hardware::gpio {
     void set_mode(int pin, PinMode mode);
 }
@@ -368,7 +368,7 @@ namespace {
 
     void internal_helper()
     {
-        // internal helper; invisible to other translation units
+        // 内部辅助函数，别的翻译单元看不见
     }
 }
 ```
@@ -378,11 +378,11 @@ namespace {
 Finally, let's nail down `::` itself. Its semantics fit in one sentence: **take the name on the right from the scope on the left**. The left side can be a namespace (`math::PI`), a class (`UARTConfig::DEFAULT_BAUDRATE`, a static class member—see the chapter on classes), or even empty—`::value` means the `value` in the global scope, your appeal when a local variable shadows a same-named global:
 
 ```cpp
-int value = 100;  // global
+int value = 100;  // 全局
 
 void function()
 {
-    int value = 50;  // local; shadows the global value
+    int value = 50;  // 局部，遮蔽了全局的 value
     printf("Local: %d\n", value);     // 50
     printf("Global: %d\n", ::value);  // 100
 }

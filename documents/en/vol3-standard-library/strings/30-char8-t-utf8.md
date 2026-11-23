@@ -19,9 +19,9 @@ title: char8_t and UTF-8 Strings
 translation:
   source: documents/vol3-standard-library/strings/30-char8-t-utf8.md
   source_hash: f760ef1b86320bdcc9c9a2df93770803de55d842bdc6bc2180090a29649ddf21
-  translated_at: '2026-09-25T23:50:22+00:00'
-  engine: anthropic
-  token_count: 3400
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 4870
 ---
 # char8_t and UTF-8 Strings
 
@@ -51,10 +51,10 @@ When you hit these two pitfalls, how do you move C++17-era code over to C++20? A
 
 ```mermaid
 flowchart TD
-    Q["Need to pass it to a legacy const char* API?"] -- "Yes" --> OPT1{"Can you change compiler options?"}
-    OPT1 -- "Yes" --> A["-fno-char8_t / /Zc:char8_t-<br/>revert u8 back to char"]
-    OPT1 -- "No" --> B["Explicit byte-wise conversion<br/>reinterpret_cast to const char*"]
-    Q -- "No (new code)" --> C["std::u8string / u8string_view<br/>+ custom operator<<"]
+    Q["要传给 const char* 旧 API?"] -- "是" --> OPT1{"能改编译选项?"}
+    OPT1 -- "能" --> A["-fno-char8_t / /Zc:char8_t-<br/>让 u8 回退为 char"]
+    OPT1 -- "不能" --> B["显式逐字节转换<br/>reinterpret_cast 到 const char*"]
+    Q -- "否（新代码）" --> C["std::u8string / u8string_view<br/>+ 自定义 operator<<"]
 ```
 
 The least troublesome is the **compiler-flag fallback**: add `-fno-char8_t` on GCC/Clang or `/Zc:char8_t-` on MSVC, push the type of `u8` literals back to C++17's `char` semantics, and the old code compiles again right away. This is only a stopgap for the transition period — do not let new code lean on it long-term. Next comes **explicit byte-wise conversion**: when you genuinely must feed an interface that only understands `const char*`, and you know full well the content is UTF-8 bytes, use `reinterpret_cast<const char*>(u8"text")` (or a C-style cast) to switch the viewpoint — the byte content stays unchanged, only the pointer type is swapped, and pitfall one is sidestepped. The most "politically correct" option is the **`std::u8string` route**: hold UTF-8 text type-safely in `u8string`/`u8string_view`, and when it is time to print, write a tiny `operator<<` to convert on the way out — carrying type safety through to the very end.
@@ -74,20 +74,20 @@ The demo below puts the two pitfalls (we have "sealed" them inside comments — 
 #include <iostream>
 #include <string>
 
-// -- Pitfall 1 (uncommenting breaks the build): u8"" no longer implicitly converts to const char* --
+// —— 坑一（取消注释会编译失败）：u8"" 不再隐式转 const char* ——
 // const char* p = u8"text";   // ill-formed since C++20
 
-// -- Pitfall 2 (uncommenting breaks the build): ostream explicitly =deletes the char8_t overloads --
+// —— 坑二（取消注释会编译失败）：ostream 显式 =delete 了 char8_t 重载 ——
 // std::cout << u8"text";      // ill-formed since C++20
 // std::cout << u8'z';         // ill-formed since C++20
 
-// Correct approach 1: explicit byte-wise conversion (content unchanged, only the pointer type view switches)
+// 正确写法之一：显式逐字节转换（内容不变，仅切换指针类型视角）
 void print_as_char(const char* s)
 {
     std::cout << s << '\n';
 }
 
-// Correct approach 2: hold UTF-8 type-safely in std::u8string, with custom printing
+// 正确写法之二：用 std::u8string 类型安全地持有 UTF-8，并自定义打印
 std::ostream& operator<<(std::ostream& os, const std::u8string& s)
 {
     return os << reinterpret_cast<const char*>(s.data());
@@ -95,10 +95,10 @@ std::ostream& operator<<(std::ostream& os, const std::u8string& s)
 
 int main()
 {
-    // Route A: use the u8 literal as const char* (fits legacy interfaces that only accept narrow characters)
+    // 路线 A：把 u8 字面量当 const char* 用（适合喂给只认窄字符的旧接口）
     print_as_char(reinterpret_cast<const char*>(u8"text"));
 
-    // Route B: keep the UTF-8 type as u8string all the way, convert only when printing
+    // 路线 B：u8string 全程保持 UTF-8 类型，打印时再转
     std::u8string u8s = u8"UTF-8 text";
     std::cout << u8s << '\n';
     return 0;

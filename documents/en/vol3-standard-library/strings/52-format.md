@@ -27,9 +27,9 @@ title: 'format: Type-Safe Formatting in C++20'
 translation:
   source: documents/vol3-standard-library/strings/52-format.md
   source_hash: 79e59ca94b1cf62b33e51126f6e588bfb8e207e667afbc13af17f4f4418b619a
-  translated_at: '2026-09-26T00:00:05+00:00'
-  engine: anthropic
-  token_count: 9800
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15657
 ---
 
 # format: Type-Safe Formatting in C++20
@@ -49,7 +49,7 @@ The first is type unsafety. Between `printf`'s format string (`%d` / `%s` / `%f`
 #include <cstdio>
 
 int main() {
-    // %s expects char*, but we pass an int — compiles fine, runtime UB
+    // %s 期望 char*，却传了 int —— 编译通过，运行期 UB
     std::printf("value = %s\n", 42);
     return 0;
 }
@@ -73,7 +73,7 @@ What's more, this `-Wformat` reminder **only fires for string literals**. Once t
 
 int main(int argc, char**) {
     std::string fmt = (argc > 0) ? "value = %s\n" : "value = %d\n";
-    std::printf(fmt.c_str(), 42);   // still UB, and this time not even a warning
+    std::printf(fmt.c_str(), 42);   // 同样是 UB，这次连 warning 都没有
     return 0;
 }
 ```
@@ -150,11 +150,11 @@ std::cout << std::format("[{:*^10}]\n", "x");
 **Precision and type**: `.N` sets how many decimal places a floating-point value keeps, and type characters `b`/`o`/`x` set the base of an integer:
 
 ```cpp
-std::cout << std::format("{:.3f}\n", 3.14159);   // 3 decimal places for the float
-std::cout << std::format("{:b}\n", 42);          // binary
-std::cout << std::format("{:#x}\n", 255);        // hexadecimal with the 0x prefix
-std::cout << std::format("{:#o}\n", 8);          // octal with the 0 prefix
-std::cout << std::format("{:c}\n", 65);          // printed as a character
+std::cout << std::format("{:.3f}\n", 3.14159);   // 浮点保留 3 位
+std::cout << std::format("{:b}\n", 42);          // 二进制
+std::cout << std::format("{:#x}\n", 255);        // 带 0x 前缀的十六进制
+std::cout << std::format("{:#o}\n", 8);          // 带 0 前缀的八进制
+std::cout << std::format("{:c}\n", 65);          // 当字符输出
 ```
 
 ```text
@@ -168,8 +168,8 @@ A
 These specifiers also compose, in the order `fill align width .prec type`. Two common combos: left-aligned padded with `-`, and signed with zero padding:
 
 ```cpp
-std::cout << std::format("[{:-<8}]\n", 42);    // left-aligned, padded with '-'
-std::cout << std::format("[{:+08}]\n", 42);    // forced plus sign + zero padding
+std::cout << std::format("[{:-<8}]\n", 42);    // 左对齐，填 '-'
+std::cout << std::format("[{:+08}]\n", 42);    // 强制正号 + 零填充
 ```
 
 ```text
@@ -210,7 +210,7 @@ The error message looks frightening, but its meaning is crisp: the specifier `d`
 A wrong argument count fails the same way. Two placeholders, one argument:
 
 ```cpp
-std::cout << std::format("{} {}", 1);   // 2 placeholders, 1 argument
+std::cout << std::format("{} {}", 1);   // 2 个占位符，1 个参数
 ```
 
 ```text
@@ -227,17 +227,17 @@ Compilation fails again. The mechanism here deserves a closer look, because it e
 The first parameter of `std::format` is not a `const char*`; it is a `std::format_string<Args...>`. This type carries one key design decision: its constructor is `consteval`—which means **constructing it at all must be doable at compile time**.
 
 ```cpp
-// Roughly the idea (simplified pseudo-code, not the real standard library)
+// 大致是这个意思（简化伪码，不是标准库真身）
 template <typename... Args>
 struct basic_format_string {
     const char* str;
 
-    // consteval constructor: format-string parsing runs at compile time
+    // consteval 构造函数：编译期就跑格式串解析
     template <typename T>
     consteval basic_format_string(const T& s) : str{s} {
-        // Scan the format string at compile time; for each placeholder, check:
-        //  - Argument index out of range? Error.
-        //  - Is the specifier legal for this argument's type? If not, error.
+        // 编译期扫描格式串，对每个占位符校验：
+        //  - 参数下标越界？报错
+        //  - 格式说明对这个参数类型合法吗？不合法报错
         constant_expression_check(s, std::make_format_checker<Args...>());
     }
 };
@@ -250,7 +250,7 @@ The `consteval` construction of `format_string` dictates that the format string 
 
 ```cpp
 std::string runtime_fmt = read_from_config();
-std::format(runtime_fmt, 42);   // error: not a constant expression
+std::format(runtime_fmt, 42);   // error: 不是常量表达式
 ```
 
 A genuinely runtime format string has to take a different route (`std::vformat`, below), and that route **has no compile-time validation**—you are on your own to keep the types matching. This is a deliberate trade-off: the standard library builds the "fast and safe" everyday path with compile-time validation, and reserves a separate escape hatch for "I truly need a runtime string and accept the risk", so the former isn't dragged down by the latter.
@@ -269,7 +269,7 @@ When you really do read a format string from a config file or from user input, `
 int main() {
     std::string runtime_fmt = "x={}, y={}";
     int a = 1, b = 2;
-    // vformat: runtime format string + arguments packed by make_format_args; no compile-time validation
+    // vformat：运行期格式串 + make_format_args 打包的参数；没有编译期校验
     std::string s = std::vformat(runtime_fmt, std::make_format_args(a, b));
     std::cout << s << '\n';
     return 0;
@@ -322,7 +322,7 @@ If the destination is a fixed-size `char` array (common in embedded, when you wa
 int main() {
     char cbuf[8];
     auto res = std::format_to_n(cbuf, sizeof(cbuf) - 1, "long number {}", 123456789);
-    *res.out = '\0';   // res.out points at the end of the written output; append the '\0' by hand
+    *res.out = '\0';   // res.out 指向写入的末尾，手动补 '\0'
     std::cout << "cbuf = [" << cbuf << "]\n";
     std::cout << "total size = " << res.size
               << ", truncated = " << std::boolalpha
@@ -391,8 +391,8 @@ P2636 opened up "nested placeholders" in format specifiers: at the width and pre
 int main() {
     int width = 8;
     int prec = 2;
-    std::println("[{:>{}}]", 42, width);          // width comes from an argument
-    std::println("[{:.{}}]", 3.14159265, prec);    // precision comes from an argument
+    std::println("[{:>{}}]", 42, width);          // 宽度从参数取
+    std::println("[{:.{}}]", 3.14159265, prec);    // 精度从参数取
     return 0;
 }
 ```
@@ -413,7 +413,7 @@ In `{:>{}}`, the first `{}` is the placeholder proper and the second `{}` is the
 #include <print>
 
 int main() {
-    std::println("Hello {} = {}", "x", 42);   // newline included automatically
+    std::println("Hello {} = {}", "x", 42);   // 自动带换行
     std::print("[no newline]");
     return 0;
 }
@@ -447,15 +447,15 @@ struct Point {
     int y{};
 };
 
-// Give Point formatting support: specialize std::formatter<Point>
+// 给 Point 加格式化支持：特化 std::formatter<Point>
 template <>
 struct std::formatter<Point> {
-    // Parse the spec part between {} in the format string; we recognize none here, so accept as-is
+    // 解析格式串里 {} 之间的说明部分；这里不认任何说明，直接接受
     constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
 
-    // The real output: write the Point as "(x, y)"
+    // 真正输出：把 Point 写成 "(x, y)"
     auto format(const Point& p, std::format_context& ctx) const {
         return std::format_to(ctx.out(), "({}, {})", p.x, p.y);
     }

@@ -21,10 +21,10 @@ related:
   - 'One burst of bounce, two chains: polling debounce vs. the EXTI edge chain'
 translation:
   source: documents/vol8-domains/embedded/f103/03-uart/02-interrupt-ring-console.md
-  source_hash: 78d3196af56c51419a5fb46511a8a788b7396e508e75102ec60da18fa3a58ea9
-  translated_at: '2026-11-01T05:17:52+00:00'
-  engine: anthropic
-  token_count: 4800
+  source_hash: 1fd702443874cad26485151edda3890d0a893d330aa015feba2e99d4977309f2
+  translated_at: '2026-11-22T16:43:13+00:00'
+  engine: glm-5.3-refresh
+  token_count: 17209
 ---
 
 # The counterpart to blocking send/receive: the RXNE interrupt and the 64-byte ring buffer
@@ -180,7 +180,7 @@ The previous article's `run_command` was one if-chain answering in place, and fo
 ```cpp
 enum class ParseError { Unknown, MissingArg, BadNumber };
 
-// The error carries evidence: which word was not recognized / the name of the missing argument
+// 错误带证据: 哪个词不认识/缺的参数名
 struct CommandError {
     ParseError code;
     std::string_view token;
@@ -300,7 +300,7 @@ The lambda's parameter is auto, and `if constexpr` unrolls the seven command bra
 Example 08 also splits the answering into two channels; the comment at the top of `main.cpp` is a single line, and we bring it over as-is:
 
 ```cpp
-// Terminal mechanical actions (echo/prompt) go out as raw bytes; info lines all go through Log
+// 终端机械动作(回显/提示符)走裸字节, 信息行一律走 Log
 ```
 
 The terminal's mechanical actions (echo, the prompt) go out as `write_raw` bare bytes; info lines are invariably `Log::info`'s work. Why split them? Lay the two jobs side by side and it becomes clear. Echo has to match the typed character one for one, and speed is the only requirement. A Log line carries a Tag and a timestamp — an event record for humans to read — and travels through `UartLogSink<Serial>`'s `try_send`, the bounded-timeout route from the previous article, so the caller of a log line never hangs along with a dead line.

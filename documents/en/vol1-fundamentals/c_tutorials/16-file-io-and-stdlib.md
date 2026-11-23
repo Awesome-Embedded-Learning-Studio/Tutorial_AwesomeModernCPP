@@ -24,10 +24,10 @@ tags:
 title: File I/O and Standard Library Overview
 translation:
   source: documents/vol1-fundamentals/c_tutorials/16-file-io-and-stdlib.md
-  source_hash: 39c4341765fc67babac6c544ebcb84395a3dd9b635a2fc9e4b6e67a55e357c89
-  translated_at: '2026-09-25T13:40:45+00:00'
-  engine: anthropic
-  token_count: 7000
+  source_hash: 89f31506d42fb15de242d2806860d2956aa53d5f35a47ae5f5c1e4a27bfb21b4
+  translated_at: '2026-11-22T16:39:43+00:00'
+  engine: glm-5.3-refresh
+  token_count: 21186
 ---
 # File I/O and Standard Library Overview
 
@@ -49,7 +49,7 @@ int main(void) {
         perror("Failed to open data.txt");
         return EXIT_FAILURE;
     }
-    // ... read/write operations ...
+    // ... 读写操作 ...
     fclose(fp);
     return 0;
 }
@@ -79,10 +79,10 @@ typedef struct {
     uint32_t timestamp;
 } Record;
 
-// Write
+// 写入
 size_t written = fwrite(records, sizeof(Record), count, fp);
 
-// Read
+// 读取
 size_t count = fread(buffer, sizeof(Record), max_count, fp);
 ```
 
@@ -94,12 +94,12 @@ The return value is the number of **complete items** processed, not a byte count
 
 ```c
 long get_file_size(FILE* fp) {
-    // Save the position from before the call.
+    // 保存调用前的位置。
     long original = ftell(fp);
-    // Move the file position to the end of the file.
+    // 将文件位置移至文件末尾。
     fseek(fp, 0, SEEK_END);
     long size = ftell(fp);
-    // Restore the position from before the call.
+    // 恢复到调用前的位置。
     fseek(fp, original, SEEK_SET);
     return size;
 }
@@ -175,7 +175,7 @@ If you read a binary file in text mode on Windows, the read terminates early the
 FILE* fp = fopen("nonexistent.txt", "r");
 if (fp == NULL) {
     perror("fopen failed");
-    // Output: fopen failed: No such file or directory
+    // 输出：fopen failed: No such file or directory
 }
 ```
 
@@ -214,7 +214,7 @@ On GCC/Linux, linking against the math library requires the `-lm` option. If you
 ### `<assert.h>`: The assert Macro
 
 ```c
-assert(arr != NULL);   // Debug: terminates the program if the condition is false
+assert(arr != NULL);   // Debug: 条件为假时终止程序
 ```
 
 Once `NDEBUG` is defined, every assert is removed entirely. Use them to catch programming errors, not to handle runtime errors.
@@ -272,13 +272,13 @@ typedef struct {
     char value[MAX_VALUE];
 } ConfigEntry;
 
-/// @brief Strip leading and trailing whitespace from a string
+/// @brief 去除字符串首尾的空白字符
 char* trim(char* str);
 
-/// @brief Parse a configuration file
+/// @brief 解析配置文件
 size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries);
 
-/// @brief Look up a given key among the config entries
+/// @brief 在配置项中查找指定 key
 const char* find_config(const ConfigEntry* entries, size_t count, const char* key);
 
 int main(int argc, char* argv[]) {
@@ -286,7 +286,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Usage: %s <config_file>\n", argv[0]);
         return 1;
     }
-    // Exercise: call parse_config and find_config
+    // 练习： 调用 parse_config 和 find_config
     return 0;
 }
 ```
@@ -311,96 +311,96 @@ typedef struct {
     char key[MAX_KEY];
     char value[MAX_VALUE];
 } ConfigEntry;
-/// @brief Strip leading and trailing whitespace from a string
+/// @brief 去除字符串首尾的空白字符
 char* trim(char* str);
 
-/// @brief Parse a configuration file
+/// @brief 解析配置文件
 size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries);
 
-/// @brief Look up a given key among the config entries
+/// @brief 在配置项中查找指定 key
 const char* find_config(const ConfigEntry* entries, size_t count, const char* key);
 
 /**
- * @brief Strip leading and trailing whitespace from a string (modifies it in place, returns a pointer to the start of the result)
- * @param str the string to process (it will be modified)
- * @return char* pointer to the first character of the string after whitespace removal
+ * @brief 去除字符串首尾的空白字符（原地修改，返回指向处理结果的首地址）
+ * @param str 要处理的字符串（会被修改）
+ * @return char* 去除空白后字符串的首地址
  *
  */
 
 char* trim(char* str) {
-    char* end;  // pointer used to scan backward from the end of the string
+    char* end;  // 用于从字符串末尾向前扫描的指针
 
-    // Skip all whitespace at the start of the string (spaces, tabs, newlines, etc.)
+    // 跳过字符串开头的所有空白字符（空格、制表符、换行等）
     while (isspace((unsigned char)*str)) {
         ++str;
     }
 
-    // If the string has already ended after skipping the leading whitespace (the whole line was whitespace), return the empty string directly
+    // 若跳过开头空白后字符串已结束（整行都是空白），则直接返回空字符串
     if (*str == '\0') {
         return str;
     }
 
-    // end points at the position of the last character (skipping the trailing '\0')
+    // end 指向最后一个字符的位置（跳过末尾的 '\0'）
     end = str + strlen(str) - 1;
-    // Skip trailing whitespace from back to front until a valid character is found or we are back at the start of the string
+    // 从后向前跳过尾部空白字符，直到遇到有效字符或回到字符串开头
     while (end > str && isspace((unsigned char)*end)) {
         --end;
     }
-    // Write the terminator after the last valid character, cutting off the trailing whitespace
+    // 在最后一个有效字符之后写入结束符，截断尾部空白
     end[1] = '\0';
     return str;
 }
 
 /**
- * @brief Parse a configuration file (each line has the form key=value; lines starting with # are comments and are ignored)
- * @param path        path of the configuration file
- * @param entries     array that receives the parsed config entries
- * @param max_entries maximum number of entries the array can hold
- * @return number of parsed entries; PARSE_CONFIG_ERROR on error
+ * @brief 解析配置文件（每行格式：key=value，# 开头为注释会被忽略）
+ * @param path        配置文件路径
+ * @param entries     存放解析结果的配置项数组
+ * @param max_entries 数组最多能存放的配置项个数
+ * @return 解析出的配置项数量；发生错误时返回 PARSE_CONFIG_ERROR
  *
- * Processing logic:
- *   1. Validate the arguments;
- *   2. Open the file; on failure, print an error message and return PARSE_CONFIG_ERROR;
- *   3. Read line by line:
- *        - strip the comment part after the in-line '#';
- *        - trim leading and trailing whitespace with trim;
- *        - look for the '=' separator; skip the line if it is not found;
- *        - split at '=' into key and value, trimming each;
- *        - copy safely into the entries array with snprintf and count it; return an error once max_entries is exceeded.
+ * 处理逻辑：
+ *   1. 校验入参是否合法；
+ *   2. 打开文件，失败则打印错误信息并返回 PARSE_CONFIG_ERROR；
+ *   3. 逐行读取：
+ *        - 去掉行内 '#' 之后的注释部分；
+ *        - 用 trim 去掉首尾空白；
+ *        - 查找 '=' 分隔符，找不到则跳过该行；
+ *        - 以 '=' 为界拆分为 key 和 value，并分别 trim；
+ *        - 用 snprintf 安全复制进 entries 数组并计数；超过 max_entries 时返回错误。
  */
 size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
 {
-    FILE* file;                                 // file stream pointer
-    char line[MAX_LINE];                        // buffer for one line of text; its size is set by MAX_LINE
-    size_t count = 0;                           // number of config entries parsed so far
-    size_t line_number = 0;                     // current physical line number being read
+    FILE* file;                                 // 文件流指针
+    char line[MAX_LINE];                        // 读取单行文本的缓冲区，大小由 MAX_LINE 决定
+    size_t count = 0;                           // 已解析出的配置项数量
+    size_t line_number = 0;                     // 当前读取到的物理行号
 
-    // Argument validation: the path and the array must not be NULL, and the array capacity must be greater than 0.
+    // 参数校验：路径和数组不能为空，数组容量必须大于 0。
     if (path == NULL || entries == NULL || max_entries == 0) {
         return PARSE_CONFIG_ERROR;
     }
 
-    // Open the configuration file in read-only text mode
+    // 以只读文本模式打开配置文件
     file = fopen(path, "r");
-    // Open failed: print the system error message with perror.
+    // 打开失败：用 perror 打印系统错误信息。
     if (file == NULL) {
         perror(path);
         return PARSE_CONFIG_ERROR;
     }
 
-    // Read through the whole file: as soon as valid entries exceed the array capacity, report an error instead of silently dropping them.
+    // 读完整个文件：一旦有效配置项超过数组容量，就报告错误而不是静默丢弃。
     while (fgets(line, sizeof(line), file) != NULL) {
-        char* comment = strchr(line, '#');      // look for the '#' that starts a comment
-        char* equal;                            // pointer to the '=' separator
-        char* key;                              // points to the key part
-        char* value;                            // points to the value part
+        char* comment = strchr(line, '#');      // 查找注释起始字符 '#'
+        char* equal;                            // 指向 '=' 分隔符的指针
+        char* key;                              // 指向 key 部分
+        char* value;                            // 指向 value 部分
         int next_char;
         int key_length;
         int value_length;
 
         ++line_number;
 
-        // When the buffer is full, read one character ahead to tell "it fit exactly" from a genuinely over-long line
+        // 缓冲区已满时向前读取一个字符，区分“刚好装满”和真正的超长行
         if (strchr(line, '\n') == NULL) {
             next_char = fgetc(file);
             if (next_char != '\n' && next_char != EOF) {
@@ -414,31 +414,31 @@ size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
             }
         }
 
-        // If the line contains a '#', truncate there and ignore all comment content after it
+        // 若行内含有 '#'，则将其截断，忽略其后所有注释内容
         if (comment != NULL) {
             *comment = '\0';
         }
 
-        // Trim leading and trailing whitespace to get the candidate key string
+        // 去掉行首尾空白，得到 key 候选字符串
         key = trim(line);
-        // Empty after trimming means a blank line; skip it
+        // 去掉空白后为空行，跳过
         if (*key == '\0') {
             continue;
         }
 
-        // Look for the '=' separator
+        // 查找 '=' 分隔符
         equal = strchr(key, '=');
-        // No '=' means this is not a valid key=value line; skip it
+        // 找不到 '='，说明不是合法的 key=value 行，跳过
         if (equal == NULL) {
             continue;
         }
 
-        // Replace '=' with '\0' to cut the string at the separator, while keeping the original content after '=' intact
+        // 用 '\0' 替换 '='，把字符串在分隔符处切开，同时保留 '=' 之后的原始内容
         *equal = '\0';
-        // Handle the key (before '=') and the value (after '=') separately, trimming each
+        // 分别处理 key（'=' 之前）和 value（'=' 之后），各自去掉首尾空白
         key = trim(key);
         value = trim(equal + 1);
-        // An empty key after trimming means there is no valid key name; skip it
+        // key 去空白后为空，说明缺少有效键名，跳过
         if (*key == '\0') {
             continue;
         }
@@ -450,7 +450,7 @@ size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
             return PARSE_CONFIG_ERROR;
         }
 
-        // After copying, check the snprintf return values and reject any truncated key or value
+        // 复制后检查 snprintf 返回值，拒绝被截断的 key 或 value
         key_length = snprintf(entries[count].key, sizeof(entries[count].key), "%s", key);
         value_length = snprintf(entries[count].value, sizeof(entries[count].value), "%s", value);
         if (key_length < 0 || value_length < 0 ||
@@ -460,7 +460,7 @@ size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
             fclose(file);
             return PARSE_CONFIG_ERROR;
         }
-        ++count;    // increment the parsed count
+        ++count;    // 增加已解析数量
     }
 
     if (ferror(file)) {
@@ -477,55 +477,55 @@ size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
 }
 
 /**
- * @brief Look up a given key in the config entry array and return the corresponding value
- * @param entries the config entry array
- * @param count   number of valid elements in the array
- * @param key     the key name to look for
- * @return const char* pointer to the corresponding value when found; NULL when not found or on invalid arguments
+ * @brief 在配置项数组中查找指定 key，并返回对应的 value
+ * @param entries 配置项数组
+ * @param count   数组中的有效元素个数
+ * @param key     要查找的键名
+ * @return const char* 找到时返回对应 value 的指针；找不到或入参非法时返回 NULL
  */
 const char* find_config(const ConfigEntry* entries, size_t count, const char* key) {
-    size_t i;   // loop index
+    size_t i;   // 循环下标
 
-    // Argument validation: neither the array nor the lookup key may be NULL
+    // 参数校验：数组或查找键不能为空
     if (entries == NULL || key == NULL) {
         return NULL;
     }
 
-    // Walk every config entry, comparing key names with strcmp
+    // 遍历每个配置项，用 strcmp 比较键名
     for (i = 0; i < count; ++i) {
         if (strcmp(entries[i].key, key) == 0) {
-            return entries[i].value;   // matching key found; return a pointer to its value
+            return entries[i].value;   // 找到匹配的 key，返回其 value 指针
         }
     }
 
-    return NULL;    // finished the loop without a match; return NULL
+    return NULL;    // 遍历结束仍未找到，返回 NULL
 }
 
 /**
- * @brief Program entry point: read and parse the configuration file named on the command line, then print all config entries
- * @param argc number of command-line arguments (including the program name)
- * @param argv command-line argument array; argv[1] should be the configuration file path
- * @return int program exit code: 0 for success, 1 for a usage error, 2 for a configuration parse failure
+ * @brief 程序入口：读取命令行指定的配置文件并解析，然后打印所有配置项
+ * @param argc 命令行参数个数（含程序名）
+ * @param argv 命令行参数数组，argv[1] 应为配置文件路径
+ * @return int 程序退出码：0 表示成功，1 表示用法错误，2 表示配置解析失败
  */
 int main(int argc, char* argv[])
 {
-    ConfigEntry entries[32];    // the array holds at most 32 config entries
-    size_t count;               // number of entries actually parsed
-    size_t i;                   // loop index
+    ConfigEntry entries[32];    // 定义数组，最多存放 32 个配置项
+    size_t count;               // 实际解析出的配置项数量
+    size_t i;                   // 循环下标
 
-    // Check the argument count: it must be the program name plus the configuration file path.
+    // 检查参数个数：必须是程序名 + 配置文件路径。
     if (argc != 2) {
-        // Print a usage message to standard error and return a non-zero exit code
+        // 打印用法提示到标准错误输出，并返回非零退出码
         fprintf(stderr, "用法: %s <配置文件>\n", argv[0]);
         return 1;
     }
 
-    // Compute how many elements the array can hold, then call parse_config to parse the configuration file
+    // 计算数组能容纳的元素个数，并调用 parse_config 解析配置文件
     count = parse_config(argv[1], entries, sizeof(entries) / sizeof(entries[0]));
     if (count == PARSE_CONFIG_ERROR) {
         return 2;
     }
-    // Walk through and print every parsed entry (in key=value format)
+    // 遍历并打印所有解析出的配置项（key=value 格式）
     for (i = 0; i < count; ++i) {
         printf("%s=%s\n", entries[i].key, entries[i].value);
     }
@@ -588,19 +588,19 @@ Take the source and destination files from command-line arguments, support copyi
 
 #define BUFFER_SIZE 4096U
 
-/// @brief Copy a file
+/// @brief 复制文件
 int copy_file(const char* src_path, const char* dst_path)
 {
-    // Exercise: implement it
-    // 1. Open the source file with "rb" and the destination file with "wb"
-    // 2. Loop fread/fwrite
-    // 3. Use fseek/ftell to get the total size and print progress
-    // 4. Error handling: close in the reverse order of opening
+    // 练习： 实现
+    // 1. "rb" 打开源文件，"wb" 打开目标文件
+    // 2. 循环 fread/fwrite
+    // 3. 用 fseek/ftell 获取总大小，打印进度
+    // 4. 错误处理：先打开的后关闭
     return -1;
 }
 
 int main(int argc, char* argv[]) {
-    // Exercise: parse the command-line arguments and call copy_file
+    // 练习： 解析命令行参数，调用 copy_file
     return 0;
 }
 ```
@@ -617,7 +617,7 @@ int main(int argc, char* argv[]) {
 
 #define BUFFER_SIZE 4096U
 
-/* Check whether the two paths point to the same existing file, so that opening the destination does not truncate the source. */
+/* 检查两个路径是否指向同一个已有文件，避免目标文件打开时截断源文件。 */
 static int same_file(const char *src_path, const char *dst_path)
 {
     struct stat src_info;
@@ -635,20 +635,20 @@ static int same_file(const char *src_path, const char *dst_path)
     return 0;
 }
 
-/// @brief Copy a file
-/// @param src_path source file path
-/// @param dst_path destination file path
-/// @return 0 on success, -1 on failure
+/// @brief 复制文件
+/// @param src_path 源文件路径
+/// @param dst_path 目标文件路径
+/// @return 成功返回 0，失败返回 -1
 int copy_file(const char *src_path, const char *dst_path)
 {
-    FILE *src = NULL;                /* source file pointer, initialized to NULL */
-    FILE *dst = NULL;                /* destination file pointer, initialized to NULL */
-    unsigned char buffer[BUFFER_SIZE]; /* buffer for reading and writing data */
-    long total_size;                 /* total size of the source file (bytes) */
-    long copied_size = 0;            /* number of bytes copied so far */
-    int result = -1;                 /* function return value; failure by default */
-    int dst_opened = 0;              /* whether the destination file was ever opened successfully */
-    int progress_active = 0;         /* whether a progress line without a newline is currently on screen */
+    FILE *src = NULL;                /* 源文件指针，初始化为 NULL */
+    FILE *dst = NULL;                /* 目标文件指针，初始化为 NULL */
+    unsigned char buffer[BUFFER_SIZE]; /* 用于读写数据的缓冲区 */
+    long total_size;                 /* 源文件总大小（字节） */
+    long copied_size = 0;            /* 已复制的字节数 */
+    int result = -1;                 /* 函数返回值，默认失败 */
+    int dst_opened = 0;              /* 目标文件是否曾经成功打开 */
+    int progress_active = 0;         /* 当前是否有未换行的进度输出 */
 
     if (src_path == NULL || dst_path == NULL) {
         fprintf(stderr, "源文件和目标文件路径不能为空\n");
@@ -660,33 +660,33 @@ int copy_file(const char *src_path, const char *dst_path)
         return -1;
     }
 
-    /* Open the source file in read-only binary mode */
+    /* 以只读二进制模式打开源文件 */
     src = fopen(src_path, "rb");
     if (src == NULL) {
         fprintf(stderr, "无法打开源文件 '%s'\n", src_path);
-        goto cleanup;                /* skip the remaining steps; go straight to cleanup and return */
+        goto cleanup;                /* 跳过后续步骤，直接清理并返回 */
     }
 
-    /* Move the file pointer to the end of the file so we can read the size */
+    /* 将文件指针移动到文件末尾，以便获取文件大小 */
     if (fseek(src, 0, SEEK_END) != 0) {
         fprintf(stderr, "无法获取源文件大小 '%s'\n", src_path);
         goto cleanup;
     }
 
-    /* The current file pointer position is the file's total size */
+    /* 获取当前文件指针位置，即文件的总大小 */
     total_size = ftell(src);
     if (total_size < 0) {
         fprintf(stderr, "无法获取源文件大小 '%s'\n", src_path);
         goto cleanup;
     }
 
-    /* Move the file pointer back to the beginning of the file, ready to read the content */
+    /* 将文件指针重新移动到文件开头，准备读取内容 */
     if (fseek(src, 0, SEEK_SET) != 0) {
         fprintf(stderr, "无法定位源文件 '%s'\n", src_path);
         goto cleanup;
     }
 
-    /* Create/overwrite the destination file in write-only binary mode */
+    /* 以只写二进制模式创建/覆盖目标文件 */
     dst = fopen(dst_path, "wb");
     if (dst == NULL) {
         fprintf(stderr, "无法打开目标文件 '%s'\n", dst_path);
@@ -694,21 +694,21 @@ int copy_file(const char *src_path, const char *dst_path)
     }
     dst_opened = 1;
 
-    /* An empty source file (size 0) shows the 100% progress immediately */
+    /* 源文件为空（大小为 0）时直接显示 100% 进度 */
     if (total_size == 0) {
         printf("进度: 100%%\n");
     }
 
-    /* Loop: read the source file's content and write it to the destination file */
+    /* 循环读取源文件内容并写入目标文件 */
     while (1) {
-        /* Read at most one buffer's worth of bytes from the source file */
+        /* 从源文件读取最多一个缓冲区的字节 */
         size_t bytes_read = fread(buffer, 1, sizeof(buffer), src);
 
         if (bytes_read > 0) {
-            /* Write what was read into the destination file */
+            /* 将读取到的内容写入目标文件 */
             size_t bytes_written = fwrite(buffer, 1, bytes_read, dst);
 
-            /* A written byte count that does not match means the write failed */
+            /* 写入字节数不一致说明写入失败 */
             if (bytes_written != bytes_read) {
                 if (progress_active) {
                     putchar('\n');
@@ -719,7 +719,7 @@ int copy_file(const char *src_path, const char *dst_path)
                 goto cleanup;
             }
 
-            /* Accumulate the copied byte count, then compute and print the progress percentage */
+            /* 累加已复制的字节数，并计算并输出进度百分比 */
             copied_size += (long)bytes_written;
             if (total_size > 0) {
                 int percent = (int)(((long double)copied_size * 100.0L) /
@@ -727,15 +727,15 @@ int copy_file(const char *src_path, const char *dst_path)
                 if (percent > 100) {
                     percent = 100;
                 }
-                printf("\r进度: %d%%", percent);     /* \r moves the cursor back to the start of the line, overwriting the old progress */
-                fflush(stdout);                     /* force-flush the output buffer so the progress shows immediately */
+                printf("\r进度: %d%%", percent);     /* \r 表示回车回行首，覆盖旧进度 */
+                fflush(stdout);                     /* 强制刷新输出缓冲区，立即显示进度 */
                 progress_active = 1;
             }
         }
 
-        /* Fewer bytes read than the buffer size means the end of the file has been reached */
+        /* 如果读取字节数小于缓冲区大小，说明已到达文件末尾 */
         if (bytes_read < sizeof(buffer)) {
-            if (ferror(src)) {                      /* check whether the read failed */
+            if (ferror(src)) {                      /* 判断读取是否发生错误 */
                 if (progress_active) {
                     putchar('\n');
                     fflush(stdout);
@@ -744,23 +744,23 @@ int copy_file(const char *src_path, const char *dst_path)
                 fprintf(stderr, "读取源文件失败 '%s'\n", src_path);
                 goto cleanup;
             }
-            break;                                  /* end of file reached normally; end the loop */
+            break;                                  /* 正常到达文件末尾，结束循环 */
         }
     }
 
-    /* After the loop, show the 100% progress once more and end the line */
+    /* 循环结束后再次显示 100% 进度并换行 */
     if (total_size > 0) {
         printf("\r进度: 100%%\n");
         progress_active = 0;
     }
 
-    /* Close the destination file explicitly and check for errors */
+    /* 显式关闭目标文件，并检查是否出错 */
     if (fclose(dst) != 0) {
         dst = NULL;
         fprintf(stderr, "关闭目标文件失败 '%s'\n", dst_path);
         goto cleanup;
     }
-    dst = NULL;                                     /* closed successfully; set to NULL to prevent a double close */
+    dst = NULL;                                     /* 关闭成功，置空防止重复关闭 */
 
     if (fclose(src) != 0) {
         src = NULL;
@@ -769,14 +769,14 @@ int copy_file(const char *src_path, const char *dst_path)
     }
     src = NULL;
 
-    result = 0;                                     /* everything succeeded; mark success */
+    result = 0;                                     /* 全部操作成功，标记成功 */
 
 cleanup:
     if (progress_active) {
         putchar('\n');
         fflush(stdout);
     }
-    /* Unified cleanup: close any handle that is not NULL, avoiding resource leaks */
+    /* 统一清理：若句柄不为 NULL 则关闭，避免资源泄漏 */
     if (dst != NULL) {
         fclose(dst);
     }
@@ -790,23 +790,23 @@ cleanup:
     if (src != NULL) {
         fclose(src);
     }
-    return result;      /* return the result */
+    return result;      /* 返回结果 */
 }
 
 int main(int argc, char *argv[])
 {
-    /* Argument count check: program name + source file path + destination file path, 3 in total */
+    /* 参数个数校验：需要程序名 + 源文件路径 + 目标文件路径，共 3 个 */
     if (argc != 3) {
         fprintf(stderr, "用法: %s <源文件> <目标文件>\n", argv[0]);
         return EXIT_FAILURE;
     }
 
-    /* Call the copy function; a non-zero result means failure */
+    /* 调用复制函数，若非 0 说明失败 */
     if (copy_file(argv[1], argv[2]) != 0) {
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;    /* exit successfully */
+    return EXIT_SUCCESS;    /* 成功退出 */
 }
 ```
 
@@ -815,39 +815,39 @@ Compile and run:
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic file_copy.c -o file_copy
 
-# A. Basic function: copy + verify
-head -c 1048576 /dev/urandom > /tmp/src.bin     # 1MB of random binary data
-./file_copy /tmp/src.bin /tmp/dst.bin            # you should see the progress bar refresh in place with \r
+# A. 基础功能：拷贝 + 校验
+head -c 1048576 /dev/urandom > /tmp/src.bin     # 1MB 随机二进制
+./file_copy /tmp/src.bin /tmp/dst.bin            # 应看到进度条 \r 原地刷新
 cmp /tmp/src.bin /tmp/dst.bin && echo "OK 内容一致"
 
-# B. Empty file (size 0; should show 100%)
+# B. 空文件（大小 0，应显示 100%）
 : > /tmp/empty.bin
-./file_copy /tmp/empty.bin /tmp/e.bin; wc -c /tmp/e.bin   # the correct result is 0
+./file_copy /tmp/empty.bin /tmp/e.bin; wc -c /tmp/e.bin   # 正确为 0
 
-# C. Large file (watch the progress climb, ending at 100%)
-head -c 100000000 /dev/urandom > /tmp/big.bin    # 100MB; you can watch the percentage tick up
+# C. 大文件（观察进度递增，末尾 100%）
+head -c 100000000 /dev/urandom > /tmp/big.bin    # 100MB，能看到百分比跳动
 ./file_copy /tmp/big.bin /tmp/big_dst.bin
 
-# D. Error handling (each should print an error; the exit code is non-zero)
-./file_copy                                             # missing arguments → usage message
-./file_copy /tmp/src.bin /tmp/src.bin; echo $?           # same file → refused
-./file_copy /tmp/没有的文件 /tmp/x.bin; echo $?           # source missing → error
-./file_copy /tmp/src.bin /tmp/不存在目录/x.bin; echo $?   # destination not writable → error
+# D. 错误处理（每项应打印错误、退出码非 0）
+./file_copy                                             # 缺参数 → 用法提示
+./file_copy /tmp/src.bin /tmp/src.bin; echo $?           # 同文件 → 拒绝
+./file_copy /tmp/没有的文件 /tmp/x.bin; echo $?           # 源不存在 → 报错
+./file_copy /tmp/src.bin /tmp/不存在目录/x.bin; echo $?   # 目标不可写 → 报错
 
 ```
 
 Result (during a normal copy, `\r` keeps refreshing the progress in place on one line, so the terminal ultimately retains only `100%`):
 
 ```text
-# A. Copy src.bin → dst.bin; the progress bar keeps refreshing on the same line and finally rests at 100%
+# A. 拷贝 src.bin → dst.bin，进度条在同一行不断刷新，最终停在 100%
 进度: 100%
 OK 内容一致
 
-# B. Empty file: shows 100% immediately; the destination file's size is 0
+# B. 空文件：直接显示 100%，目标文件大小为 0
 进度: 100%
 0 /tmp/e.bin
 
-# D. Error handling (each item prints one error line; every exit code is non-zero)
+# D. 错误处理（每项打印一行错误，退出码均为非 0）
 用法: ./file_copy <源文件> <目标文件>
 源文件和目标文件不能是同一个文件: '/tmp/src.bin'
 无法打开源文件 '/tmp/没有的文件'

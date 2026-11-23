@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/08-gpio-template.md
   source_hash: c269a410ccddbff041863477e6262d47344add27d216802d3665c3328aa529ab
-  translated_at: '2026-09-27T05:55:03+00:00'
-  engine: anthropic
-  token_count: 2700
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 10593
 ---
 
 # Putting configuration into types: the Gpio template and compile-time verification
@@ -55,7 +55,7 @@ template <GpioPort PORT, uint16_t MASK,
           gpio::GpioDirection DIRECTION,
           gpio::GpioPull PULL = gpio::GpioPull::NoPull>
 struct Gpio {
-    static inline GPIO_TypeDef* const port = /* the cast from the previous section */;
+    static inline GPIO_TypeDef* const port = /* 上节那个转型 */;
     static constexpr auto mask  = MASK;
     static constexpr auto direction = DIRECTION;
     static constexpr uint8_t pin = std::countr_zero(MASK);  // C++20 <bit>
@@ -142,7 +142,7 @@ struct LED {
         if constexpr (POLARITY == gpio::GpioPolarity::ActiveHigh) { Pin::set(); }
         else { Pin::reset(); }
     }
-    // off() is symmetric; the polarity picks the other way
+    // off() 对称;极性反过来选
     static void toggle() { Pin::toggle(); }  // Take it easy :)
 };
 ```
@@ -152,7 +152,7 @@ Now we run an experiment that piece 06 would not have dared to imagine: delibera
 ```cpp
 using BadPin = estdx::stm32f1::Gpio<estdx::stm32f1::GpioPort::C, GPIO_PIN_13,
                                     estdx::gpio::GpioDirection::Input>;
-using Led = estdx::device::LED<BadPin>;   // ← an input pin lighting the LED?
+using Led = estdx::device::LED<BadPin>;   // ← 输入脚点灯?
 ```
 
 We save those lines as `/tmp/concept_fail.cpp`, give `arm-none-eabi-g++` one pass over them, and the compiler throws an error on the spot. Here is the genuinely-run error text for you (excerpted from arm-none-eabi-g++ 16.2):
@@ -181,12 +181,12 @@ Now look at `LED`'s second template parameter, `POLARITY`: the default is `Activ
 The firmware we actually ran is `examples/03_led` (the whole of it is just the `LedPin` and `Led` from above, plus the standard clock configuration); built with `-O3` it comes out at 3476 bytes of text, against the bare-register version's 2380. Next, let us see what `LedPin::init()` inside `main` expanded into (a real excerpt from `arm-none-eabi-objdump -d`):
 
 ```text
-8000154: ldr   r3, [pc, #80]    @ 0x40021000  ← RCC base address lands in the literal pool
+8000154: ldr   r3, [pc, #80]    @ 0x40021000  ← RCC 基地址进了字面量池
 8000158: ldr   r2, [r3, #24]                   ← APB2ENR
 800015c: orr.w r2, r2, #16                     ← |= IOPCEN
 8000160: str   r2, [r3, #24]
-8000162: ldr   r3, [r3, #24]                   ← tmpreg dummy read (the subtlety from piece 03)
-        ...  filling in the on-stack GPIO_InitTypeDef ...
+8000162: ldr   r3, [r3, #24]                   ← tmpreg 假读(03 篇讲过的讲究)
+        ...  填栈上的 GPIO_InitTypeDef ...
 800017a: bl    HAL_GPIO_Init
 ```
 

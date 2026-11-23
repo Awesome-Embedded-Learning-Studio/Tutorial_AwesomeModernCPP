@@ -10,9 +10,10 @@ description: "A member function and a free function taking the object pointer co
 reading_time_minutes: 7
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/05-classes-in-assembly/01-this-pointer-and-member-offsets.md
-  source_hash: 6232167ce53378d67f452b4747e103bf1d1c0ec39f3596e8b56a11ce600c6500
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: e9f20e9825383c40873cfec80d80dabdbdedc9263e97403c23ec3b6686f4da71
+  translated_at: '2026-11-22T16:44:07Z'
+  engine: glm-5.3-refresh
+  token_count: 6991
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -51,7 +52,7 @@ The machine is x86-64, and the calling convention carries over from 03: System V
 We start from the smallest possible class. `Point` carries two ints and a member function `translate`, and next to it we write a free function `point_translate` that looks deliberately staged: its parameter list spells the object pointer out as the first argument, and its body mirrors `translate` statement for statement. The two do the same job, so the question we ask next is whether the compiler turned them into the same thing:
 
 ```cpp
-// e1.cc -- member function vs free function; this is the first argument
+// e1.cc —— 成员函数 vs 自由函数，this 就是第一个参数
 #include <cstdio>
 
 struct Point {
@@ -64,8 +65,7 @@ struct Point {
     }
 };
 
-// The free function matching translate parameter for parameter:
-// the object address is explicitly the first argument
+// 与 translate 逐参数对应的自由函数：对象地址显式做第一个参数
 void point_translate(Point* p, int dx, int dy) {
     p->x += dx;
     p->y += dy;
@@ -77,7 +77,7 @@ int main() {
     p.translate(3, 4);
     point_translate(&p, 5, 6);
 
-    volatile int sink = p.x + p.y;  // consume the object state so the optimizer can't drop it
+    volatile int sink = p.x + p.y;  // 消费对象状态，防优化
     (void)sink;
 
     std::printf("p.x=%d p.y=%d\n", p.x, p.y);
@@ -103,21 +103,21 @@ _ZN5Point9translateEii:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
-	movq	%rdi, -8(%rbp)       # this, from rdi, lands on the stack
-	movl	%esi, -12(%rbp)      # dx, from rsi, lands on the stack
-	movl	%edx, -16(%rbp)      # dy, from rdx, lands on the stack
+	movq	%rdi, -8(%rbp)       # rdi 里的 this 落栈
+	movl	%esi, -12(%rbp)      # rsi 里的 dx 落栈
+	movl	%edx, -16(%rbp)      # rdx 里的 dy 落栈
 	movq	-8(%rbp), %rax
-	movl	(%rax), %edx         # x is at this+0
+	movl	(%rax), %edx         # x 在 this+0
 	movl	-12(%rbp), %eax
 	addl	%eax, %edx
 	movq	-8(%rbp), %rax
-	movl	%edx, (%rax)         # x += dx written back to this+0
+	movl	%edx, (%rax)         # x += dx 写回 this+0
 	movq	-8(%rbp), %rax
-	movl	4(%rax), %edx        # y is at this+4
+	movl	4(%rax), %edx        # y 在 this+4
 	movl	-16(%rbp), %eax
 	addl	%eax, %edx
 	movq	-8(%rbp), %rax
-	movl	%edx, 4(%rax)        # y += dy written back to this+4
+	movl	%edx, 4(%rax)        # y += dy 写回 this+4
 	nop
 	popq	%rbp
 	.cfi_def_cfa 7, 8
@@ -130,7 +130,7 @@ The three stores at the top put the answer straight on the table. `movq %rdi, -8
 The call sites run on the same order. Here are the instructions for the two calls in `main` (the argument setup for printf and the stack protector are elided; the full text sits at lines 76 through 120 of `e1.s`):
 
 ```asm
-	leaq	-16(%rbp), %rax      # &p into %rax; p lives at rbp-16
+	leaq	-16(%rbp), %rax      # &p 进 %rax，p 在 rbp-16
 	movl	$4, %edx             # dy = 4   → rdx
 	movl	$3, %esi             # dx = 3   → rsi
 	movq	%rax, %rdi           # this=&p  → rdi
@@ -196,7 +196,7 @@ The real differences are 2 lines: one function symbol name and the number of a G
 
 ```text
 $ diff -u e1.member.norm e1.free.norm
-(no output)
+(无输出)
 ```
 
 diff printed not one line, and the exit code is a clean 0. This is the quietest piece of evidence in the whole article: on this build of the compiler, "a member function is an ordinary function that took this" has left the territory of rhetoric, and a single diff command verifies it mechanically. If you want to check it yourself, save the two listings above into files, replace the symbols, and diff again; what you get is the same silence.

@@ -10,9 +10,10 @@ description: "A std::pair<int, int> return draws a single rax, the counting expe
 reading_time_minutes: 15
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/08-return-value-journey/04-multivalue-return-and-channel-recap.md
-  source_hash: a9d0bcc6526b663aeffed59f1f26803010d666688b987c3073bff9a4883ee66c
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 0374ce0c7e8693d50858d0453ba0ae05b867974e4cbee0188d281dc1e4c81bf2
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8320
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,15 +29,15 @@ The previous piece finished the chase after copy elision; this one returns to th
 C++ has no syntax for returning several values, so the habit is to pack two results into a std::pair. In the ABI's eyes a pair is just an ordinary struct, and it lands in the same classification, so this stretch of the piece doubles as a review of the routing criteria. Our opening prediction went like this: a pair has two members, so its return should travel in rax plus rdx. The measurement beat us.
 
 ```cpp
-// Return-register packing of a std::pair<int,int> (8 bytes, trivially copyable) + receiving it with a structured binding
+// std::pair<int,int>(8 字节,平凡可拷贝)的返回寄存器打包 + 结构化绑定接收
 #include <utility>
 
 std::pair<int, int> make_ipair(int a, int b) __attribute__((noinline));
 std::pair<int, int> make_ipair(int a, int b) { return {a, b}; }
 
 int main() {
-    auto [x, y] = make_ipair(3, 4);        // structured binding reception
-    volatile int sink = x + y;             // consume, so nothing is deleted
+    auto [x, y] = make_ipair(3, 4);        // 结构化绑定接收
+    volatile int sink = x + y;             // 消费,防删
     return sink == 7 ? 0 : 1;
 }
 ```
@@ -58,8 +59,8 @@ _Z10make_ipairii:
 	movq	%rcx, %rsi
 	movq	%rax, %rdi
 	call	_ZNSt4pairIiiEC1IRiS2_EEOT_OT0_
-	movq	-16(%rbp), %rax        ; the whole pair loaded into rax in one go
-	movq	-8(%rbp), %rdx         ; (stack protector canary, unrelated to the return)
+	movq	-16(%rbp), %rax        ; 整个 pair 一次装进 rax
+	movq	-8(%rbp), %rdx         ; (栈保护 canary,与返回无关)
 	subq	%fs:40, %rdx
 	je	.L3
 	call	__stack_chk_fail@PLT
@@ -86,19 +87,19 @@ On the main side the reception uses a structured binding, a C++17 spelling: `aut
 	movl	$4, %esi
 	movl	$3, %edi
 	call	_Z10make_ipairii
-	movq	%rax, -16(%rbp)       ; the hidden variable lands in one move, no second transfer
+	movq	%rax, -16(%rbp)       ; 隐藏变量一次落地,无第二笔搬运
 	leaq	-16(%rbp), %rax
 	movq	%rax, %rdi
 	call	_ZSt3getILm0EiiEONSt13tuple_elementIXT_ESt4pairIT0_T1_EE4typeEOS4_
-	movq	%rax, -32(%rbp)       ; std::get<0> returns the member's address (a reference)
+	movq	%rax, -32(%rbp)       ; std::get<0> 返回成员地址(引用)
 	leaq	-16(%rbp), %rax
 	movq	%rax, %rdi
 	call	_ZSt3getILm1EiiEONSt13tuple_elementIXT_ESt4pairIT0_T1_EE4typeEOS4_
 	movq	%rax, -24(%rbp)
 	movq	-32(%rbp), %rax
-	movl	(%rax), %edx          ; x read through the address
+	movl	(%rax), %edx          ; x 经地址读
 	movq	-24(%rbp), %rax
-	movl	(%rax), %eax          ; y read through the address
+	movl	(%rax), %eax          ; y 经地址读
 	addl	%edx, %eax
 	movl	%eax, -36(%rbp)
 ```
@@ -110,7 +111,7 @@ The first move, `movq %rax, -16(%rbp)`, lands the hidden variable in one shot; t
 For the counting experiment we swap the members for a Counter that keeps a tally, and count from inside the function all the way out to the binding reception:
 
 ```cpp
-// Copy counting at the structured-binding reception (semantic evidence)
+// 结构化绑定接收处的拷贝计数(语义证据)
 #include <utility>
 #include <cstdio>
 
@@ -128,8 +129,8 @@ CPair make_cpair(int a, int b) __attribute__((noinline));
 CPair make_cpair(int a, int b) { return {Counter{a}, Counter{b}}; }
 
 int main() {
-    auto [x, y] = make_cpair(1, 2);   // hidden variable + x/y bound to the members by reference
-    volatile int sink = x.v + y.v;    // read members only, no copies
+    auto [x, y] = make_cpair(1, 2);   // 隐藏变量 + x/y 按引用绑定到成员
+    volatile int sink = x.v + y.v;    // 只读成员,不拷贝
     std::printf("member-copies = %ld, x = %d, y = %d\n", Counter::copies, x.v, y.v);
     return sink == 3 ? 0 : 1;
 }
@@ -147,7 +148,7 @@ member-copies = 2, x = 1, y = 2
 $ g++ -std=c++14 -O0 -fno-elide-constructors r6b_binding.cpp -o r6b_cpp14_O0_noelide && ./r6b_cpp14_O0_noelide
 r6b_binding.cpp: In function ‘int main()’:
 r6b_binding.cpp:20:10: warning: structured bindings only available with ‘-std=c++17’ or ‘-std=gnu++17’ [-Wc++17-extensions]
-   20 |     auto [x, y] = make_cpair(1, 2);   // hidden variable + x/y bound to the members by reference
+   20 |     auto [x, y] = make_cpair(1, 2);   // 隐藏变量 + x/y 按引用绑定到成员
       |          ^
 member-copies = 4, x = 1, y = 2
 ```
@@ -170,7 +171,7 @@ $ objdump -d r6b_O0 | grep -B4 'call.*_ZN7CounterC1ERKS_'
 
 $ nm r6b_O0 | grep -E 'CounterC1ERKS_|St4pair.*C[12]'
 000000000000127c W _ZN7CounterC1ERKS_
-000000000000131e W _ZNSt4pairI7CounterS0_EC1IS0_S0_EEOT_OT0_   <- start address of the pair forwarding constructor, 0x131e
+000000000000131e W _ZNSt4pairI7CounterS0_EC1IS0_S0_EEOT_OT0_   <- pair 转发构造函数起址 0x131e
 
 $ objdump -d r6b_O0 | awk '/<_Z11make_cpairii>:/,/^$/' | grep -c 'CounterC1ERKS_'
 0
@@ -184,12 +185,12 @@ Next comes a comparison on the same baseline: swap main in r6b for the two stret
 
 ```cpp
     long before = Counter::copies;
-    auto [x, y] = make_cpair(1, 2);              // structured binding reception
+    auto [x, y] = make_cpair(1, 2);              // 结构化绑定接收
     volatile int s1 = x.v + y.v;
     std::printf("binding   reception: +%ld\n", Counter::copies - before);
 
     before = Counter::copies;
-    CPair p = make_cpair(3, 4);                  // named variable reception
+    CPair p = make_cpair(3, 4);                  // 具名变量接收
     volatile int s2 = p.first.v + p.second.v;
     std::printf("namedvar reception: +%ld\n", Counter::copies - before);
 ```
@@ -197,13 +198,13 @@ Next comes a comparison on the same baseline: swap main in r6b for the two stret
 The three configurations correspond to ./r6c_O0, ./r6c_O0_noelide, and ./r6c_O2 in the output; here is what we saw:
 
 ```text
-== -O0 default ==        ./r6c_O0
+== -O0 默认 ==        ./r6c_O0
 binding   reception: +2
 namedvar reception: +2
 == -O0 -fno-elide ==  ./r6c_O0_noelide
 binding   reception: +2
 namedvar reception: +2
-== -O2 default ==        ./r6c_O2
+== -O2 默认 ==        ./r6c_O2
 binding   reception: +2
 namedvar reception: +2
 (exit=0)

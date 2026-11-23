@@ -22,9 +22,9 @@ related:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/07-microbenchmarks-that-lie/01-compiler-ate-your-benchmark.md
   source_hash: 11bde6f0c4f193da49fb17e3e020d8ccaab6217ec2bf80963e26efc0b062a334
-  translated_at: '2026-09-26T16:29:48+00:00'
-  engine: anthropic
-  token_count: 5700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6169
 ---
 
 # The Compiler Lied to You: The #1 Microbenchmark Lie
@@ -51,7 +51,7 @@ static long heavy_sum(long n) {
 }
 
 int main() {
-    const long N = 1'000'000'000L;  // 1 billion
+    const long N = 1'000'000'000L;  // 10 亿次
     auto t0 = std::chrono::steady_clock::now();
     long s = heavy_sum(N);
     auto t1 = std::chrono::steady_clock::now();
@@ -95,7 +95,7 @@ We can verify this in the assembly. `objdump` the symbol tables of both binaries
 $ objdump -t opt_away_O0 | grep heavy_sum
 0000000000000000 l    F .text  00000000000000xx  heavy_sum(long)
 $ objdump -t opt_away_O2 | grep heavy_sum
-# (empty)
+# (空)
 ```
 
 At `-O0`, `heavy_sum` is a standalone function symbol; at `-O2` the symbol **is gone entirely** — it got inlined into `main`, the loop body was constant-folded away, and even the function itself disappeared. Now count the conditional jump instructions in both binaries (`jne`/`je`/`jmp` and the like — the things a loop can't live without):
@@ -117,7 +117,7 @@ The most common one: **the loop's result is never really consumed**. Change `hea
 
 ```cpp
 long s = heavy_sum(N);
-// s never appears again
+// s 后面再没出现过
 ```
 
 This time `N` could just as well be read in at runtime; the compiler sees that nobody uses `s` and still kills the whole loop — it may not be able to substitute a formula, but delete it definitely will. Your benchmark reports zero nanoseconds; you think the function is fast, when in fact the function is gone.
@@ -157,7 +157,7 @@ static void BM_Sum(benchmark::State& state) {
     for (auto _ : state) {
         long acc = 0;
         for (long i = 0; i < N; ++i) acc += i;
-        benchmark::DoNotOptimize(acc);  // pin acc so the compiler can't eliminate it
+        benchmark::DoNotOptimize(acc);  // 钉住 acc，不让编译器消除
     }
 }
 BENCHMARK(BM_Sum)->Arg(1000000000);
@@ -169,7 +169,7 @@ Under the hood, `DoNotOptimize(a)` is an inline-assembly snippet with a special 
 Google Benchmark isn't installed on our machine, but the principle is easy to replicate. The snippet below uses a bit of inline assembly to mimic the core effect of `DoNotOptimize` — again, "trick the compiler into believing this value is used externally":
 
 ```cpp
-// Simplified DoNotOptimize: use asm to make the compiler think acc may be modified asynchronously
+// 简化版 DoNotOptimize：用 asm 让编译器以为 acc 可能被异步修改
 static inline void do_not_optimize(long& x) {
     asm volatile("" : "+r"(x) : :);
 }
@@ -186,9 +186,9 @@ The `"+r"(x)` constraint tells the compiler: this assembly snippet (empty as it 
 Sometimes pinning a single value isn't enough. If the loop writes to a chunk of memory, the compiler may merge, reorder, or even eliminate that entire block of writes, and pinning the final value won't stop it. That's when you flush the whole memory barrier:
 
 ```cpp
-// In Google Benchmark:
+// Google Benchmark 里：
 benchmark::ClobberMemory();
-// Equivalent hand-written version:
+// 等价的手写版本：
 asm volatile("" : : : "memory");
 ```
 

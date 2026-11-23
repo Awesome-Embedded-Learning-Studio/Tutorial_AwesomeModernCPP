@@ -19,10 +19,10 @@ tags:
 title: 'C++20-23 New Attributes: Performance-Oriented Compiler Hints'
 translation:
   source: documents/vol2-modern-features/ch07-attributes/02-modern-attributes.md
-  source_hash: 275036bd2d02fcf8e41a130e7bf4f7e98a6f0507ab0c8cf46e8a6522af7e6aae
-  translated_at: '2026-09-25T16:03:10+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: 325267ee423d3c7f98f7c801bc02728632702a36a09aebd7e11b7edc30574d53
+  translated_at: '2026-11-23T01:10:31+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10616
 ---
 # C++20-23 New Attributes: Performance-Oriented Compiler Hints
 
@@ -51,16 +51,16 @@ Modern CPUs all have dynamic branch predictors that guess which way a branch wil
 This pair of attributes can be placed in the branch body of an `if` statement, or on a `case` label of a `switch`:
 
 ```cpp
-// Placed in an if branch
+// 放在 if 分支中
 if (error == ErrorCode::Ok) [[likely]] {
-    // Normal path — very likely to execute
+    // 正常路径——大概率执行
     process_data();
 } else {
-    // Error path — rarely executes
+    // 错误路径——小概率执行
     handle_error();
 }
 
-// Placed on a switch case
+// 放在 switch case 上
 switch (status) {
     [[likely]] case Status::Running:
         run_task();
@@ -80,7 +80,7 @@ Watch the attribute placement: `[[likely]]` goes before the `{` of the branch bo
 Many articles will tell you "add `[[likely]]` and the compiler optimizes the code layout", but what exactly did it optimize? Talk is cheap; let's read the assembly directly. The following test was compiled with GCC 15 at `-O2 -std=c++20`:
 
 ```cpp
-// Without the hint
+// 不加提示
 int process_no_hint(int value) {
     if (value > 0) {
         return value * 2;
@@ -89,7 +89,7 @@ int process_no_hint(int value) {
     }
 }
 
-// With [[likely]]
+// 加 [[likely]]
 int process_likely(int value) {
     if (value > 0) [[likely]] {
         return value * 2;
@@ -127,12 +127,12 @@ Typical scenarios where it pays off include: error-check branches (normal path `
 Before `[[likely]]` existed, GCC/Clang used `__builtin_expect` for branch-prediction hints:
 
 ```cpp
-// Old way
+// 旧写法
 if (__builtin_expect(error == ErrorCode::Ok, 1)) {
     process_data();
 }
 
-// New way
+// 新写法
 if (error == ErrorCode::Ok) [[likely]] {
     process_data();
 }
@@ -150,30 +150,30 @@ The C++ standard requires every complete object to have a unique address, which 
 
 ```cpp
 struct Empty {
-    void foo() {}   // Only member functions, no data members
+    void foo() {}   // 只有成员函数，没有数据成员
 };
 
 struct Container {
-    // Common memory layout on x86-64:
-    // offset   0: e       (1 byte)
-    // offset 1~3: padding (3 bytes)
-    // offset 4~7: x       (4 bytes)
-    // Because int is 4 bytes, the compiler usually
-    // places it at an address that is a multiple of 4
+    // 在x86-64架构上常见内存布局为
+    // offset   0: e       (1 字节)
+    // offset 1~3: padding (3 字节)
+    // offset 4~7: x       (4 字节)
+    // 因为 int类型大小为4字节所以编译器通常
+    // 会将它放在4的倍数的内存地址
     Empty e;
     int x;
 };
 
 struct [[gnu::packed]] PackedContainer {
-    // offset   0: e       (1 byte)
-    // offset 1~4: x       (4 bytes)
+    // offset   0: e       (1 字节)
+    // offset 1~4: x       (4 字节)
     Empty e;
     int x;
 };
 
 static_assert(sizeof(Empty) == 1);
-static_assert(sizeof(Container) == 8); // Almost certainly has padding
-static_assert(sizeof(PackedContainer) == sizeof(int) + 1); // Tells the compiler not to add padding
+static_assert(sizeof(Container) == 8); // 大概率有padding
+static_assert(sizeof(PackedContainer) == sizeof(int) + 1); // 提示编译器不要添加padding
 ```
 
 For most applications, wasting 1 byte is nothing. But in generic programming, policy classes (allocators, mutex policies, and so on) are frequently empty classes. If several policy classes sit as members at the same time, each taking 1 byte, the total adds up before you notice. More critically, this makes `sizeof` come out different from what you'd expect, interfering with optimizations such as cache-line alignment.
@@ -185,12 +185,12 @@ The traditional solution is Empty Base Optimization (EBO)—hold the empty class
 ```cpp
 struct Empty {};
 
-// Traditional EBO: via inheritance
+// 传统 EBO：通过继承
 struct Container : private Empty {
     int x;
 };
 
-static_assert(sizeof(Container) == sizeof(int));  // Empty takes no space
+static_assert(sizeof(Container) == sizeof(int));  // Empty 不占空间
 ```
 
 But EBO has a few drawbacks: you can only inherit one empty base of the same type (you can't inherit two `Empty`s at once); inheritance is a very strong coupling relationship, and changing your inheritance structure just to save memory is unreasonable; and some coding standards forbid private inheritance.
@@ -205,11 +205,11 @@ struct Empty {
 };
 
 struct Container {
-    [[no_unique_address]] Empty e;   // If Empty is an empty class, e takes no space
+    [[no_unique_address]] Empty e;   // 如果 Empty 是空类，e 不占空间
     int x;
 };
 
-static_assert(sizeof(Container) == sizeof(int));  // e is optimized away
+static_assert(sizeof(Container) == sizeof(int));  // e 被优化掉了
 ```
 
 ### Application in Policy-Based Design
@@ -234,7 +234,7 @@ class ThreadSafeBuffer {
 public:
     void push(const T& item) {
         mutex_.lock();
-        // ... add the element
+        // ... 添加元素
         mutex_.unlock();
     }
 
@@ -245,11 +245,11 @@ private:
     std::size_t capacity_;
 };
 
-// Single-threaded version: NullMutex takes no space
+// 单线程版本：NullMutex 不占空间
 ThreadSafeBuffer<int> single_thread_buf;
 static_assert(sizeof(single_thread_buf) == sizeof(void*) + sizeof(std::size_t) * 2);
 
-// Multi-threaded version: std::mutex takes real space
+// 多线程版本：std::mutex 占实际空间
 ThreadSafeBuffer<int, StdMutex> multi_thread_buf;
 static_assert(sizeof(multi_thread_buf) == sizeof(std::mutex) + sizeof(void*) + sizeof(std::size_t) * 2);
 ```
@@ -268,7 +268,7 @@ struct A {
 };
 
 A a;
-// &a.e1 == &a.e2 can be true! (Not necessarily in GCC 15.2.1, but the first empty member may share an address with a later non-empty member)
+// &a.e1 == &a.e2 可能为 true！（GCC 15.2.1 中不一定，但第一个空成员可能与后续非空成员共享地址）
 ```
 
 > **Verified**: tested on GCC 15.2.1, multiple `[[no_unique_address]]` empty members do not necessarily share the same address, but the first empty member's address may be the same as a later non-empty member's. The `sizeof` savings are deterministic and significant.
@@ -279,7 +279,7 @@ If you need to take the addresses of these members or point references at them, 
 struct NotEmpty { int data; };
 
 struct Test {
-    [[no_unique_address]] NotEmpty e;   // e still occupies sizeof(int)
+    [[no_unique_address]] NotEmpty e;   // e 仍然占 sizeof(int)
     int x;
 };
 static_assert(sizeof(Test) == 2 * sizeof(int));
@@ -321,7 +321,7 @@ __assume(b != 0);
 // GCC
 if (b == 0) __builtin_unreachable();
 
-// The standard C++23 spelling
+// C++23 标准写法
 [[assume(b != 0)]];
 ```
 
@@ -335,7 +335,7 @@ void process_array(int* data, std::size_t size) {
     [[assume(size > 0)]];
 
     for (std::size_t i = 0; i < size; ++i) {
-        // The compiler can omit the null check and bounds check
+        // 编译器可以省略 null 检查和越界检查
         data[i] *= 2;
     }
 }
@@ -363,10 +363,10 @@ This means that if you write `vec.empty();` instead of `if (vec.empty())`, a C++
 ```cpp
 std::vector<int> vec = {1, 2, 3};
 
-// Before C++20: return value unchecked, passes silently
-vec.empty();  // Looks like it empties the container; actually does nothing
+// C++20 之前：不检查返回值，静默通过
+vec.empty();  // 看起来像是清空操作，实际上什么都没做
 
-// C++20: the compiler emits a nodiscard warning
+// C++20：编译器发出 nodiscard 警告
 vec.empty();  // warning: ignoring return value of 'empty()'
 ```
 
@@ -375,11 +375,11 @@ vec.empty();  // warning: ignoring return value of 'empty()'
 For library authors, `[[nodiscard("reason")]]` is extremely practical. The message can explain why the return value should not be ignored, and what the correct usage looks like:
 
 ```cpp
-// Tell callers why the return value must be checked
+// 告诉调用方为什么需要检查返回值
 [[nodiscard("Memory leak: returned pointer must be freed")]]
 void* allocate_buffer(std::size_t size);
 
-// Tell callers how to use it correctly
+// 告诉调用方应该怎么用
 [[nodiscard("Store the lock_guard to keep the mutex locked")]]
 std::unique_lock<std::mutex> acquire_lock();
 ```

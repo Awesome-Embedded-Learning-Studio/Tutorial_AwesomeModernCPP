@@ -18,10 +18,10 @@ tags:
 title: A Simple Guide to Cross-Compilation and CMake
 translation:
   source: documents/vol7-engineering/01-cross-compilation-and-cmake.md
-  source_hash: 54d9f8630c3c7dc6217f84ed43b542496cfffab006ac3c1f6435e540cfa0bb98
-  translated_at: '2026-09-27T02:28:15+00:00'
-  engine: anthropic
-  token_count: 2850
+  source_hash: 84a002ca0b920c03b74ee9b6ce4f54a33b6844bf467e78a65dc6806e7a5f0a58
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10373
 ---
 # A Modern Embedded C++ Tutorial: Cross-Compilation Fundamentals and Multi-Target Builds with CMake
 
@@ -63,7 +63,7 @@ In cross compilation we use the "target triplet" to describe the target platform
 
 ```cpp
 
-<arch>-<vendor>-<os>-<abi>
+<架构>-<厂商>-<操作系统>-<ABI>
 
 ```
 
@@ -146,24 +146,24 @@ Let's start with an example toolchain file for an ARM Cortex-M:
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-# Specify the cross compilers
+# 指定交叉编译器
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
 
-# Specify the toolchain utilities
+# 指定工具链程序
 set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
 set(CMAKE_OBJDUMP arm-none-eabi-objdump)
 set(CMAKE_SIZE arm-none-eabi-size)
 
-# Set compiler flags
+# 设置编译器标志
 set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16")
 set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-exceptions -fno-rtti")
 
-# Set linker flags
+# 设置链接器标志
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-specs=nosys.specs -Wl,--gc-sections")
 
-# Search path configuration
+# 搜索路径配置
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
@@ -200,27 +200,27 @@ For ARM devices running Linux (such as a Raspberry Pi), the toolchain file looks
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
-# Toolchain installation prefix
+# 工具链安装路径
 set(TOOLCHAIN_PREFIX /usr/aarch64-linux-gnu)
 
-# Compilers
+# 编译器
 set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
 
-# Sysroot settings (holds the target system's libraries and headers)
+# Sysroot设置(包含目标系统的库和头文件)
 set(CMAKE_SYSROOT ${TOOLCHAIN_PREFIX})
 set(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_PREFIX})
 
-# Compiler flags
+# 编译器标志
 set(CMAKE_C_FLAGS_INIT "-march=armv8-a")
 set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT}")
 
-# Search configuration
+# 搜索配置
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-# pkg-config configuration
+# pkg-config配置
 set(ENV{PKG_CONFIG_PATH} "")
 set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
 set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
@@ -235,15 +235,15 @@ Configure with a toolchain file like this:
 
 ```bash
 
-# Create the build directory
+# 创建构建目录
 mkdir build-arm && cd build-arm
 
-# Configure CMake with the toolchain file
+# 使用toolchain文件配置CMake
 cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/arm-none-eabi-toolchain.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       ..
 
-# Build
+# 构建
 cmake --build .
 
 ```
@@ -267,7 +267,7 @@ The simplest multi-target scheme is to create a separate build directory for eac
 
 ```bash
 
-# Project structure
+# 项目结构
 project/
 ├── src/
 ├── include/
@@ -288,19 +288,19 @@ An example build script:
 ```bash
 #!/bin/bash
 
-# Build the Cortex-M4 version
+# 构建Cortex-M4版本
 cmake -S . -B builds/cortex-m4 \
       -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake \
       -DCMAKE_BUILD_TYPE=Release
 cmake --build builds/cortex-m4
 
-# Build the Cortex-M7 version
+# 构建Cortex-M7版本
 cmake -S . -B builds/cortex-m7 \
       -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m7.cmake \
       -DCMAKE_BUILD_TYPE=Release
 cmake --build builds/cortex-m7
 
-# Build the host test version
+# 构建主机测试版本
 cmake -S . -B builds/host \
       -DCMAKE_BUILD_TYPE=Debug
 cmake --build builds/host
@@ -315,11 +315,11 @@ In CMakeLists.txt, we need conditional configuration based on the platform:
 cmake_minimum_required(VERSION 3.20)
 project(EmbeddedApp CXX C ASM)
 
-# Detect the target platform
+# 检测目标平台
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
     message(STATUS "Building for ARM architecture")
 
-    # ARM-specific configuration
+    # ARM特定配置
     add_compile_definitions(TARGET_ARM)
 
     if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
@@ -336,13 +336,13 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
     add_compile_definitions(TARGET_RISCV64)
 endif()
 
-# Add source files
+# 添加源文件
 set(COMMON_SOURCES
     src/main.cpp
     src/application.cpp
 )
 
-# Platform-specific source files
+# 平台特定源文件
 if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
     list(APPEND COMMON_SOURCES
         src/startup_arm.s
@@ -354,10 +354,10 @@ else()
     )
 endif()
 
-# Create the executable target
+# 创建可执行目标
 add_executable(app ${COMMON_SOURCES})
 
-# Platform-specific linker configuration
+# 平台特定链接配置
 if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
     target_link_options(app PRIVATE
         -T${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld
@@ -373,19 +373,19 @@ CMake's generator expressions offer a more flexible way to do conditional config
 
 ```cmake
 
-# Different compile options per configuration type
+# 根据配置类型设置不同的编译选项
 target_compile_options(app PRIVATE
     $<$<CONFIG:Debug>:-O0 -g3>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
 
-# Options depending on the compiler
+# 根据编译器类型设置选项
 target_compile_options(app PRIVATE
     $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
     $<$<CXX_COMPILER_ID:Clang>:-Weverything>
 )
 
-# Link libraries depending on the platform
+# 根据平台设置链接库
 target_link_libraries(app PRIVATE
     $<$<PLATFORM_ID:Linux>:pthread>
     $<$<PLATFORM_ID:Windows>:ws2_32>
@@ -399,13 +399,13 @@ In a multi-target project, a well-designed hardware abstraction layer matters a 
 
 ```cmake
 
-# Create the HAL interface library
+# 创建HAL接口库
 add_library(hal_interface INTERFACE)
 target_include_directories(hal_interface INTERFACE
     include/hal
 )
 
-# Create HAL implementations per platform
+# 为不同平台创建HAL实现
 if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
     add_library(hal_impl STATIC
         src/hal/gpio_stm32.cpp
@@ -422,7 +422,7 @@ endif()
 
 target_link_libraries(hal_impl PUBLIC hal_interface)
 
-# Link the application against the HAL
+# 应用程序链接HAL
 target_link_libraries(app PRIVATE hal_impl)
 
 ```
@@ -433,7 +433,7 @@ For different hardware variants of the same architecture, you can use CMake opti
 
 ```cmake
 
-# Define the hardware variant option
+# 定义硬件变体选项
 set(TARGET_BOARD "STM32F407_DISCOVERY" CACHE STRING "Target board")
 set_property(CACHE TARGET_BOARD PROPERTY STRINGS
     "STM32F407_DISCOVERY"
@@ -442,7 +442,7 @@ set_property(CACHE TARGET_BOARD PROPERTY STRINGS
     "CUSTOM_BOARD_V2"
 )
 
-# Configure per board
+# 根据板子配置
 if(TARGET_BOARD STREQUAL "STM32F407_DISCOVERY")
     set(MCU_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16")
     set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld")
@@ -455,7 +455,7 @@ elseif(TARGET_BOARD STREQUAL "STM32F429_DISCO")
 
 endif()
 
-# Apply the configuration
+# 应用配置
 add_compile_options(${MCU_FLAGS})
 target_link_options(app PRIVATE -T${LINKER_SCRIPT})
 

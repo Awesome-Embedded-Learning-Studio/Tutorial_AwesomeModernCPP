@@ -17,9 +17,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/vol1-fundamentals/ch08/04-abstract-classes.md
   source_hash: dfcb0eebe4c7a05db7c6b2153cad09b156e3ba16abd1d948e4793a1daa5f4390
-  translated_at: '2026-09-25T11:28:42+00:00'
-  engine: anthropic
-  token_count: 2450
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9273
 ---
 
 # Abstract Classes and Interfaces: Pin Down the "What", Leave the "How" Open
@@ -38,16 +38,16 @@ To turn a class into an "uninstantiable" abstract class, we only need to declare
 class Shape {
 public:
     virtual ~Shape() = default;
-    virtual double area() const = 0;       // pure virtual function
-    virtual const char* name() const = 0;   // pure virtual function
+    virtual double area() const = 0;       // 纯虚函数
+    virtual const char* name() const = 0;   // 纯虚函数
 };
 ```
 
 The `= 0` notation looks a bit odd, but its semantics are crystal clear: this function has no implementation in the base class, and derived classes **must** provide their own version. A class containing at least one pure virtual function is an **abstract class**, and the compiler stops us from creating its objects directly:
 
 ```cpp
-Shape s;            // Compile error! Cannot instantiate an abstract class
-Shape* p = nullptr; // OK, pointers and references are fine
+Shape s;            // 编译错误！不能实例化抽象类
+Shape* p = nullptr; // OK，指针和引用是可以的
 ```
 
 Manipulating derived class objects through pointers or references is perfectly fine—that is precisely the precondition for polymorphism to do its job. For a derived class to become a "concrete class" (one that can be instantiated), it must implement every pure virtual function of the base class, leaving none out:
@@ -69,7 +69,7 @@ public:
     const char* name() const override { return "Rectangle"; }
 };
 
-// Operate on everything uniformly through a base class reference
+// 通过基类引用统一操作
 void print_area(const Shape& shape) {
     std::cout << shape.name() << ": " << shape.area() << std::endl;
 }
@@ -120,7 +120,7 @@ public:
 If you have written Java or C#, you might find it strange: how come C++ does not even have an `interface` keyword? Indeed it does not, but C++'s abstract class mechanism fully covers the semantics of interfaces. The C++ community convention is this: when all of a class's member functions are pure virtual and it has no non-static data members, we call it an **interface class**.
 
 ```cpp
-// A standard C++ interface class
+// 标准的 C++ 接口类
 class ISerializable {
 public:
     virtual ~ISerializable() = default;
@@ -138,7 +138,7 @@ Whenever interface design comes up, we have to mention the **I in SOLID—the In
 Let's look at a counterexample. Suppose we define an "all-powerful" device interface that lumps connection management, data reading and writing, and serial-port configuration all together:
 
 ```cpp
-// Anti-pattern: a bloated "fat interface"
+// 反面教材：臃肿的"胖接口"
 class IDevice {
 public:
     virtual ~IDevice() = default;
@@ -189,10 +189,10 @@ That's right, you read that correctly. A pure virtual function declared `= 0` ca
 class Base {
 public:
     virtual ~Base() = default;
-    virtual void on_error(const std::string& msg) = 0;  // pure virtual function
+    virtual void on_error(const std::string& msg) = 0;  // 纯虚函数
 };
 
-// Default implementation of the pure virtual function — defined outside the class
+// 纯虚函数的默认实现——类外部定义
 void Base::on_error(const std::string& msg) {
     std::cerr << "[ERROR] " << msg << std::endl;
 }
@@ -204,8 +204,8 @@ This looks contradictory—if it is "pure virtual", how can it also have an impl
 class Derived : public Base {
 public:
     void on_error(const std::string& msg) override {
-        Base::on_error(msg);    // First reuse the base class default behavior
-        write_to_log_file(msg); // Then append our own handling
+        Base::on_error(msg);    // 先复用基类的默认行为
+        write_to_log_file(msg); // 再追加自己的处理
     }
 };
 ```
@@ -220,7 +220,7 @@ Now let's tie together everything we have learned and build a small but complete
 #include <iostream>
 #include <string>
 
-/// @brief Serializer interface — outputs data in different formats
+/// @brief 序列化器接口——支持不同格式的数据输出
 class ISerializer {
 public:
     virtual ~ISerializer() = default;
@@ -322,7 +322,7 @@ template <typename T>
 class IComparable {
 public:
     virtual ~IComparable() = default;
-    /// @returns <0 means this < other, 0 means equal, >0 means this > other
+    /// @returns <0 表示 this < other, 0 表示相等, >0 表示 this > other
     virtual int compare_to(const T& other) const = 0;
 };
 ```

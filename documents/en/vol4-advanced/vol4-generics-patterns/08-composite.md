@@ -20,9 +20,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/08-composite.md
   source_hash: f2ca5ecbc48c3dd50a9bce4bbc9bf371063520a9623e01bc7d1278fb70f0ce44
-  translated_at: '2026-09-26T05:15:39+00:00'
-  engine: anthropic
-  token_count: 10400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14436
 ---
 
 # Composite Pattern: Disguising a Whole Tree as a Single Object
@@ -40,7 +40,7 @@ class Creature {
 public:
     int get_strength() const { return strength; }
     void set_strength(int v) { strength = v; }
-    // agility / intelligence follow the same pattern...
+    // agility / intelligence 依样画葫芦……
 };
 ```
 
@@ -193,12 +193,12 @@ public:
 
 class Rectangle : public Graphic {
 public:
-    void draw() const override { /* draw a rectangle */ }
+    void draw() const override { /* 画矩形 */ }
 };
 
 class Circle : public Graphic {
 public:
-    void draw() const override { /* draw a circle */ }
+    void draw() const override { /* 画圆 */ }
 };
 ```
 
@@ -315,14 +315,14 @@ class Graphic {
 public:
     virtual ~Graphic() = default;
     virtual void draw() const = 0;
-    // Transparent style: the base class declares add; the leaf implements it as a throw
+    // 透明式: 基类就声明 add, 叶子实现成抛异常
     virtual void add(std::unique_ptr<Graphic>) {
         throw std::logic_error("add() not supported on a leaf");
     }
 };
 
 class Circle : public Graphic {
-    // ... does not override add, inherits the base class's throwing version
+    // ... 不 override add, 继承基类那个抛异常的版本
 };
 ```
 
@@ -345,15 +345,15 @@ class Graphic {
 public:
     virtual ~Graphic() = default;
     virtual void draw() const = 0;
-    // Safe style: no add in the base class
+    // 安全式: 基类里没有 add
 };
 
-class Circle : public Graphic { /* no add */ };
+class Circle : public Graphic { /* 没有 add */ };
 
 class Group : public Graphic {
 public:
     // ... draw ...
-    void add(std::unique_ptr<Graphic> g) {  // add lives only here
+    void add(std::unique_ptr<Graphic> g) {  // add 只在这里
         children_.push_back(std::move(g));
     }
 };

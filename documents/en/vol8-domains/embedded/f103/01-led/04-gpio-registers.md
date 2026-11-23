@@ -13,9 +13,9 @@ platform: stm32f1
 translation:
   source: documents/vol8-domains/embedded/f103/01-led/04-gpio-registers.md
   source_hash: a589719144cec48b818b9eeea5d1194caf3aebda44a01c298ea40a294210ce2c
-  translated_at: '2026-09-27T05:48:24+00:00'
-  engine: anthropic
-  token_count: 7800
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7308
 ---
 
 # From configuration to toggling: four bits per pin, and atomic set/reset
@@ -58,8 +58,8 @@ The post-reset default values also deserve a look. The manual gives the CRL/CRH 
 With that, we can now read exactly what these two configuration lines are doing:
 
 ```cpp
-GPIOC->CRH &= ~(0xFu << 20);   // clear PC13's four old configuration bits
-GPIOC->CRH |=  (0x2u << 20);   // write the new config: 0010 = 2MHz push-pull output
+GPIOC->CRH &= ~(0xFu << 20);   // 清掉 PC13 的四位旧配置
+GPIOC->CRH |=  (0x2u << 20);   // 写入新配置: 0010 = 2MHz 推挽输出
 ```
 
 We already ran an identity check on these two lines in the second piece's disassembly: `bic.w` clears the bits, `orr.w` sets them, and both read-modify-write rounds landed in `0x40011004`.
@@ -69,11 +69,10 @@ We already ran an identity check on these two lines in the second piece's disass
 The example's first version contains a crash the author personally lived through, with a comment left behind at the scene. Thanks to git, it has been dug back out:
 
 ```cpp
-// 2) PC13 mode: the config slot for pin ≥ 8 lives in CRH (4 bits per pin:
-//    pin13 → offset (13-8)*4=20, CNF takes bit23:22, MODE takes bit21:20).
-//    Version one wrote this slot into CRL (configuring pin5 instead), so
-//    PC13 stayed at its reset-default floating input and BSRR/BRR writes
-//    drove no pin — in Renode the ODR reading never budged, caught live.
+// 2) PC13 模式:pin ≥ 8 的配置段在 CRH(每脚 4 位:pin13 → 偏移
+//    (13-8)*4=20,CNF 占 bit23:22,MODE 占 bit21:20)。第一版把这段写进
+//    CRL(配成了 pin5),PC13 保持复位默认的浮空输入,BSRR/BRR 写了
+//    也不驱动引脚 —— Renode 里 ODR 读数纹丝不动,当场抓包。
 ```
 
 Where was the mistake? The author wrote the configuration into `CRL` — the low half, the one governing pin0-7. With `0x2 << 20` landing in CRL, the pin that got configured was `(20-0)/4 = 5`: PC5 inexplicably became a 2MHz push-pull output, while PC13's four bits stayed untouched, still the reset-default floating input.
@@ -84,7 +83,7 @@ Let's reproduce the crash scene in Renode: clock switch closed, **CRH deliberate
 --- CRH before (model reset):
 0x00000000
 --- write 0x00002000 to BSRR, then ODR:
-0x00000000        ← ODR does not budge
+0x00000000        ← ODR 纹丝不动
 ```
 
 What makes this bug so sneaky? Zero warnings at compile time, zero errors at run time. The write to BSRR "succeeds" and returns, the program keeps running its loop, and the pin never moves. When you really do crash like this, the first reflex of our debugging routine is to read CRH/ODR and take a look; if the configuration never landed, then every BSRR write that follows is spinning its wheels. As for "why does the output register not drive the pin in floating-input mode"? The circuit relationship between the two MOS transistors inside the pin and the four configuration bits is exactly the next piece's main topic, so we will not expand on it here.
@@ -100,8 +99,8 @@ What can go wrong inside that window? Let's lay out the worst ordering: the main
 The protagonists of the second route are BSRR and BRR: the manual sets this pair of registers aside so that one write can set one bit right. We just met BSRR in the crash log — with the configuration not landed, it was the one that no amount of writing could get to drive the pin. This time the configuration is correct, so let's go straight to the instructions:
 
 ```text
-08000178: 6125    str   r5, [r4, #16]   ; BSRR ← 0x2000, set PC13
-08000182: 6165    str   r5, [r4, #20]   ; BRR  ← 0x2000, reset PC13
+08000178: 6125    str   r5, [r4, #16]   ; BSRR ← 0x2000,置位 PC13
+08000182: 6165    str   r5, [r4, #20]   ; BRR  ← 0x2000,复位 PC13
 ```
 
 Count along: one `str`, and the job is done.
@@ -119,9 +118,9 @@ The last route is the bit band: give a single bit its own dedicated address — 
 Grab a little notebook and write along with me, OwO:
 
 ```text
-alias address = 0x42000000 + (byte offset × 32) + (bit number × 4)
+别名地址 = 0x42000000 + (字节偏移 × 32) + (位序号 × 4)
 
-bit13 of GPIOC_ODR:
+GPIOC_ODR 的 bit13:
 0x42000000 + (0x4001100C - 0x40000000) × 32 + 13 × 4
 = 0x42000000 + 0x1100C × 0x20 + 0x34
 = 0x42000000 + 0x220180 + 0x34
@@ -132,9 +131,9 @@ But our word alone proves nothing — here is what Renode actually measured (clo
 
 ```text
 --- bit-band write 0x1 to 0x422201B4, then ODR:
-0x00002000        ← bit13 rises on the spot
+0x00002000        ← bit13 应声而起
 --- bit-band write 0x0 to 0x422201B4, then ODR:
-0x00000000        ← and falls on the spot
+0x00000000        ← 应声而落
 ```
 
 The bit band's advantage: one bit is one dedicated address, a single instruction finishes the write, even BSRR's "compute the mask" step is saved, and reading a single bit is just as atomic. The price is that the magic-number address reads terribly, which is why bare bit-band writes are rare in library code — when we use it, we usually wrap it in a macro. Now let's lay the three routes side by side:

@@ -4,7 +4,7 @@ description: "Master std::array usage and how it compares with C arrays, and lea
 chapter: 5
 order: 2
 difficulty: beginner
-reading_time_minutes: 11
+reading_time_minutes: 16
 platform: host
 prerequisites:
   - "C-Style Arrays"
@@ -15,12 +15,23 @@ tags:
   - 入门
   - 基础
 cpp_standard: [11, 14, 17, 20]
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #216)"
+      en: "Contributed exercise solutions and article revisions (PR #216)"
 translation:
   source: documents/vol1-fundamentals/ch05/02-std-array.md
-  source_hash: 512d3d7fb247f42f52d05edbdcf722d4c40732150bb35bacd9fc97cad96370eb
-  translated_at: '2026-09-25T10:53:36+00:00'
-  engine: anthropic
-  token_count: 5600
+  source_hash: 80cbb95b5693c63cd9971496df9e969a536c992a14f330aa27de0f927346402b
+  translated_at: '2026-11-22T16:43:11+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10784
 ---
 
 # std::array: Everything a C Array Can Do, and It Knows Its Own Size
@@ -73,12 +84,12 @@ int main()
 {
     std::array<int, 5> arr = {10, 20, 30, 40, 50};
 
-    std::cout << "arr[0]     = " << arr[0] << "\n";      // No bounds checking
-    std::cout << "arr.at(2)  = " << arr.at(2) << "\n";   // Throws an exception when out of range
+    std::cout << "arr[0]     = " << arr[0] << "\n";      // 无边界检查
+    std::cout << "arr.at(2)  = " << arr.at(2) << "\n";   // 越界抛异常
     std::cout << "front      = " << arr.front() << "\n";
     std::cout << "back       = " << arr.back() << "\n";
 
-    int* p = arr.data();                                   // Get the raw pointer
+    int* p = arr.data();                                   // 获取裸指针
     std::cout << "data()[3]  = " << p[3] << "\n";
 
     return 0;
@@ -107,14 +118,14 @@ That was all the groundwork—next comes where `std::array` truly leaves C array
 #include <array>
 #include <iostream>
 
-// Returning a std::array directly — a C array can't do this
+// 直接返回 std::array——C 数组做不到这一点
 std::array<int, 5> make_array()
 {
     std::array<int, 5> result = {1, 2, 3, 4, 5};
     return result;
 }
 
-// Pass by value — no size information lost
+// 按值传参——不会丢失大小信息
 void print_array(std::array<int, 5> arr)
 {
     for (int x : arr) {
@@ -126,10 +137,10 @@ void print_array(std::array<int, 5> arr)
 int main()
 {
     auto arr1 = make_array();
-    auto arr2 = arr1;  // Direct copy — a C array can't do this
+    auto arr2 = arr1;  // 直接拷贝——C 数组做不到
 
     arr2[0] = 99;
-    std::cout << "arr1[0] = " << arr1[0] << "\n";  // 1, unaffected by arr2
+    std::cout << "arr1[0] = " << arr1[0] << "\n";  // 1，不受 arr2 影响
     std::cout << "arr2[0] = " << arr2[0] << "\n";  // 99
 
     print_array(arr1);
@@ -186,20 +197,20 @@ int main()
     std::array<int, 5> a = {1, 2, 3, 4, 5};
     std::array<int, 5> b = {10, 20, 30, 40, 50};
 
-    // fill — set every element to the same value
+    // fill —— 全部设为同一值
     a.fill(0);
     std::cout << "fill 后: ";
     for (int x : a) { std::cout << x << " "; }
     std::cout << "\n";
 
-    // swap — exchange the contents of two arrays
+    // swap —— 交换两个 array 的内容
     a = {1, 2, 3, 4, 5};
     a.swap(b);
     std::cout << "swap 后 a: ";
     for (int x : a) { std::cout << x << " "; }
     std::cout << "\n";
 
-    // Combined with <algorithm>
+    // 配合 <algorithm>
     std::array<int, 5> c = {5, 3, 1, 4, 2};
     std::sort(c.begin(), c.end());
     std::cout << "排序后: ";
@@ -227,7 +238,7 @@ Let's reimplement, with `std::array`, the operations we previously did with C ar
 #include <array>
 #include <iostream>
 
-// A clean function signature — the type and size are self-evident, no extra length parameter needed
+// 函数签名清晰——类型和大小一目了然，不需要额外传长度
 void print_stats(const std::array<int, 5>& data)
 {
     std::cout << "元素个数: " << data.size() << "\n";
@@ -291,6 +302,61 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 The improvements are across the board: `print_stats` takes a `const std::array<int, 5>&`, so the type and size are self-evident; every STL algorithm drops right in—sorting, searching, reversing, min/max are all one-line calls; and the array-decay-loses-the-length problem can never bite us again.
 
 > Whenever we see a C-style signature like `void func(int arr[], int n)` in code, we suggest rewriting it as `void func(const std::array<int, N>& arr)` (size fixed) or `void func(std::span<int> arr)` (size determined at runtime). Neither loses length information, and both are far safer than passing `n` by hand.
+
+### By the Way: What a `std::array` Really Is, and 2D Arrays
+
+When you first meet `std::array`, you might feel it just makes the C array type longer to write. For example:
+
+```cpp
+std::array<int, 5> values = {32, 76, 43, 10, 54};
+```
+
+That is actually shorthand for aggregate initialization. You can picture a `std::array` as "an object wrapping a fixed-size C array", so the fully spelled-out form can be written with two layers of braces:
+
+```cpp
+std::array<int, 5> values = {{
+    32, 76, 43, 10, 54
+}};
+```
+
+The outer braces initialize the `std::array` object; the inner braces initialize the elements it contains. The compiler allows that inner layer of braces to be omitted, which is why the single-layer form is all we need day to day. The "wrapping" here is a mental model to aid understanding; the standard semantics of `std::array` are equivalent to an aggregate holding a `T[N]`, and the concrete member names are implementation details.
+
+A two-dimensional `std::array` simply swaps the element type for another `std::array`. For example:
+
+```cpp
+#include <array>
+#include <cstdint>
+
+std::array<std::array<std::uint8_t, 4>, 8> data = {{
+    {{0x01, 0x00, 0x00, 0x00}},
+    {{0x01, 0x01, 0x00, 0x00}},
+    {{0x00, 0x01, 0x00, 0x00}},
+    {{0x00, 0x01, 0x01, 0x00}},
+    {{0x00, 0x00, 0x01, 0x00}},
+    {{0x00, 0x00, 0x01, 0x01}},
+    {{0x00, 0x00, 0x00, 0x01}},
+    {{0x01, 0x00, 0x00, 0x01}}
+}};
+```
+
+To read this type, work from the outside in: the outer layer has 8 elements, and each of those elements is itself a `std::array` holding 4 `std::uint8_t`s. You can therefore think of it as a fixed-size table of "8 rows, 4 bytes per row". Each row's double braces initialize one inner `std::array`; the rows sit side by side—they are not nested layer upon layer.
+
+If the double braces on every row feel too cramped, you can omit just the inner `std::array`'s layer and keep the outer two:
+
+```cpp
+std::array<std::array<std::uint8_t, 4>, 8> data = {{
+    {0x01, 0x00, 0x00, 0x00},
+    {0x01, 0x01, 0x00, 0x00},
+    {0x00, 0x01, 0x00, 0x00},
+    {0x00, 0x01, 0x01, 0x00},
+    {0x00, 0x00, 0x01, 0x00},
+    {0x00, 0x00, 0x01, 0x01},
+    {0x00, 0x00, 0x00, 0x01},
+    {0x01, 0x00, 0x00, 0x01}
+}};
+```
+
+This form initializes exactly the same contents as the fully spelled-out version in the previous snippet, and it has been the standard way to write it since C++11. When you meet layer upon layer of braces in older code, unpack them in the order "outer object → outer element → inner object → inner element", and the brackets usually stop making your head spin.
 
 ## Exercises
 

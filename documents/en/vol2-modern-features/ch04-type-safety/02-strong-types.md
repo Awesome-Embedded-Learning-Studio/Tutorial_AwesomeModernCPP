@@ -22,10 +22,10 @@ tags:
 title: 'Strong Typedefs: Type Safety That Prevents Mix-Ups'
 translation:
   source: documents/vol2-modern-features/ch04-type-safety/02-strong-types.md
-  source_hash: 394d14227ab939e80ee716d4d66dea81dbf4cd8fdad31dac585c1b9a70b56787
-  translated_at: '2026-09-25T15:30:18+00:00'
-  engine: anthropic
-  token_count: 4700
+  source_hash: aa8667c35b74d9ac388c6ddf239d124d993fe13551883cc156bf1f53b4fdd736
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 10304
 ---
 # Strong Typedefs: Type Safety That Prevents Mix-Ups
 
@@ -46,14 +46,14 @@ using OrderId = int;
 UserId uid = 42;
 OrderId oid = 100;
 
-// Everything below compiles without a single warning
-uid = oid;           // Assigning an OrderId to a UserId? The compiler sees no problem
-OrderId another = uid;  // Works the other way around, too
+// 以下全部编译通过，没有任何警告
+uid = oid;           // OrderId 赋给 UserId？编译器觉得没问题
+OrderId another = uid;  // 反过来也行
 
 void process_order(OrderId id);
-process_order(uid);   // Passing a UserId in? The compiler doesn't care
+process_order(uid);   // 传了 UserId 进去？编译器不管
 
-int total = uid + oid;  // Adding two IDs with "different semantics"? Go right ahead
+int total = uid + oid;  // 两个"不同语义"的 ID 相加？随便加
 ```
 
 The problem is plain: `using UserId = int` merely gives `int` a nickname. In the compiler's eyes, `UserId`, `OrderId`, and `int` are one and the same thing. Every operation that accepts `int` will happily take `UserId` or `OrderId` — even when it makes no semantic sense whatsoever.
@@ -65,11 +65,11 @@ In a large codebase this is a huge hazard. The longer a function's parameter lis
 The core idea of the solution is called the phantom type: use a template parameter that serves purely as a marker and takes up no actual space to distinguish different types.
 
 ```cpp
-// Tag structs: they exist only to tell types apart; nothing needs implementing
+// 标签结构体，只用来区分类型，不需要实现任何东西
 struct WidthTag {};
 struct HeightTag {};
 
-// The strong type wrapper
+// 强类型包装器
 template <typename Tag, typename Rep = int>
 class StrongInt {
 public:
@@ -90,11 +90,11 @@ Now `Width` and `Height` are two completely different types. The compiler will s
 Width w(100);
 Height h(200);
 
-// h = w;          // Compile error! Can't assign a Width to a Height
-// Width bad = h;  // Compile error!
+// h = w;          // 编译错误！不能把 Width 赋给 Height
+// Width bad = h;  // 编译错误！
 
 void set_rect(Width w, Height h);
-set_rect(h, w);    // Compile error! Argument types don't match
+set_rect(h, w);    // 编译错误！参数类型不匹配
 set_rect(Width(100), Height(200));  // OK
 ```
 
@@ -116,21 +116,21 @@ The `StrongInt` above is too bare-bones. In real projects we usually need to sup
 #include <iostream>
 #include <type_traits>
 
-/// @brief Strong integer wrapper
-/// @tparam Tag   Phantom tag used to distinguish types
-/// @tparam Rep   Underlying storage type
+/// @brief 强类型整数包装器
+/// @tparam Tag   幽灵标签，用于区分不同类型
+/// @tparam Rep   底层存储类型
 template <typename Tag, typename Rep = int>
 class StrongInt {
 public:
     using ValueType = Rep;
 
-    // Construction
+    // 构造
     constexpr explicit StrongInt(Rep value = Rep{}) : value_(value) {}
 
-    // Get the underlying value
+    // 获取底层值
     constexpr Rep get() const noexcept { return value_; }
 
-    // Increment / decrement
+    // 自增/自减
     constexpr StrongInt& operator++() noexcept { ++value_; return *this; }
     constexpr StrongInt operator++(int) noexcept {
         StrongInt tmp = *this;
@@ -144,7 +144,7 @@ public:
         return tmp;
     }
 
-    // Compound assignment (same type)
+    // 复合赋值（同类型）
     constexpr StrongInt& operator+=(const StrongInt& other) noexcept {
         value_ += other.value_;
         return *this;
@@ -154,7 +154,7 @@ public:
         return *this;
     }
 
-    // Arithmetic (same type)
+    // 算术运算（同类型）
     constexpr StrongInt operator+(const StrongInt& other) const noexcept {
         return StrongInt(value_ + other.value_);
     }
@@ -162,7 +162,7 @@ public:
         return StrongInt(value_ - other.value_);
     }
 
-    // Comparison
+    // 比较运算
     constexpr bool operator==(const StrongInt& other) const noexcept {
         return value_ == other.value_;
     }
@@ -186,7 +186,7 @@ private:
     Rep value_;
 };
 
-// Stream output (handy for debugging)
+// 流输出（方便调试）
 template <typename Tag, typename Rep>
 std::ostream& operator<<(std::ostream& os, const StrongInt<Tag, Rep>& v)
 {
@@ -202,7 +202,7 @@ This `StrongInt` template covers the most common everyday needs: construction, e
 Now let's use the strong type wrapper to build a type-safe system of physical units. This is one of the most classic applications of strong typedefs — using the type system to stop values of different physical quantities from being mixed up.
 
 ```cpp
-// Tag definitions
+// 标签定义
 struct MetersTag {};
 struct KilometersTag {};
 struct CelsiusTag {};
@@ -210,7 +210,7 @@ struct FahrenheitTag {};
 struct SecondsTag {};
 struct MillisecondsTag {};
 
-// Type aliases
+// 类型别名
 using Meters        = StrongInt<MetersTag, double>;
 using Kilometers    = StrongInt<KilometersTag, double>;
 using Celsius       = StrongInt<CelsiusTag, double>;
@@ -218,7 +218,7 @@ using Fahrenheit    = StrongInt<FahrenheitTag, double>;
 using Seconds       = StrongInt<SecondsTag, double>;
 using Milliseconds  = StrongInt<MillisecondsTag, int64_t>;
 
-// Unit conversion functions
+// 单位转换函数
 constexpr Kilometers to_kilometers(Meters m) noexcept
 {
     return Kilometers(m.get() / 1000.0);
@@ -240,11 +240,11 @@ In use:
 ```cpp
 Meters distance(5000.0);
 Kilometers km = to_kilometers(distance);
-// km = distance;  // Compile error! No direct assignment
+// km = distance;  // 编译错误！不能直接赋值
 
 Seconds duration(2.5);
 Milliseconds ms = to_milliseconds(duration);
-// auto bad = distance + duration;  // Compile error! Meters and Seconds can't be added
+// auto bad = distance + duration;  // 编译错误！Meters 和 Seconds 不能相加
 ```
 
 That's the power of a type-safe unit system: the compiler intercepts every "physical quantity mismatch" error for you at compile time. You can't accidentally add meters to seconds, and you can't use a Celsius value as Fahrenheit.
@@ -268,13 +268,13 @@ class OrderService {
 public:
     OrderId create_order(UserId user, ProductId product, int quantity)
     {
-        // If the parameters get swapped, the compiler errors out right away
+        // 如果参数写反了，编译器会直接报错
         return OrderId(next_id_++);
     }
 
     void cancel_order(OrderId id)
     {
-        // Accepts only OrderId — not UserId or ProductId
+        // 只接受 OrderId，不接受 UserId 或 ProductId
     }
 
 private:
@@ -289,8 +289,8 @@ ProductId product(100);
 OrderId order(1);
 
 service.create_order(user, product, 3);  // OK
-// service.create_order(product, user, 3);  // Compile error!
-// service.cancel_order(user);              // Compile error! UserId is not an OrderId
+// service.create_order(product, user, 3);  // 编译错误！
+// service.cancel_order(user);              // 编译错误！UserId 不是 OrderId
 ```
 
 In large projects, primary keys, foreign keys, and all sorts of association IDs in database tables are `uint64_t`. Without strong types to separate them, it's easy for a caller to pass a `user_id` where an `order_id` belongs. We've seen this kind of bug make a production database execute the wrong delete operation — the cost of fixing it far exceeded the cost of introducing strong types.
@@ -300,15 +300,20 @@ In large projects, primary keys, foreign keys, and all sorts of association IDs 
 C++17 introduced Class Template Argument Deduction (CTAD), which spares us the trouble of spelling out template arguments explicitly. Our `StrongInt` takes two template parameters (`Tag` and `Rep`), and `Tag` can't be deduced — but we can still simplify construction with deduction guides:
 
 ```cpp
-// Deduction guide for the Rep type
-template <typename Tag>
-StrongInt(Tag*) -> StrongInt<Tag, int>;
+// 让构造函数带上一个 tag 形参（其余成员与第三步的一致）
+template <typename Tag, typename Rep = int>
+class StrongInt {
+public:
+    constexpr explicit StrongInt(Tag*, Rep value) : value_(value) {}
+    constexpr Rep get() const noexcept { return value_; }
+};
 
-// In use, only the Tag needs to be spelled out
+// 构造的时候把 tag 一起递进去
 struct ScoreTag {};
 using Score = StrongInt<ScoreTag, int>;
 
-Score s(100);  // Direct construction — no need to write <ScoreTag, int>
+Score s((ScoreTag*)nullptr, 100);                 // 走别名构造，Tag 在编译期对上号
+StrongInt auto_deduced((ScoreTag*)nullptr, 100);  // 不写别名，CTAD 推出 StrongInt<ScoreTag, int>
 ```
 
 Honestly, though, in our usage pattern strong types are nearly always consumed through `using` aliases, so CTAD doesn't buy much. What's genuinely useful is another C++17 feature — `if constexpr` and `auto` deduction make template code much more natural to write:
@@ -320,10 +325,12 @@ constexpr auto make_strong(Rep value)
     return StrongInt<Tag, Rep>(value);
 }
 
-// Usage
+// 使用
 auto width = make_strong<WidthTag>(100);
-// width has type StrongInt<WidthTag, int>, deduced automatically
+// width 的类型是 StrongInt<WidthTag, int>，自动推导
 ```
+
+> The `StrongInt<Tag, Rep>(value)` here uses the single-argument constructor from step three: inside the factory function, `Tag` is an explicitly given template argument at the call site, so there is no need to stuff it into the constructor's parameter list as well. The tag-parameter constructor added in this section is reserved specifically for bare CTAD—the two routes each mind their own business, and the class keeps both constructors on hand side by side.
 
 ## Embedded in Practice — Type Safety for Register Addresses
 
@@ -341,7 +348,7 @@ using SpiRegAddr  = StrongInt<SpiRegTag, uint32_t>;
 void gpio_write(GpioRegAddr addr, uint32_t value);
 void uart_write(UartRegAddr addr, uint32_t value);
 
-// gpio_write(UartRegAddr(0x40001000), 42);  // Compile error! Type mismatch
+// gpio_write(UartRegAddr(0x40001000), 42);  // 编译错误！类型不匹配
 ```
 
 This pattern is extremely valuable in large embedded projects — when your chip has dozens of peripherals and hundreds of register addresses, a type-safe address system keeps you from writing to the wrong register. And the runtime overhead is zero: `StrongInt`'s `get()` gets inlined, and the generated code is identical to using a raw `uint32_t` directly.

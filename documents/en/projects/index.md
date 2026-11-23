@@ -8,10 +8,10 @@ tags:
   - intermediate
 translation:
   source: documents/projects/index.md
-  source_hash: 42eb53b42495d01aa1fb318f2084582052831d6c383d0cf22598181cb3c8fd75
-  translated_at: '2026-09-27T03:10:35+00:00'
-  engine: anthropic
-  token_count: 700
+  source_hash: 505447c367545e75540e818edd4fcff43d6718a2f3a2675bfbc05f0fe3db3cc8
+  translated_at: '2026-11-22T16:41:29+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1120
 ---
 
 # Hands-On Projects: Putting It All Together
@@ -22,8 +22,7 @@ translation:
 
 These projects already have tutorials or runnable skeletons in other volumes, and each one is a thread you can pull to go deeper:
 
-- **Coroutine Echo Server**: In [Volume 5: Coroutine Echo Server](../vol5-concurrency/ch06-async-io-coroutine/05-coroutine-echo-server.md) we build our way up from `co_await` to a working echo service that can send and receive — the most hands-on project there is for understanding coroutine scheduling.
-- **Mini Concurrent Runtime (capstone)**: [Volume 5: Mini Runtime Capstone](../vol5-concurrency/exercises/06-capstone-mini-runtime.md) blends a thread pool, timers, and task queues into a minimal scheduler — a ready-made starting point for the later "Mini Concurrent Runtime".
+- **Coroutine Echo Server**: In [Volume 5: Coroutine Echo Server](../vol5-concurrency/chapter07-coroutines/08-echo-server.md) we build our way up from `co_await` to a working echo service that can send and receive — the most hands-on project there is for understanding coroutine scheduling.
 - **OnceCallback Component Study**: [Volume 9: OnceCallback](../vol9-open-source-project-learn/chrome/01_once_callback/index.md) uses 16 articles to dissect Chromium's callback mechanism by hand, a model for moving from reading source code to "designing industrial-grade components yourself".
 - **INI Parser**: As the first complete project in C++ engineering, it lives in its own repository, [Tutorial_cpp_SimpleIniParser](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_cpp_SimpleIniParser) — from lexical analysis to error handling, it is well worth building along once.
 

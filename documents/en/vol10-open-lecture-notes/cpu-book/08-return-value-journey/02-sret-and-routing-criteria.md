@@ -10,9 +10,10 @@ description: "A 24-byte Big is written straight into the caller's stack slot thr
 reading_time_minutes: 16
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/08-return-value-journey/02-sret-and-routing-criteria.md
-  source_hash: 62b55999018d491603f6b37f664d709633130552aa482672ee6721a18c5bdea5
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 8b9276d6e98c343721594ffa67106391db482fea5d5a50824de26dbc64b21de2
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8171
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -28,7 +29,7 @@ In the previous piece we verified the first two routes: small values that fit in
 The twenty-four-byte `struct Big { long a, b, c; }` doesn't fit in two registers, and the third route was built for exactly this case. You have seen the whole mechanism once already, when piece 03 walked through make_big: the caller sets up a buffer on its stack and hands the buffer's address to the callee through rdi, which treats it exactly like a first argument; the function writes its fields straight into that memory, and rax carries that same address back on return. Toolchain documentation usually calls this sret, short for struct return, and that is the word this piece borrows. Piece 03 gave a plain-language version of the two-chunk rule; the next section brings in the rule's original text and the register roster for the return side, plus one exception 03 never mentioned.
 
 ```cpp
-// The sret route end to end: returning a 24-byte Big
+// sret 全链路 —— 24 字节 Big 的返回
 struct Big { long a, b, c; };
 static_assert(sizeof(Big) == 24, "Big must be 24 bytes");
 
@@ -37,7 +38,7 @@ Big make_big(long x) { return {x, x + 1, x + 2}; }
 
 int main() {
     Big b = make_big(100);
-    volatile long sink = b.a + b.b + b.c;   // consumed, so it can't be optimized away
+    volatile long sink = b.a + b.b + b.c;   // 消费,防删
     return sink == 303 ? 0 : 1;
 }
 ```
@@ -48,20 +49,20 @@ The compile command is `g++ -O0 -S -fno-asynchronous-unwind-tables r3_sret.cpp -
 _Z8make_bigl:
 	pushq	%rbp
 	movq	%rsp, %rbp
-	movq	%rdi, -8(%rbp)        ; spills the hidden return-slot pointer
-	movq	%rsi, -16(%rbp)       ; spills the real argument x (which has been bumped to rsi!)
+	movq	%rdi, -8(%rbp)        ; 溢出隐藏返回槽指针
+	movq	%rsi, -16(%rbp)       ; 溢出真实实参 x(已让位到 rsi!)
 	movq	-8(%rbp), %rax
 	movq	-16(%rbp), %rdx
-	movq	%rdx, (%rax)          ; a -> slot+0
+	movq	%rdx, (%rax)          ; a -> 槽+0
 	movq	-16(%rbp), %rax
 	leaq	1(%rax), %rdx
 	movq	-8(%rbp), %rax
-	movq	%rdx, 8(%rax)         ; b -> slot+8
+	movq	%rdx, 8(%rax)         ; b -> 槽+8
 	movq	-16(%rbp), %rax
 	leaq	2(%rax), %rdx
 	movq	-8(%rbp), %rax
-	movq	%rdx, 16(%rax)        ; c -> slot+16
-	movq	-8(%rbp), %rax        ; rax = the slot address, handed back
+	movq	%rdx, 16(%rax)        ; c -> 槽+16
+	movq	-8(%rbp), %rax        ; rax = 还回槽地址
 	popq	%rbp
 	ret
 
@@ -69,11 +70,11 @@ main:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$48, %rsp
-	leaq	-32(%rbp), %rax       ; the buffer is main's own local b
-	movl	$100, %esi            ; the real argument goes into esi (the second slot)
-	movq	%rax, %rdi            ; the hidden pointer goes into rdi (the first slot)
+	leaq	-32(%rbp), %rax       ; 缓冲就是 main 自己的局部 b
+	movl	$100, %esi            ; 真实实参进 esi(第二槽)
+	movq	%rax, %rdi            ; 隐藏指针进 rdi(第一槽)
 	call	_Z8make_bigl
-	movq	-32(%rbp), %rdx       ; after the call, b is read in place, no copying
+	movq	-32(%rbp), %rdx       ; 返回后直接读 b,无搬运
 	movq	-24(%rbp), %rax
 	addq	%rax, %rdx
 	movq	-16(%rbp), %rax
@@ -119,7 +120,7 @@ CALLER : &b  (main 栈上局部)   = 0x7fffffffd0a0
 #0  make_big (x=100) at r3_sret.cpp:8
 8	Big make_big(long x) { return {x, x + 1, x + 2}; }
 main () at r3_sret.cpp:12
-12	    volatile long sink = b.a + b.b + b.c;   // consumed, so it can't be optimized away
+12	    volatile long sink = b.a + b.b + b.c;   // 消费,防删
 Value returned is $1 = {a = 100, b = 101, c = 102}
 RETURN : rax (还回的地址)      = 0x7fffffffd0a0
 RETURN : 缓冲里三个字段        = 100 101 102
@@ -168,7 +169,7 @@ So far the criteria have only spoken about size and class. There is one more exc
 Next we want to count copy constructions, and to count them we have to give the type a user-provided copy constructor. The moment we add one, the type's identity in the ABI's eyes changes. A paired experiment makes this easy to see: in the source, P16 and Pair8 are both sixteen bytes and both made of two longs, and the only difference is that P16 carries a copy constructor of its own:
 
 ```cpp
-// Sixteen bytes, but the copy constructor is non-trivial - do registers still apply?
+// 16 字节、但拷贝构造非平凡 —— 归类是否仍走寄存器?
 struct P16 {
     long a, b;
     static long copies;
@@ -194,15 +195,15 @@ _Z8make_p16ll:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$32, %rsp
-	movq	%rdi, -8(%rbp)        ; the hidden sret pointer
-	movq	%rsi, -16(%rbp)       ; argument a (bumped to rsi)
-	movq	%rdx, -24(%rbp)       ; argument b (pushed on to rdx)
+	movq	%rdi, -8(%rbp)        ; 隐藏 sret 指针
+	movq	%rsi, -16(%rbp)       ; 实参 a(让位到 rsi)
+	movq	%rdx, -24(%rbp)       ; 实参 b(再让到 rdx)
 	movq	-24(%rbp), %rdx
 	movq	-16(%rbp), %rcx
 	movq	-8(%rbp), %rax
 	movq	%rcx, %rsi
-	movq	%rax, %rdi            ; the constructor's this = the sret slot
-	call	_ZN3P16C1Ell          ; P16::P16(long,long) writes straight into the slot
+	movq	%rax, %rdi            ; 构造函数 this = sret 槽
+	call	_ZN3P16C1Ell          ; P16::P16(long,long) 直接写进槽
 	movq	-8(%rbp), %rax
 	leave
 	ret

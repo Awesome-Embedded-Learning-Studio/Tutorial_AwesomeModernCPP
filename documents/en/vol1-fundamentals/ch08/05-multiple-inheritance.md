@@ -21,9 +21,9 @@ title: Multiple Inheritance and Virtual Inheritance
 translation:
   source: documents/vol1-fundamentals/ch08/05-multiple-inheritance.md
   source_hash: d5e2c2c014cd1b6e447948f4ac6c2ae447c1cebad05965d448999bcd3144eb12
-  translated_at: '2026-09-27T03:51:38+00:00'
-  engine: anthropic
-  token_count: 3300
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7999
 ---
 # Multiple Inheritance and Virtual Inheritance: It Works, but Think It Through Before Using It
 
@@ -48,7 +48,7 @@ public:
     virtual std::string serialize() const = 0;
 };
 
-// A config item that is both printable and serializable
+// 同时可打印、可序列化的配置项
 class ConfigItem : public Printable, public Serializable {
 private:
     std::string key_;
@@ -95,9 +95,9 @@ class TouchScreen : public InputDevice, public OutputDevice
 };
 
 TouchScreen ts;
-// ts.id = 1;          // Compile error: ambiguous!
+// ts.id = 1;          // 编译错误：歧义！
 ts.InputDevice::id = 1;
-ts.OutputDevice::id = 2;  // Two independent ids that do not affect each other
+ts.OutputDevice::id = 2;  // 两份独立的 id，互不影响
 ```
 
 We can see that `Device`'s constructor is called twice and `id` exists as two independent copies. A touchscreen device should have exactly one ID. Even worse is the data inconsistency—in a large system, this kind of "two out-of-sync pieces of state inside one logical object" is a source of bugs that is extremely hard to track down.
@@ -113,7 +113,7 @@ class OutputDevice : virtual public Device {};
 class TouchScreen : public InputDevice, public OutputDevice
 {
 public:
-    // With virtual inheritance, the most-derived class is responsible for initializing the virtual base
+    // 虚继承下，最底层的派生类负责初始化虚基类
     TouchScreen() : Device(), InputDevice(), OutputDevice() {}
 };
 ```
@@ -140,12 +140,12 @@ Let's look at a complete, compilable example that covers both multi-interface in
 
 ```cpp
 // multi_inherit.cpp
-// Compile: g++ -Wall -Wextra -std=c++17 -o multi_inherit multi_inherit.cpp
+// 编译：g++ -Wall -Wextra -std=c++17 -o multi_inherit multi_inherit.cpp
 
 #include <cstdio>
 #include <string>
 
-// --- Interface multiple inheritance ---
+// --- 接口多继承 ---
 class Drawable {
 public:
     virtual ~Drawable() = default;
@@ -190,7 +190,7 @@ public:
     }
 };
 
-// --- Diamond inheritance (non-virtual) ---
+// --- 菱形继承（非虚） ---
 class Component {
 public:
     int version;
@@ -214,7 +214,7 @@ public:
     Widget() { printf("  Widget()\n"); }
 };
 
-// --- Diamond inheritance (virtual inheritance) ---
+// --- 菱形继承（虚继承） ---
 class VComponent {
 public:
     int version;
@@ -256,7 +256,7 @@ int main()
 
     printf("\n=== Diamond (virtual) ===\n");
     VWidget vw;
-    vw.version = 42;  // OK! Only one copy
+    vw.version = 42;  // OK！只有一份
     printf("  sizeof(VWidget) = %zu\n", sizeof(VWidget));
 
     return 0;
@@ -324,7 +324,7 @@ class SmartDevice : public Networkable, public Monitorable
 public:
     SmartDevice(int id) : Networkable(id), Monitorable(id) {}
     void connect() override { printf("Connected\n"); }
-    int read_status() override { return device_id; }  // Ambiguous!
+    int read_status() override { return device_id; }  // 歧义！
 };
 ```
 

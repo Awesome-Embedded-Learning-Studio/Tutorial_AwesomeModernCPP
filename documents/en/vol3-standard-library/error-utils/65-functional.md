@@ -28,9 +28,9 @@ tags:
 translation:
   source: documents/vol3-standard-library/error-utils/65-functional.md
   source_hash: a47ad663992ac484c4176aa21f363357da603f02f679d191f4acc6b506a39e01
-  translated_at: '2026-09-26T00:53:52+00:00'
-  engine: anthropic
-  token_count: 11700
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 16300
 ---
 
 # functional: The Cost of std::function and C++23's move_only_function
@@ -58,7 +58,7 @@ struct Multiplier {
 };
 
 Multiplier times3{3};
-int r = times3(10);   // 30 — calls operator()
+int r = times3(10);   // 30 —— 调用 operator()
 ```
 
 What characterizes a functor: it carries state (`factor` is a member), and its **type is a class you defined yourself**.
@@ -68,8 +68,8 @@ The third kind is the **lambda**. A lambda looks featherweight and reads like an
 ```cpp
 // Standard: C++11
 auto f1 = []() { return 1; };
-auto f2 = []() { return 1; };   // looks identical to f1
-// but f1 and f2 have different types
+auto f2 = []() { return 1; };   // 看起来和 f1 完全相同
+// 但 f1、f2 类型不同
 static_assert(not std::is_same_v<decltype(f1), decltype(f2)>);
 ```
 
@@ -100,15 +100,15 @@ int free_fn(int x) { return x + 1; }
 struct Doubler { int operator()(int x) const { return x * 2; } };
 
 int main() {
-    std::function<int(int)> f;   // a slot that can hold any int(int)
+    std::function<int(int)> f;   // 一个能装任何 int(int) 的槽
 
-    f = free_fn;                 // store a function pointer
-    f = Doubler{};               // store a functor
-    f = [](int x){ return x * 3; };   // store a lambda
+    f = free_fn;                 // 装函数指针
+    f = Doubler{};               // 装 functor
+    f = [](int x){ return x * 3; };   // 装 lambda
     int cap = 10;
-    f = [cap](int x){ return x + cap; };  // store a lambda with captures
+    f = [cap](int x){ return x + cap; };  // 装带捕获的 lambda
 
-    return f(5);   // invoke — doesn't matter what it currently holds
+    return f(5);   // 调用 —— 无关它现在装的是什么
 }
 ```
 
@@ -146,14 +146,14 @@ void* operator new(std::size_t n) {
 void operator delete(void* p) noexcept { std::free(p); }
 
 int main() {
-    // small capture: 1 int, fits in the SBO
+    // 小捕获:1 个 int,塞得进 SBO
     {
         int x = 42;
         g_alloc_count = 0; g_alloc_bytes = 0;
         std::function<int(int)> f = [x](int a){ return a + x; };
-        // (use f somehow, so the compiler can't optimize it away)
+        // (用一下 f,别让编译器优化掉)
     }
-    // large capture: int[64] ≈ 256B, doesn't fit in the SBO
+    // 大捕获:int[64] ≈ 256B,塞不进 SBO
     {
         int big[64]{};
         big[0] = 7;
@@ -179,9 +179,9 @@ The conclusion is blunt: small capture, zero allocations; large capture, one hea
 This is the one that really hurts performance. A `std::function` call jumps indirectly through an internal function pointer, and the compiler **cannot inline across that indirect call**. First we use the assembly to confirm that it really is an indirect call, then we microbenchmark the time.
 
 ```cpp
-// Compile: g++ -std=c++23 -O2 -S
+// 编译:g++ -std=c++23 -O2 -S
 int main() {
-    std::function<int(int)> f = target;   // target is a noinline external function
+    std::function<int(int)> f = target;   // target 是个 noinline 外部函数
     // ...
     return f(3);
 }
@@ -190,7 +190,7 @@ int main() {
 In the assembly, `f(3)` corresponds to exactly this:
 
 ```text
-call *%rax       ; indirect call - target address known only at runtime
+call *%rax       ; 间接调用,目标地址运行时才能定
 ```
 
 That asterisk in `*%rax` is the indirection — the call target is fetched from inside the `function` at runtime, invisible to the compiler at compile time, so nothing can be inlined across that boundary. This is a different world from calling a plain function directly, where the compiler sees the implementation and can inline it.
@@ -208,9 +208,9 @@ static volatile int g_sink = 0;
 int main() {
     const int N = 1'000'000'000;
 
-    auto lambda = [](int x){ return x + 1; };          // can be inlined
-    int (*fptr)(int) = +[](int x){ return x + 1; };    // function pointer, cannot be inlined
-    std::function<int(int)> func = lambda;             // type erasure, cannot be inlined
+    auto lambda = [](int x){ return x + 1; };          // 能被内联
+    int (*fptr)(int) = +[](int x){ return x + 1; };    // 函数指针,不能内联
+    std::function<int(int)> func = lambda;             // 类型擦除,不能内联
 
     auto bench = [&](auto& c){
         long long acc = 0;
@@ -269,7 +269,7 @@ We saw earlier that `sizeof(std::function<int(int)>)` is 32 bytes. Even when hol
 int power(int base, int exp);
 
 auto square_bind = std::bind(power, std::placeholders::_1, 2);
-// call: square_bind(5) == power(5, 2) == 25
+// 调用: square_bind(5) == power(5, 2) == 25
 ```
 
 `std::placeholders::_1` is a placeholder meaning "this position gets its argument at call time". That was useful in the days when C++11 lambdas hadn't yet spread and functors had to be hand-written by the pile. But since C++14, **a lambda beats `bind` on almost every axis**:
@@ -287,7 +287,7 @@ The next high-frequency tool is `std::reference_wrapper`, together with its comp
 
 ```cpp
 // Standard: C++11
-std::vector<int&> v;   // won't compile — the element type must be Erasable / a real object type
+std::vector<int&> v;   // 编不过 —— 元素类型必须是 Erasable / 可对象化的
 ```
 
 The C++ standard requires container elements to be genuine object types; a reference is not an object (it has no address and cannot be assigned), so `vector<T&>` is rejected outright. Yet in practice you often do want "a container referencing a group of external variables". `reference_wrapper` is a thin wrapper that "behaves like a reference but is itself an object" — it holds a pointer and supports implicit conversion back to `T&`:
@@ -303,7 +303,7 @@ int main() {
     int a = 1, b = 2, c = 3;
     std::vector<std::reference_wrapper<int>> refs{std::ref(a), std::ref(b), std::ref(c)};
 
-    for (int& x : refs) {   // reference_wrapper implicitly converts to int&
+    for (int& x : refs) {   // reference_wrapper 隐式转 int&
         x *= 10;
     }
     std::cout << "通过 ref 修改后: a=" << a << " b=" << b << " c=" << c << "\n";
@@ -325,8 +325,8 @@ During iteration, `reference_wrapper<int>` converts implicitly back to `int&`, s
 
 ```cpp
 // Standard: C++11
-std::hash<int>{}(42);                 // hash 42
-std::hash<std::string>{}("hello");    // hash the string
+std::hash<int>{}(42);                 // 算 42 的哈希
+std::hash<std::string>{}("hello");    // 算字符串的哈希
 ```
 
 ```text
@@ -378,8 +378,8 @@ Now we get to what is genuinely new in this article. `std::function` has a long-
 ```cpp
 // Standard: C++23
 std::unique_ptr<int> up = std::make_unique<int>(100);
-auto lam = [up = std::move(up)](int x){ return *up + x; };   // the closure is move-only
-std::function<int(int)> f = std::move(lam);   // won't compile
+auto lam = [up = std::move(up)](int x){ return *up + x; };   // 闭包是 move-only
+std::function<int(int)> f = std::move(lam);   // 编不过
 ```
 
 The compiler refuses bluntly, with a static assertion failure:
@@ -400,7 +400,7 @@ C++23's `std::move_only_function` exists precisely to fill this gap. It performs
 #include <memory>
 
 int main() {
-    // a factory: returns a move-only lambda capturing a unique_ptr
+    // 一个工厂:返回捕获了 unique_ptr 的 move-only lambda
     auto make_processor = [](std::unique_ptr<int> owner){
         return [owner = std::move(owner)](int x){
             return *owner + x;
@@ -412,7 +412,7 @@ int main() {
     std::cout << "move_only_function 调用: " << mof(5) << "\n";
     std::cout << "  仍持有: " << (mof ? "yes" : "no") << "\n";
 
-    // move_only_function itself is also move-only (not copyable)
+    // move_only_function 本身也是 move-only(不能拷贝)
     auto mof2 = std::move(mof);
     std::cout << "move 后 mof2(5) = " << mof2(5) << "\n";
     std::cout << "move 后源 mof 是否空: " << (mof ? "no" : "yes(被掏空)") << "\n";

@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/12-abi-design.md
   source_hash: aaf67d96814a45b5a0d8129e6f980f287595a5ce3aef9ee4ff6840bcd61b7c0b
-  translated_at: '2026-10-13T04:21:23+00:00'
-  engine: anthropic
-  token_count: 4700
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14804
 ---
 
 # ABI Design: Defining the Interface, Managing Its Versions
@@ -36,10 +36,10 @@ Let's put API and ABI side by side and tell them apart. Those few lines of decla
 We start with the real thing right away. In v1's header, calc_item carries just two fields. We build the app against v1, totaling a line of 3 units at a unit price of 2500:
 
 ```c
-/* calc_v1.h — libcalc v1's outward-facing header (include guard omitted; don't learn that from me) */
+/* calc_v1.h —— libcalc v1 的对外头文件(Include guard 省了,您别学) */
 struct calc_item {
-    int units;   /* unit count */
-    int price;   /* unit price, in cents */
+    int units;   /* 件数 */
+    int price;   /* 单价,分 */
 };
 
 int line_total(struct calc_item item);
@@ -114,8 +114,8 @@ Notice that the 2.0 node recognizes 1.0 as its parent, and the new function bulk
 ```c
 __asm__(".symver line_total_1,line_total@CALC_1.0");
 __asm__(".symver line_total_2,line_total@@CALC_2.0");
-int line_total_1(struct calc_item item) { /* the old algorithm */ }
-int line_total_2(struct calc_item item) { /* from 2.0 on, 50 off for every full 1000 */ }
+int line_total_1(struct calc_item item) { /* 老算法 */ }
+int line_total_2(struct calc_item item) { /* 2.0 起满 1000 减 50 */ }
 ```
 
 A single @ means attach by name to a given node; the double @ (@@) additionally declares itself the default version: for clients that do not pick a version, the linker always hands them the @@ one. Let's build it and look:
@@ -204,18 +204,18 @@ What leads is ?, @@ handles the segmentation, and there is no kinship at all wit
 `extern "C"` only settles the name; a header that can cross toolchains has to pin down the rest as well. We compress what matters into a four-piece set: function declarations, type definitions, macro constants, include dependencies. Let's work up a version of libcalc:
 
 ```c
-/* calc_abi.h — the complete outward ABI header: complete only when all four pieces are in place */
-#include <stddef.h>                  /* include dependency: where size_t comes from */
-#define CALC_MAX_ITEMS 64            /* macro constant: the number the interface uses */
+/* calc_abi.h —— 对外的完整 ABI 头:四件套齐了才算完整 */
+#include <stddef.h>                  /* 包含依赖:size_t 的来处 */
+#define CALC_MAX_ITEMS 64            /* 宏常数:接口用到的数 */
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct calc_item {           /* type definition: layout written into the header */
+typedef struct calc_item {           /* 类型定义:布局写死在头里 */
     int units;
     int price;
 } calc_item;
-typedef struct calc_pool calc_pool;  /* opaque pointer: declared, never defined */
-int          calc_line_total(const calc_item* item);  /* function declaration */
+typedef struct calc_pool calc_pool;  /* 不透明指针:只声明,不定义 */
+int          calc_line_total(const calc_item* item);  /* 函数声明 */
 calc_pool*   calc_pool_create(size_t n);
 void         calc_pool_destroy(calc_pool* pool);
 const char*  calc_build_id(void);

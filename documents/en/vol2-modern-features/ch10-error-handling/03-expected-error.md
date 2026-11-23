@@ -23,9 +23,9 @@ title: 'std::expected<T, E>: Type-Safe Error Propagation'
 translation:
   source: documents/vol2-modern-features/ch10-error-handling/03-expected-error.md
   source_hash: d3b459b84e7ad55481f2adfa556d4c9d03f5b4bab1fdd256b0d77a381ea882df
-  translated_at: '2026-09-25T16:45:07+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13482
 ---
 # std::expected<T, E>: Type-Safe Error Propagation
 
@@ -78,7 +78,7 @@ int main() {
     auto r2 = parse_int("42abc");
     if (!r2) {
         std::cout << "Error: " << static_cast<int>(r2.error()) << "\n";
-        // Prints Error: 1 (kInvalidCharacter)
+        // 输出 Error: 1（kInvalidCharacter）
     }
 }
 ```
@@ -96,14 +96,14 @@ How the value and the error are packed into one return type — and how they are
 `expected` offers a fairly rich set of construction options. The most basic ones: construct directly from a value to represent success, and construct from `std::unexpected` to represent failure:
 
 ```cpp
-// Construct from a success value
+// 成功值构造
 std::expected<int, std::string> success = 42;
 
-// Construct from an error
+// 错误构造
 std::expected<int, std::string> failure =
     std::unexpected("something went wrong");
 
-// Construct in place
+// 就地构造
 std::expected<std::string, int> in_place_success{
     std::in_place, "hello"};
 ```
@@ -113,22 +113,22 @@ For access, `expected` provides an interface similar to `optional`'s, but adds o
 ```cpp
 std::expected<int, std::string> result = 42;
 
-// Check
+// 检查
 result.has_value();      // true
 static_cast<bool>(result);  // true
 
-// Access the value
-result.value();          // 42; throws std::bad_expected_access if empty
-*result;                 // 42; no check, undefined behavior if empty (like optional's operator*)
-result->some_member;     // if T is a struct
+// 访问值
+result.value();          // 42，如果为空则抛出 std::bad_expected_access
+*result;                 // 42，未定义行为检查（类似 optional 的 operator*）
+result->some_member;     // 如果 T 是结构体
 
-// Access the error (only call when !has_value())
+// 访问错误（仅在 !has_value() 时调用）
 std::expected<int, std::string> err =
     std::unexpected("oops");
 err.error();             // "oops"
 
-// Safe default value
-result.value_or(0);      // returns the value if present, otherwise 0
+// 安全默认值
+result.value_or(0);      // 如果有值返回值，否则返回 0
 ```
 
 The difference between `value()` and `operator*` is this: the former throws the `std::bad_expected_access<E>` exception when the `expected` is in the error state, while the latter is undefined behavior. So use `*` on paths where you are certain a value is there, and use `value()` — or an explicit `has_value()` check first — on paths where you are not so sure.
@@ -187,7 +187,7 @@ The difference between `transform` and `and_then` is that the function you pass 
 auto result = parse_int("42")
     .transform([](int v) { return v * 2; })
     .transform([](int v) { return std::to_string(v); });
-// The type of result is std::expected<std::string, ParseError>
+// result 的类型是 std::expected<std::string, ParseError>
 ```
 
 Here the first `transform` turns an `int` into an `int` (doubled), and the second turns the `int` into a `std::string`. If any step along the way fails, the subsequent `transform` calls do not run.
@@ -204,7 +204,7 @@ std::expected<int, std::string> try_cache(int key) {
 }
 
 std::expected<int, std::string> try_database(int key) {
-    return key * 100;  // Simulate fetching from the database
+    return key * 100;  // 模拟从数据库获取
 }
 
 int main() {
@@ -214,7 +214,7 @@ int main() {
             return try_database(42);
         });
 
-    // result holds 4200
+    // result 持有 4200
 }
 ```
 
@@ -228,7 +228,7 @@ The function passed to `or_else` must return an `expected` of the same type. Thi
 struct AppError {
     int code;
     std::string message;
-    std::string context;  // Extra context information
+    std::string context;  // 额外的上下文信息
 };
 
 auto result = parse_int("abc")
@@ -237,7 +237,7 @@ auto result = parse_int("abc")
                         "Parse error",
                         "in config file line 1"};
     });
-// The type of result is std::expected<int, AppError>
+// result 的类型是 std::expected<int, AppError>
 ```
 
 ### A Complete Chained Example
@@ -264,7 +264,7 @@ struct ServerConfig {
 
 std::expected<std::string, ConfigError> read_file(
     const std::string& path) {
-    // Simplified: assume it always succeeds
+    // 简化：假设总是成功
     return "host=192.168.1.1\nport=8080\n";
 }
 
@@ -273,7 +273,7 @@ std::expected<ServerConfig, ConfigError> parse_config(
     ServerConfig cfg;
     cfg.host = "localhost";
     cfg.port = 8080;
-    // Simplified: actually parse the content
+    // 简化：实际解析内容
     return cfg;
 }
 
@@ -342,14 +342,14 @@ If your project is still on C++17, don't worry — you can implement a simplifie
 #include <type_traits>
 #include <stdexcept>
 
-/// Helper type: used to construct the error branch
+/// 辅助类型：用于构造错误分支
 template <typename E>
 struct unexpected {
     E value;
     constexpr explicit unexpected(E v) : value(std::move(v)) {}
 };
 
-/// A simplified expected<T, E>
+/// 简化版 expected<T, E>
 template <typename T, typename E>
 class expected {
     bool has_value_;
@@ -359,7 +359,7 @@ class expected {
     } storage_;
 
 public:
-    // Construct from a success value
+    // 成功值构造
     expected(const T& v) : has_value_(true) {
         new(&storage_.val_) T(v);
     }
@@ -368,12 +368,12 @@ public:
         new(&storage_.val_) T(std::move(v));
     }
 
-    // Construct from an error
+    // 错误构造
     expected(unexpected<E> u) : has_value_(false) {
         new(&storage_.err_) E(std::move(u.value));
     }
 
-    // Destructor
+    // 析构
     ~expected() {
         if (has_value_) storage_.val_.~T();
         else storage_.err_.~E();
@@ -409,7 +409,7 @@ public:
         return has_value_ ? storage_.val_ : default_val;
     }
 
-    /// and_then: chain an operation that returns an expected
+    /// and_then：链接返回 expected 的操作
     template <typename F>
     auto and_then(F&& f) -> decltype(f(std::declval<T>())) {
         using ResultType = decltype(f(std::declval<T>()));
@@ -417,7 +417,7 @@ public:
         return ResultType(unexpected<E>{storage_.err_});
     }
 
-    /// transform: transform the value
+    /// transform：对值做变换
     template <typename F>
     auto transform(F&& f)
         -> expected<decltype(f(std::declval<T>())), E> {
@@ -427,7 +427,7 @@ public:
         return expected<U, E>(unexpected<E>{storage_.err_});
     }
 
-    /// or_else: handle the error
+    /// or_else：处理错误
     template <typename F>
     expected or_else(F&& f) {
         if (has_value_) return *this;

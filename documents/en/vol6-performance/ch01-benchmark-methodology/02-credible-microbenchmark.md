@@ -26,9 +26,9 @@ title: How to write a credible microbenchmark
 translation:
   source: documents/vol6-performance/ch01-benchmark-methodology/02-credible-microbenchmark.md
   source_hash: a800c5e069a479290b4dc543fdf43dcdd3603f9e32cc1f270846685a0f7c39fe
-  translated_at: '2026-09-26T05:37:23+00:00'
-  engine: anthropic
-  token_count: 4400
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7288
 ---
 # How to write a credible microbenchmark
 
@@ -45,27 +45,27 @@ You're probably tempted to do it this way: a `for` loop, `std::chrono::steady_cl
 Here's a minimal but complete example, measuring `std::vector::push_back`:
 
 ```cpp
-// push_bench.cpp — minimal complete GBench example
+// push_bench.cpp —— GBench 最小完整例子
 #include <benchmark/benchmark.h>
 #include <vector>
 
 static void BM_PushBack(benchmark::State& state) {
-    for (auto _ : state) {                       // timing loop: the framework controls the iteration count
+    for (auto _ : state) {                       // 计时循环:框架控制迭代次数
         std::vector<int> v;
         for (int i = 0; i < state.range(0); ++i) {
             v.push_back(i);
-            benchmark::DoNotOptimize(v.data());  // anti-DCE + memory barrier
+            benchmark::DoNotOptimize(v.data());  // 防 DCE + 内存 barrier
         }
-        benchmark::ClobberMemory();              // make sure writes really land in memory
+        benchmark::ClobberMemory();              // 确保写真正落内存
     }
-    state.SetComplexityN(state.range(0));        // tell the framework the big-O N; it auto-fits
+    state.SetComplexityN(state.range(0));        // 告诉框架 big-O 的 N,自动拟合
 }
 
 BENCHMARK(BM_PushBack)
-    ->RangeMultiplier(2)->Range(8, 8 << 6)       // parameter sweep: 8,16,32,...,512
-    ->UseRealTime()                              // report wall time, not CPU time
-    ->Repetitions(3)                             // run 3 rounds
-    ->ReportAggregatesOnly(true);                // report only mean/median/stddev/cv
+    ->RangeMultiplier(2)->Range(8, 8 << 6)       // 参数扫描:8,16,32,...,512
+    ->UseRealTime()                              // 报墙钟时间,不是 CPU 时间
+    ->Repetitions(3)                             // 跑 3 轮
+    ->ReportAggregatesOnly(true);                // 只报 mean/median/stddev/cv
 
 BENCHMARK_MAIN();
 ```
@@ -144,7 +144,7 @@ include(FetchContent)
 FetchContent_Declare(benchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG v1.9.5)
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)   # turn off benchmark's own test targets
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)   # 关掉它自己的测试目标
 FetchContent_MakeAvailable(benchmark)
 add_executable(push_bench push_bench.cpp)
 target_link_libraries(push_bench PRIVATE benchmark::benchmark_main)

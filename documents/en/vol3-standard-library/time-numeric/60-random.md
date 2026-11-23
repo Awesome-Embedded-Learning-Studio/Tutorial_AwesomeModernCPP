@@ -28,9 +28,9 @@ title: 'random: Why You Should Stop Using rand()'
 translation:
   source: documents/vol3-standard-library/time-numeric/60-random.md
   source_hash: 9a4aa065735385dd8be0b7d7ce7c7907aba0ba7c7a650c441717ca22e9729d73
-  translated_at: '2026-09-26T00:17:49+00:00'
-  engine: anthropic
-  token_count: 5500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 14071
 ---
 
 # random: Why You Should Stop Using rand()
@@ -73,7 +73,7 @@ Run the following on two machines with different compilers/standard libraries, a
 
 ```cpp
 std::srand(12345);
-// first 5 values
+// 前 5 个值
 ```
 
 On this machine (GCC 16.1.1 / glibc), we get:
@@ -126,7 +126,7 @@ int main()
     for (int t = 0; t < 4; ++t) {
         ts.emplace_back([&]() {
             for (int i = 0; i < 100000; ++i) {
-                total += std::rand() & 1;   // 0 or 1
+                total += std::rand() & 1;   // 0 或 1
             }
         });
     }
@@ -194,11 +194,11 @@ int main()
 {
     std::mt19937 eng(2024);
 
-    // Normal distribution: mean 0, standard deviation 1
+    // 正态分布: 均值 0, 标准差 1
     std::normal_distribution<double> norm(0.0, 1.0);
     constexpr int N = 1000000;
     double sum = 0, sum2 = 0;
-    std::vector<long long> hist(10, 0);   // 10 buckets over [-5, 5), each 1.0 wide
+    std::vector<long long> hist(10, 0);   // [-5, 5) 分 10 桶，每桶宽 1.0
     for (int i = 0; i < N; ++i) {
         double x = norm(eng);
         sum += x; sum2 += x * x;
@@ -213,13 +213,13 @@ int main()
         std::printf("  [%+.0f,%+.0f) %lld\n", i - 5.0, i - 4.0, hist[i]);
     }
 
-    // Bernoulli: p=0.7
+    // 伯努利: p=0.7
     std::bernoulli_distribution bern(0.7);
     long long trues = 0;
     for (int i = 0; i < N; ++i) if (bern(eng)) ++trues;
     std::printf("bernoulli(0.7) %d 样本: true 占比=%.4f\n", N, double(trues) / N);
 
-    // Uniform real: [0, 1)
+    // 均匀实数: [0, 1)
     std::uniform_real_distribution<double> ureal(0.0, 1.0);
     double usum = 0;
     for (int i = 0; i < N; ++i) usum += ureal(eng);
@@ -285,9 +285,9 @@ Putting the above together: for "generate a uniform integer from 1 to 100", the 
 
 int main()
 {
-    std::random_device rd;                       // 1. Device: a non-deterministic seed
-    std::mt19937 eng(rd());                      // 2. Engine: initialized from the seed
-    std::uniform_int_distribution<int> dist(1, 100);  // 3. Distribution: closed interval [1, 100]
+    std::random_device rd;                       // 1. 设备：非确定种子
+    std::mt19937 eng(rd());                      // 2. 引擎：用种子初始化
+    std::uniform_int_distribution<int> dist(1, 100);  // 3. 分布：[1, 100] 闭区间
 
     std::printf("rd{}() 种 mt19937 + uniform(1,100) 10 个: ");
     for (int i = 0; i < 10; ++i) std::printf("%d ", dist(eng));
@@ -324,7 +324,7 @@ The correct solution is one independent engine per thread, stored `thread_local`
 #include <thread>
 #include <vector>
 
-// One independent engine per thread; thread_local keeps it thread-private
+// 每个线程一个独立引擎，thread_local 保证线程私有
 thread_local std::mt19937 tl_eng{std::random_device{}()};
 
 int main()

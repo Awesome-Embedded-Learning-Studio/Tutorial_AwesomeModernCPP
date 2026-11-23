@@ -16,9 +16,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/compilation/09-pic-got-plt.md
   source_hash: ff746950f6ee72532ab057814a6b72912e380de26b84a8d76a079352ae943862
-  translated_at: '2026-10-13T04:10:38+00:00'
-  engine: anthropic
-  token_count: 13500
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 12469
 ---
 
 # Position-Independent Code and GOT/PLT: Addresses Settled at Load Time
@@ -34,7 +34,7 @@ The environment disclosure, as always: my experiments all ran in WSL2, with the 
 The libmyutil.so that 08 asked us to keep around, we won't be using this time. To see the GOT/PLT machinery clearly, we swap in a leaner three-line specimen, plus a program that uses it:
 
 ```c
-// libcalc.c — exports one variable and one function, then lets another function use them
+// libcalc.c —— 导出一个变量和一个函数,再让另一个函数用它们
 int tax_rate = 17;
 
 int base_tax(void) { return 100; }
@@ -112,7 +112,7 @@ $ readelf -h app | grep Type; readelf -h app_nopie | grep Type; readelf -h libca
 Now we take apart the main act. With total_tax's disassembly in hand, the data-loading part is what we look at first:
 
 ```text
-$ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
+$ objdump -d --no-show-raw-insn -M intel libcalc.so(节选)
 0000000000001114 <total_tax>:
     1114:	push   rbp
     1115:	mov    rbp,rsp
@@ -155,7 +155,7 @@ Look at the type: R_X86_64_COPY — that is the copy relocation. The end of 08 f
 Done with reading data, we return to that call line in total_tax. In the opening piece's hello.s, @PLT hung off the tail of the call operand, and all we said then was that it had something to do with how dynamic-library calls are made: the PLT is a trampoline, and the GOT is a table for looking up addresses. Once linking is finished, it has grown into a real, physical thing. Let's look at main on the app side — app has a PLT of its own, and we'll see it shortly:
 
 ```text
-$ objdump -d --no-show-raw-insn -M intel app (excerpt)
+$ objdump -d --no-show-raw-insn -M intel app(节选)
     1180:	call   1060 <base_tax@plt>
     1188:	call   1050 <total_tax@plt>
 ```
@@ -163,7 +163,7 @@ $ objdump -d --no-show-raw-insn -M intel app (excerpt)
 The call's target is 0x1060, and the label reads base_tax@plt. PLT stands for Procedure Linkage Table; in 04 we glimpsed it from afar, calling it the trampoline that function calls pass through. Today we read its entries out one by one. Each entry is a small fixed stretch of jump code — that is what the jargon calls a stub. app and libcalc each keep their own set, each serving its own call sites. The stub inside libcalc looks like this, together with that special first entry ahead of it:
 
 ```text
-$ objdump -d --no-show-raw-insn -M intel libcalc.so (excerpt)
+$ objdump -d --no-show-raw-insn -M intel libcalc.so(节选)
     1020:	push   QWORD PTR [rip+0x2fca]        # 3ff0 <_GLOBAL_OFFSET_TABLE_+0x8>
     1026:	jmp    QWORD PTR [rip+0x2fcc]        # 3ff8 <_GLOBAL_OFFSET_TABLE_+0x10>
     102c:	nop    DWORD PTR [rax+0x0]
@@ -223,7 +223,7 @@ So is the default lazy or eager? We don't have to memorize anyone's word for it 
 Back to the question we set aside earlier: total_tax calls its own base_tax — why should that have to go through the PLT? The binding records above have already let the answer slip out: when libcalc resolved base_tax, it looked for it as a global symbol. When the dynamic linker resolves a symbol, it lays out the export tables of every module in the process and searches from the front — whoever comes first wins, and there is no special privilege by which a library always uses its own. A same-named definition in another module displacing a call made inside the library: the jargon for this is interposition. Let's actually run it once; our impostor is one line long:
 
 ```c
-// libfake.c — the impostor: a same-named definition, return value deliberately different
+// libfake.c —— 顶替者:同名定义,返回值故意不同
 int base_tax(void) { return 999; }
 ```
 

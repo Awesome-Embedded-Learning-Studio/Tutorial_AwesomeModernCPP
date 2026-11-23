@@ -22,9 +22,9 @@ tags:
 translation:
   source: documents/vol8-domains/networking/03-reactor-pattern.md
   source_hash: 75310342b609b7747b3fb8f896485305280b6d432e4663b9766246081f9625eb
-  translated_at: '2026-09-26T04:36:08+00:00'
-  engine: anthropic
-  token_count: 4600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 7194
 ---
 
 # The Reactor pattern: wrapping epoll into an event loop + callbacks, and why it's 'synchronous non-blocking'
@@ -35,9 +35,9 @@ In the previous piece we wrote an echo server with epoll, and one thread can now
 for (int i = 0; i < n; ++i) {
     int fd = evs[i].data.fd;
     if (fd == lfd) {
-        // logic to accept a new connection ...
+        // accept 新连接的逻辑 ...
     } else {
-        // logic to echo an existing connection ...
+        // echo 已有连接的逻辑 ...
     }
 }
 ```
@@ -59,10 +59,10 @@ The full picture:
 
 ```mermaid
 flowchart TD
-    APP["App: Concrete Event Handlers<br/>(listen handler / echo handler / timer handler ...)"] -->|"register: fd + events of interest"| R["Reactor / Initiation Dispatcher<br/>(fd→handler registry + event loop)"]
-    R -->|"epoll_wait blocks waiting for readiness"| DM["Synchronous Event Demultiplexer<br/>(epoll_wait)"]
-    DM -->|"returns the ready fd + events"| R
-    R -->|"look up by fd, dispatch to the matching handler"| APP
+    APP["应用:Concrete Event Handlers<br/>(监听 handler / echo handler / 定时器 handler ...)"] -->|"注册:fd + 关心的事件"| R["Reactor / Initiation Dispatcher<br/>(fd→handler 注册表 + 事件循环)"]
+    R -->|"epoll_wait 阻塞等就绪"| DM["Synchronous Event Demultiplexer<br/>(epoll_wait)"]
+    DM -->|"返回就绪的 fd + 事件"| R
+    R -->|"按 fd 查表,分发给对应 handler"| APP
 ```
 
 The key is **decoupling**: the Reactor itself only does "registry + loop + dispatch" — it **neither knows nor cares** how a particular fd is actually handled; that's the handler's business. Adding a new fd type? Write a new handler, register it with the Reactor, and the event loop doesn't change a single line. That's the value of the pattern.
@@ -72,7 +72,7 @@ The key is **decoupling**: the Reactor itself only does "registry + loop + dispa
 Piece 2's `epoll_lt.cpp` is actually **already a minimal Reactor** — the roles just aren't spelled out separately. Let's refactor it into the shape the pattern calls for, so the structure stands out clearly:
 
 ```cpp
-// Event handler interface: handle_event is called when an fd is ready
+// 事件处理器接口:某个 fd 就绪时调 handle_event
 class EventHandler {
 public:
     virtual ~EventHandler() = default;
@@ -80,27 +80,27 @@ public:
     virtual int fd() const = 0;
 };
 
-// The Reactor itself: registry + event loop
+// Reactor 本体:注册表 + 事件循环
 class Reactor {
 public:
     void add(int fd, uint32_t events, std::unique_ptr<EventHandler> h) {
         epoll_event ev{}; ev.events = events; ev.data.fd = fd;
         ::epoll_ctl(ep_, EPOLL_CTL_ADD, fd, &ev);
-        handlers_[fd] = std::move(h);          // fd → handler registry
+        handlers_[fd] = std::move(h);          // fd → handler 注册表
     }
     void run() {
         for (;;) {
             int n = ::epoll_wait(ep_, evs_.data(), evs_.size(), -1);  // Demultiplexer
             for (int i = 0; i < n; ++i) {
                 int fd = evs[i].data.fd;
-                handlers_[fd]->handle_event(evs[i].events);           // dispatch
+                handlers_[fd]->handle_event(evs[i].events);           // 分发
             }
         }
     }
 private:
     int ep_{::epoll_create1(0)};
     std::array<epoll_event, 128> evs_;
-    std::unordered_map<int, std::unique_ptr<EventHandler>> handlers_; // registry
+    std::unordered_map<int, std::unique_ptr<EventHandler>> handlers_; // 注册表
 };
 ```
 
@@ -126,11 +126,11 @@ This is the one pair of concepts in network programming most worth clearing up o
 
 ```mermaid
 flowchart LR
-    subgraph Reactor["Reactor (epoll / Linux) — ready notification"]
-        R1["kernel: fd is readable"] --> R2["you: read() and haul it yourself"]
+    subgraph Reactor["Reactor(epoll / Linux)——就绪通知"]
+        R1["内核:fd 可读了"] --> R2["你:read() 自己搬"]
     end
-    subgraph Proactor["Proactor (IOCP / Windows) — completion notification"]
-        P1["you: issue the read request"] --> P2["kernel: reads it for you"] --> P3["notifies you: done"]
+    subgraph Proactor["Proactor(IOCP / Windows)——完成通知"]
+        P1["你:发起 read 请求"] --> P2["内核:帮你读完"] --> P3["通知你:读完了"]
     end
 ```
 

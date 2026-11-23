@@ -27,10 +27,10 @@ tags:
 title: "-O levels and optimization blockers: what the compiler can and can't do"
 translation:
   source: documents/vol6-performance/ch07-compiler-and-size/07-01-opt-levels-and-blockers.md
-  source_hash: a17a25eef54896e1c0579d6ddd496ac78ca689e3441ab20649db3e961b5f6837
-  translated_at: '2026-09-26T07:06:21+00:00'
-  engine: anthropic
-  token_count: 3700
+  source_hash: 1140ae40f3f12152317d4485c0dba3bd9de332e879742f9179cf67936eef3496
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 4194
 ---
 # -O levels and optimization blockers: what the compiler can and can't do
 
@@ -57,10 +57,10 @@ GCC/Clang's `-O` levels control how hard the optimizer works. One table (check t
 We benchmark the same function (a loop with a `volatile` scale) at different -O levels:
 
 ```text
-===== -O levels (same loop function) =====
-  -O0: 18.6 ms   ← no optimization, 4x slower than -O2
-  -O2:  4.9 ms   ← release sweet spot
-  -O3:  7.4 ms   ← slower than -O2! (see below: not vectorization backfiring)
+===== -O 级别(同一个循环函数)=====
+  -O0: 18.6 ms   ← 不优化,慢 4 倍于 -O2
+  -O2:  4.9 ms   ← release 甜点
+  -O3:  7.4 ms   ← 比 -O2 还慢!(见下文:不是向量化反伤)
 ```
 
 Two things here, one sentence each.
@@ -86,8 +86,8 @@ C/C++ allows two pointers to point at the same address (aliasing). The compiler 
 Measured (`scale_add`: a loop computing `a[i] += b[i] * *scale`, with `volatile` scale):
 
 ```text
-  -O3 aliasing version (default): 7.4 ms   ← compiler won't assume a≠b
-  -O3 __restrict version:         5.8 ms   ← you promise a/b/scale don't alias, compiler dares to optimize
+  -O3 别名版(默认):   7.4 ms   ← 编译器不敢假设 a≠b
+  -O3 __restrict 版:   5.8 ms   ← 你保证 a/b/scale 不别名,编译器敢优化
 ```
 
 > ⚠️ Note: the attribution in this teaching demo is actually **not clean**. In the accompanying code, the alias version's signature takes `volatile int* scale` while the restrict version's takes `int* __restrict scale` (scale is not volatile) — meaning the restrict version **also drops the `volatile` on `scale`**. So 7.4→5.8 isn't entirely the work of alias analysis; part of it is that once `volatile` is gone, `scale` can be cached/hoisted. A clean aliasing comparison would keep `scale`'s type identical across both versions and vary only whether `a`/`b` carry `__restrict`. That's a simplification of the teaching demo — in real-world comparisons, mind the "change only one variable" discipline from ch00-01.
@@ -111,7 +111,7 @@ In practice, **don't use `volatile` for "thread synchronization" or "performance
 ## References
 
 - The GCC manual, *Options That Control Optimization* (the list of passes each of `-O0`/`-O1`/`-O2`/`-O3`/`-Os`/`-Oz` enables)
-- Agner Fog, *Optimizing software in C++*, §8 *Different C++ compilers* (local copy available)
+- Agner Fog, *Optimizing software in C++*, §8 *Different C++ compilers*
 - CSAPP chapter 5, *Optimizing Program Performance* (the conceptual definition of optimization blockers — the aliasing/memory-referencing story)
 - This article's benchmark code: `code/volumn_codes/vol6-performance/ch07/opt_levels_blockers.cpp`
 

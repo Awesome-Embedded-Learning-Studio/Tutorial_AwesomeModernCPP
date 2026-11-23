@@ -20,10 +20,10 @@ tags:
 title: 'Pointer Basics: The World of Addresses'
 translation:
   source: documents/vol1-fundamentals/c_tutorials/07A-pointer-essentials.md
-  source_hash: 87e8e241628694cd84d0af49bb476a713d805b5fce6d4296e606af2c53609aad
-  translated_at: '2026-09-25T12:58:47+00:00'
-  engine: anthropic
-  token_count: 2500
+  source_hash: 79e8e6c12be75aed82782544fe9dc0627cc1e9e9063141ee16f5386d2a9e11b0
+  translated_at: '2026-11-22T16:39:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7701
 ---
 # Pointer Basics: The World of Addresses
 
@@ -89,7 +89,7 @@ The declaration syntax for a pointer variable is `type* name`. The `*` sitting n
 
 ```c
 int value = 42;
-int* ptr = &value;  // ptr stores the address of value
+int* ptr = &value;  // ptr 存储了 value 的地址
 ```
 
 `&` is the address-of operator; it returns the memory address of its operand. `ptr` now holds the address of `value`, and we say "ptr points to value".
@@ -99,8 +99,8 @@ int* ptr = &value;  // ptr stores the address of value
 Here is a habit of vital importance: **always initialize a pointer when you declare it**. An uninitialized pointer stores a random value—it may point anywhere in memory. If you accidentally dereference an uninitialized pointer, at best you read garbage data, at worst you crash on the spot with a segmentation fault, and in the more insidious cases the program "looks normal" while the data has been quietly rewritten.
 
 ```c
-int* good_ptr = NULL;     // Good: explicitly states "points to nothing"
-int* bad_ptr;             // Dangerous: holds a random address; dereferencing it is undefined behavior
+int* good_ptr = NULL;     // 好：明确表示"不指向任何东西"
+int* bad_ptr;             // 危险：包含随机地址，解引用是未定义行为
 ```
 
 `int* p, q;` declares one `int*` and one `int`—not two pointers! The `*` only modifies the variable name immediately after it, `p`. To declare two pointers, you must write `int *p, *q;`. This is a classic trap of C's declaration syntax.
@@ -115,17 +115,17 @@ Initializing a pointer you're not using yet to `NULL` is a good habit. `NULL` is
 
 ```c
 int value = 42;
-int* ptr = &value;     // &value → take value's address and assign it to ptr
+int* ptr = &value;     // &value → 取得 value 的地址，赋给 ptr
 
-printf("value 的地址: %p\n", (void*)ptr);    // print the address
-printf("ptr 指向的值: %d\n", *ptr);          // *ptr → dereference, yields 42
+printf("value 的地址: %p\n", (void*)ptr);    // 打印地址
+printf("ptr 指向的值: %d\n", *ptr);          // *ptr → 解引用，得到 42
 ```
 
 Dereferencing `*ptr` means "follow the address stored in ptr and fetch the value from that piece of memory". If we can read, we can also write:
 
 ```c
 *ptr = 100;
-printf("value = %d\n", value);  // prints 100 — the original variable was modified through the pointer
+printf("value = %d\n", value);  // 输出 100——通过指针修改了原始变量
 ```
 
 This is exactly the power of pointers: holding an address lets you operate directly on the data in that memory—whether that memory sits in the current function's stack frame, on the heap, or in a memory-mapped hardware register region.
@@ -179,12 +179,12 @@ By way of analogy: you're standing in front of a row of lockers, each 40 cm wide
 
 ```c
 int arr[5] = {10, 20, 30, 40, 50};
-int* p = arr;     // p points to arr[0]
+int* p = arr;     // p 指向 arr[0]
 
-p++;              // p now points to arr[1]
-                 // the address increased by sizeof(int), i.e. 4 bytes
+p++;              // p 现在指向 arr[1]
+                 // 地址增加了 sizeof(int)，即 4 字节
 
-int val = *(p + 2);  // p+2 skips two ints, landing on arr[3]; val = 40
+int val = *(p + 2);  // p+2 跳过两个 int，指向 arr[3]，val = 40
 ```
 
 `p + 2` doesn't add 2 to the address value—it adds `2 * sizeof(int)`. The design is beautifully clever: it makes pointer arithmetic a natural fit for array subscript offsets.
@@ -198,7 +198,7 @@ int arr[5] = {10, 20, 30, 40, 50};
 int* start = &arr[1];
 int* end   = &arr[4];
 
-ptrdiff_t distance = end - start;   // 3, not 12
+ptrdiff_t distance = end - start;   // 3，不是 12
 ```
 
 `ptrdiff_t` is a type defined in `<stddef.h>` specifically to represent pointer distances.
@@ -295,9 +295,9 @@ Two things are worth noting:
 Traverse an `int` array with pointer arithmetic and print all its elements. The requirement: no `[]` operator—only pointer addition/subtraction and dereference:
 
 ```c
-/// @brief Traverse an int array with pointer arithmetic and print every element
-/// @param data address of the array's first element
-/// @param count number of elements
+/// @brief 使用指针算术遍历并打印 int 数组
+/// @param data 数组首元素地址
+/// @param count 元素个数
 void print_int_array(const int* data, size_t count);
 ```
 

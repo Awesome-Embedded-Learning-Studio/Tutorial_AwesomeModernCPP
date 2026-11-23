@@ -19,9 +19,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/06-flashing.md
   source_hash: 70d7986cdacf6b4c10a055cd0c8973c01e2d168017274273c6e4236abcb99dc9
-  translated_at: '2026-09-25T08:25:51+00:00'
-  engine: anthropic
-  token_count: 2103
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8484
 ---
 
 # The board has arrived — plug it in first
@@ -93,7 +93,7 @@ lsusb | grep -Ei '0483:3748|st-?link'
 Seeing output like this means it went through (a real capture from my machine):
 
 ```text
-# I typed lsusb and pressed Enter
+# 笔者输入了 lsusb 后回车
 Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
 Bus 001 Device 003: ID 0483:3748 STMicroelectronics ST-LINK/V2
 Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub

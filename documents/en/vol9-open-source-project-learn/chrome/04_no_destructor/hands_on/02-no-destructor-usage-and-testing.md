@@ -23,9 +23,9 @@ title: "NoDestructor Design Guide (II): usage boundaries, LSan, and testing"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/hands_on/02-no-destructor-usage-and-testing.md
   source_hash: a026c0db95f64cfca81ee3534d8444b2613a581c2b58e3111d83faf08ba73eea
-  translated_at: '2026-09-26T03:33:31+00:00'
-  engine: anthropic
-  token_count: 1600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3852
 ---
 # NoDestructor Design Guide (II): usage boundaries, LSan, and testing
 
@@ -35,7 +35,7 @@ In the previous piece we picked apart the "why" and the implementation of NoDest
 
 ```cpp
 const T& GetGlobal() {
-    static const base::NoDestructor<T> x(args...);   // ✓ function-local static + non-trivially-destructible T
+    static const base::NoDestructor<T> x(args...);   // ✓ 函数局部静态 + 非平凡析构 T
     return *x;
 }
 ```

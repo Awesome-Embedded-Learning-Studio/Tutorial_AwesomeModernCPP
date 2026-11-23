@@ -20,12 +20,23 @@ tags:
 - 入门
 - 基础
 title: Smart Pointer Preview
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #213)"
+      en: "Contributed exercise solutions and article revisions (PR #213)"
 translation:
   source: documents/vol1-fundamentals/ch04/04-smart-ptr-preview.md
-  source_hash: 1146842cae17703a4869553547f7cf3190da266ef75747ee9cdb10944b54f398
-  translated_at: '2026-09-25T10:38:42+00:00'
-  engine: anthropic
-  token_count: 5200
+  source_hash: 898f603501758c89e81fe03172eef14b5274b8113174fe041bff4bdcc5738e2c
+  translated_at: '2026-11-22T16:40:19+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7424
 ---
 # Smart Pointer Preview: Stop Keeping Track of delete by Hand
 
@@ -43,7 +54,7 @@ void process_data()
     int* data = new int[1000];
 
     if (some_error_condition()) {
-        return;  // Returned right here — where's the delete???
+        return;  // 直接 return 了，delete 呢？？？
     }
 
     delete[] data;
@@ -84,7 +95,7 @@ void demo()
     IntHolder holder(42);
     std::cout << "内部值: " << *holder.ptr << "\n";
     if (true) {
-        return;  // Even with an early return, holder's destructor still runs
+        return;  // 即使提前 return，holder 的析构函数也会被调用
     }
 }
 ```
@@ -136,10 +147,10 @@ int main()
 {
     {
         auto hero = std::make_unique<Player>("Alice", 5);
-        hero->show_status();   // -> accesses members, same as a raw pointer
-        std::cout << (*hero).name << "\n";  // * dereferences too
+        hero->show_status();   // -> 访问成员，和裸指针一样
+        std::cout << (*hero).name << "\n";  // * 解引用也行
     }
-    // hero leaves scope here; delete happens automatically
+    // hero 在这里离开作用域，自动 delete
 
     std::cout << "继续执行...\n";
     return 0;
@@ -166,8 +177,8 @@ We can see that "Alice 退场。" appears before "继续执行..."—the destruc
 
 ```cpp
 auto p1 = std::make_unique<int>(42);
-auto p2 = std::move(p1);  // Ownership moves from p1 to p2
-// p1 becomes nullptr; p2 now owns that memory
+auto p2 = std::move(p1);  // 所有权从 p1 转移到 p2
+// p1 变成 nullptr，p2 持有那块内存
 ```
 
 The detailed mechanics of `std::move` will be covered systematically in Volume Two. For now, we only need to remember that it is the standard way to transfer ownership of a `unique_ptr`.
@@ -190,7 +201,7 @@ void raw_version(bool error)
     data[0] = 42;
 
     if (error) {
-        return;  // Leak! Forgot delete[]
+        return;  // 泄漏！忘记 delete[]
     }
 
     delete[] data;
@@ -202,19 +213,19 @@ void smart_version(bool error)
     data[0] = 42;
 
     if (error) {
-        return;  // No leak — the destructor calls delete[] automatically
+        return;  // 不泄漏——析构函数自动调用 delete[]
     }
 }
 
 int main()
 {
     std::cout << "=== 错误场景 ===\n";
-    raw_version(true);    // Leaks 400 bytes
-    smart_version(true);  // Safe
+    raw_version(true);    // 泄漏 400 字节
+    smart_version(true);  // 安全
 
     std::cout << "=== 正常场景 ===\n";
-    raw_version(false);   // Released normally
-    smart_version(false); // Released normally
+    raw_version(false);   // 正常释放
+    smart_version(false); // 正常释放
     return 0;
 }
 ```

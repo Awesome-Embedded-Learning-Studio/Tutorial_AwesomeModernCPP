@@ -24,9 +24,9 @@ title: 'Chrome-like WeakPtr: Reference-Counted Control Block and WeakPtrFactory'
 translation:
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/04-chrome-weakptr.md
   source_hash: 176284eae4fa309c923eb3d115d38f7eb2be4c8406a4be2860d081171ffa2ab4
-  translated_at: '2026-09-27T02:44:49+00:00'
-  engine: anthropic
-  token_count: 4100
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 9182
 ---
 # Chrome-like WeakPtr: Reference-Counted Control Block and WeakPtrFactory
 
@@ -56,7 +56,7 @@ Now let's implement the teaching version.
 
 ```cpp
 // weak_flag.h
-// Teaching version of a reference-counted control block
+// 教学版引用计数控制块
 
 #pragma once
 
@@ -66,7 +66,7 @@ class WeakFlag {
 public:
     WeakFlag() = default;
 
-    // Copying and moving are forbidden — the control block is not copyable
+    // 禁止拷贝和移动——控制块是不可复制的
     WeakFlag(const WeakFlag&) = delete;
     WeakFlag& operator=(const WeakFlag&) = delete;
 
@@ -91,9 +91,9 @@ public:
 
 private:
     std::atomic<bool> is_valid_{true};
-    std::atomic<int> ref_count_{1};  // The factory initially holds one reference
-    // Note: no virtual destructor, no custom deleter wired into delete
-    // The design goal of this control block is to be lighter than shared_ptr's control block
+    std::atomic<int> ref_count_{1};  // Factory 初始持有一份引用
+    // 注意：不使用虚析构函数，不使用 delete 的自定义删除器
+    // 这个控制块的设计目标是比 shared_ptr 的控制块更轻量
 
     ~WeakFlag() = default;
 };
@@ -105,7 +105,7 @@ Compared with `shared_ptr`'s control block, `WeakFlag` has only two atomic varia
 
 ```cpp
 // weak_ptr.h
-// Teaching version of a Chrome-like WeakPtr<T>
+// 教学版 Chrome-like WeakPtr<T>
 
 #pragma once
 
@@ -123,7 +123,7 @@ public:
         }
     }
 
-    // Copy constructor: bump the reference count
+    // 拷贝构造：增加引用计数
     WeakPtr(const WeakPtr& other) : ptr_(other.ptr_), flag_(other.flag_)
     {
         if (flag_) {
@@ -131,7 +131,7 @@ public:
         }
     }
 
-    // Move constructor: transfer the reference
+    // 移动构造：转移引用
     WeakPtr(WeakPtr&& other) noexcept
         : ptr_(other.ptr_), flag_(other.flag_)
     {
@@ -139,11 +139,11 @@ public:
         other.flag_ = nullptr;
     }
 
-    // Assignment
+    // 赋值
     WeakPtr& operator=(const WeakPtr& other)
     {
         if (this != &other) {
-            // Release the old one first
+            // 先释放旧的
             if (flag_) {
                 flag_->release();
             }
@@ -170,7 +170,7 @@ public:
         return *this;
     }
 
-    // Destructor: drop the reference count
+    // 析构：减少引用计数
     ~WeakPtr()
     {
         if (flag_) {
@@ -178,10 +178,10 @@ public:
         }
     }
 
-    // Check whether it is still valid
+    // 检查是否有效
     bool is_valid() const { return flag_ && flag_->is_valid(); }
 
-    // Get the pointer
+    // 获取指针
     T* get() const
     {
         if (is_valid()) {
@@ -204,7 +204,7 @@ private:
 
 ```cpp
 // weak_ptr_factory.h
-// Teaching version of WeakPtrFactory<T>
+// 教学版 WeakPtrFactory<T>
 
 #pragma once
 
@@ -216,21 +216,21 @@ class WeakPtrFactory {
 public:
     explicit WeakPtrFactory(T* owner) : owner_(owner)
     {
-        // The factory allocates the control block on creation
+        // Factory 创建时分配 control block
         flag_ = new WeakFlag();
     }
 
-    // Copying and moving are forbidden — the factory is bound to its owner
+    // 禁止拷贝和移动——Factory 和 Owner 绑定
     WeakPtrFactory(const WeakPtrFactory&) = delete;
     WeakPtrFactory& operator=(const WeakPtrFactory&) = delete;
 
-    // Create a new WeakPtr
+    // 创建一个新的 WeakPtr
     WeakPtr<T> get_weak_ptr()
     {
         return WeakPtr<T>(owner_, flag_);
     }
 
-    // Invalidate every WeakPtr that has been handed out
+    // 使所有已发出的 WeakPtr 失效
     void invalidate_weak_ptrs()
     {
         if (flag_) {
@@ -238,13 +238,13 @@ public:
         }
     }
 
-    // Automatically invalidate when the factory is destroyed
+    // Factory 析构时自动 invalidate
     ~WeakPtrFactory()
     {
         invalidate_weak_ptrs();
-        // The factory releases the reference it holds
-        // If any WeakPtr is still alive, flag_ is not deleted
-        // flag_ is deleted only when the last WeakPtr is destroyed
+        // Factory 释放自己持有的引用
+        // 如果还有 WeakPtr 活着，flag_ 不会被 delete
+        // 最后一个 WeakPtr 析构时才会 delete flag_
         if (flag_) {
             flag_->release();
         }
@@ -316,7 +316,7 @@ public:
 
 private:
     int id_;
-    // The factory is the last member — ensure invalidation happens before the other members are destroyed
+    // Factory 作为最后一个成员变量——确保在其他成员析构之前 invalidate
     WeakPtrFactory<Session> factory_{this};
 };
 
@@ -327,17 +327,17 @@ int main()
         auto w = s->get_weak_ptr();
         std::cout << "Before destroy: valid = " << w.is_valid() << "\n";
         return w;
-        // The Session is destroyed here
-        // factory_ destroyed → invalidate → release (ref_count: 2→1)
-        // The WeakFlag is still alive (held by weak)
+        // Session 在这里析构
+        // factory_ 析构 → invalidate → release (ref_count: 2→1)
+        // WeakFlag 仍然活着（weak 持有）
     }();
 
-    // The Session has been destroyed
+    // Session 已经销毁
     std::cout << "After destroy: valid = " << weak.is_valid() << "\n";
     std::cout << "get() returns: "
               << (weak.get() ? "non-null" : "nullptr") << "\n";
 
-    // weak destroyed → release (ref_count: 1→0) → delete WeakFlag
+    // weak 析构 → release (ref_count: 1→0) → delete WeakFlag
 }
 ```
 

@@ -19,9 +19,9 @@ prerequisites:
 translation:
   source: documents/vol4-advanced/vol4-generics-patterns/03-factory-method-abstract-factory.md
   source_hash: 795e3cee99e366cfbb01b154001c32709243628fc8526e52fdc03f49181648d7
-  translated_at: '2026-09-26T05:04:02+00:00'
-  engine: anthropic
-  token_count: 7000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 21905
 ---
 # Factory Method and Abstract Factory: From a Single Switch to Creating a Family of Products
 
@@ -39,8 +39,8 @@ void enjoy_our_meals(std::vector<Person>& crowds) {
             case BurgerType::Cheese:  p = new CheeseBurger;  break;
             case BurgerType::Beef:    p = new BeefBurger;    break;
             case BurgerType::Chicken: p = new ChickenBurger; break;
-            // oh shit, there are still dozens of burgers to add
-            // someone will ask who patches the missing smart-pointer part for me — hold on, we're doing design patterns.
+            // oh shit, 还有几十种汉堡要加
+            // 有人会问我缺的智能指针这块谁给我补啊，我说别急，讲设计模式呢。
         }
         each_person.enjoy_burger(p);
         delete p;
@@ -137,13 +137,13 @@ The behavior is exactly right. But the simple factory has a flaw it cannot dodge
 How do we manage "add a product without touching the factory"? The answer: **make the factory itself an abstraction too, and give each product its own concrete factory**. That is where GoF's Factory Method pattern comes from:
 
 ```cpp
-// Factory interface: only defines "can make a Burger", without dictating which kind
+// 工厂接口:只定义「能造一个 Burger」,不规定造哪种
 struct BurgerCreator {
     virtual ~BurgerCreator() = default;
     virtual std::unique_ptr<Burger> create() const = 0;
 };
 
-// Each product gets its own concrete factory
+// 每种产品配一个具体工厂
 struct CheeseBurgerCreator : BurgerCreator {
     std::unique_ptr<Burger> create() const override { return std::make_unique<CheeseBurger>(); }
 };
@@ -177,7 +177,7 @@ int main() {
 
     int total = 0;
     for (auto& creator : creators) {
-        auto burger = creator->create();   // returns unique_ptr<Burger>; the concrete type is erased
+        auto burger = creator->create();   // 返回 unique_ptr<Burger>,具体类型被擦除
         std::cout << "got " << burger->name()
                   << ", price=" << burger->price() << "\n";
         total += burger->price();
@@ -241,20 +241,20 @@ struct Drink {
 struct Cola  : Drink { std::string name() const override { return "Cola"; } };
 struct Juice : Drink { std::string name() const override { return "Juice"; } };
 
-// Abstract factory: the creation interfaces for a family of products, bundled together
+// 抽象工厂:一族产品的创建接口打包在一起
 struct MealFactory {
     virtual ~MealFactory() = default;
     virtual std::unique_ptr<Burger> create_burger() const = 0;
     virtual std::unique_ptr<Drink>  create_drink()  const = 0;
 };
 
-// Classic combo factory: keeps the whole family in the "classic" style
+// 经典套餐工厂:整套家族保持「经典」风格
 struct ClassicMealFactory : MealFactory {
     std::unique_ptr<Burger> create_burger() const override { return std::make_unique<CheeseBurger>(); }
     std::unique_ptr<Drink>  create_drink()  const override { return std::make_unique<Cola>(); }
 };
 
-// Healthy combo factory: keeps the whole family in the "healthy" style
+// 健康套餐工厂:整套家族保持「健康」风格
 struct HealthyMealFactory : MealFactory {
     std::unique_ptr<Burger> create_burger() const override { return std::make_unique<ChickenBurger>(); }
     std::unique_ptr<Drink>  create_drink()  const override { return std::make_unique<Juice>(); }
@@ -321,13 +321,13 @@ struct FunctionalBurgerFactory {
 
     static std::unique_ptr<Burger> create(const std::string& key) {
         auto it = registry().find(key);
-        if (it == registry().end()) return nullptr;   // key doesn't exist; safely return empty
+        if (it == registry().end()) return nullptr;   // key 不存在,安全地返回空
         return (it->second)();
     }
 
 private:
     static std::unordered_map<std::string, Creator>& registry() {
-        static std::unordered_map<std::string, Creator> r;  // a Meyer's Singleton holds the registry
+        static std::unordered_map<std::string, Creator> r;  // Meyer's Singleton 持有注册表
         return r;
     }
 };
@@ -336,21 +336,21 @@ private:
 Registration and use are both plain lambdas — no inheritance, no class explosion:
 
 ```cpp
-// Registration phase: each new burger registers one lambda here
+// 注册阶段:每加一种汉堡,这里登记一条 lambda
 FunctionalBurgerFactory::register_creator("cheese",  [] { return std::make_unique<CheeseBurger>(); });
 FunctionalBurgerFactory::register_creator("beef",    [] { return std::make_unique<BeefBurger>(); });
 FunctionalBurgerFactory::register_creator("chicken", [] { return std::make_unique<ChickenBurger>(); });
 
-// Usage phase: fetch a product by key
+// 使用阶段:按 key 拿产品
 auto b  = FunctionalBurgerFactory::create("beef");
-auto mx = FunctionalBurgerFactory::create("nope");   // a nonexistent key
+auto mx = FunctionalBurgerFactory::create("nope");   // 不存在的 key
 ```
 
 Let's verify it here, with special attention to what happens on a nonexistent key:
 
 ```cpp
 #include <iostream>
-// ... FunctionalBurgerFactory definition + registration of the three products ...
+// ... FunctionalBurgerFactory 定义 + 三个产品的注册 ...
 
 int main() {
     FunctionalBurgerFactory::register_creator("cheese",  [] { return std::make_unique<CheeseBurger>(); });
@@ -405,7 +405,7 @@ struct Burger {
 };
 struct CheeseBurger : Burger { std::string name() const override { return "CheeseBurger"; } };
 struct BeefBurger   : Burger { std::string name() const override { return "BeefBurger"; } };
-// Key point: when adding FishBurger, this line is an addition, not a modification of existing code
+// 关键:新增 FishBurger 时,下面这行是「新增」,不是「修改既有」
 struct FishBurger   : Burger { std::string name() const override { return "FishBurger"; } };
 
 struct BurgerCreator {
@@ -414,14 +414,14 @@ struct BurgerCreator {
 };
 struct CheeseBurgerCreator : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<CheeseBurger>(); } };
 struct BeefBurgerCreator   : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<BeefBurger>(); } };
-// New FishBurgerCreator: still an addition — the existing Creator subclasses and the BurgerCreator interface stay untouched
+// 新增 FishBurgerCreator:依然是「新增」,既有的 Creator 子类和 BurgerCreator 接口都没动
 struct FishBurgerCreator   : BurgerCreator { std::unique_ptr<Burger> create() const override { return std::make_unique<FishBurger>(); } };
 
 int main() {
     std::vector<std::unique_ptr<BurgerCreator>> creators;
     creators.emplace_back(std::make_unique<CheeseBurgerCreator>());
     creators.emplace_back(std::make_unique<BeefBurgerCreator>());
-    creators.emplace_back(std::make_unique<FishBurgerCreator>());   // one more line at the assembly point
+    creators.emplace_back(std::make_unique<FishBurgerCreator>());   // 装配点加一行
     for (auto& c : creators) std::cout << c->create()->name() << "\n";
 }
 ```
@@ -446,7 +446,7 @@ Everything so far has been about decoupling. But the factory pattern has another
 struct TracingBurgerFactory {
     static std::unique_ptr<Burger> create(BurgerType t) {
         auto start = std::chrono::steady_clock::now();
-        auto burger = SimpleBurgerFactory::create(t);   // delegate to the real factory
+        auto burger = SimpleBurgerFactory::create(t);   // 委托真实工厂
         auto end   = std::chrono::steady_clock::now();
         auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         std::cerr << "[factory] created " << burger->name()

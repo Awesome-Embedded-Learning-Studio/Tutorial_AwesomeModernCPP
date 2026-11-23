@@ -10,10 +10,10 @@ tags:
 difficulty: beginner
 translation:
   source: documents/cpp-reference/index.md
-  source_hash: ef275b342e0914de36a1ab7e4ec0557d1aca4a7e85c835452f43e320132ba2c2
-  translated_at: '2026-09-27T02:03:39+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: 6365067c1c63a987cd0a379efb04f6d328da620a1883e9bc586534a4f64eb05b
+  translated_at: '2026-11-22T16:41:57.331292+00:00'
+  engine: glm-5.3-refresh
+  token_count: 18096
 ---
 
 <!-- markdownlint-disable MD051 -->

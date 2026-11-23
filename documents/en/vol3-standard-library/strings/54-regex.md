@@ -27,9 +27,9 @@ title: 'regex: The Heaviest Text Tool in the Standard Library and Its Cost'
 translation:
   source: documents/vol3-standard-library/strings/54-regex.md
   source_hash: 631bf7c89e1bfa6b03fc114f11b7120c7cf2528400d3c5034a348ac5f16bc6a0
-  translated_at: '2026-09-26T00:03:56+00:00'
-  engine: anthropic
-  token_count: 16000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 13799
 ---
 # regex: The Heaviest Text Tool in the Standard Library and Its Cost
 
@@ -60,16 +60,16 @@ int main()
     std::string email = "charlie@example.com";
     std::regex email_re(R"(^\w+@\w+\.\w+$)");
 
-    // regex_match: the entire string must fully match
+    // regex_match：整串必须完全匹配
     std::cout << "regex_match 邮箱: "
               << std::boolalpha << std::regex_match(email, email_re) << '\n';
-    // whole string fits -> true
+    // 整串对得上 -> true
 
-    // same pattern, but a string with "other text around it": match goes straight to false
+    // 同一个模式,换成"前后带其它字"的串,match 直接 false
     std::cout << "regex_match 带垃圾: "
               << std::regex_match(std::string("联系 charlie@example.com 谢谢"), email_re) << '\n';
 
-    // regex_search: searches for a substring, no whole-string requirement
+    // regex_search：在串里搜子串,不要求整串
     std::string text = "订单 #12345 已于 2026-06-22 发货";
     std::regex num_re(R"(\d+)");
     std::smatch m;
@@ -167,7 +167,7 @@ The other one, `std::regex_token_iterator`, does tokenization full-time. Its key
 
 ```cpp
 // Standard: C++17
-std::string csv = "alpha,beta,,gamma,delta";   // deliberately leave one empty field
+std::string csv = "alpha,beta,,gamma,delta";   // 故意留一个空字段
 std::regex comma_re(",");
 
 std::sregex_token_iterator tit(csv.begin(), csv.end(), comma_re, -1);
@@ -217,14 +217,14 @@ Constructing a `std::regex` can take syntax flags from `std::regex_constants` to
 using namespace std::regex_constants;
 std::string s = "abc 123 XYZ";
 
-std::regex def_re(R"(\w+\s\d+)");                 // default ECMAScript: \w and \d both recognized
+std::regex def_re(R"(\w+\s\d+)");                 // 默认 ECMAScript,\w \d 都认
 std::smatch m;
 if (std::regex_search(s, m, def_re)) std::cout << "默认 ECMAScript: '" << m[0] << "'\n";
 
-std::regex ext_re(R"([0-9]+)", extended);         // POSIX extended: \d not recognized, use [0-9]
+std::regex ext_re(R"([0-9]+)", extended);         // POSIX extended,\d 不认,用 [0-9]
 if (std::regex_search(s, m, ext_re)) std::cout << "POSIX extended [0-9]+: '" << m[0] << "'\n";
 
-std::regex icase_re("hello", icase);              // layer on icase for case-insensitive matching
+std::regex icase_re("hello", icase);              // 叠 icase 不区分大小写
 std::cout << "icase 匹配 'HELLO': " << std::boolalpha
           << std::regex_search(std::string("say HELLO world"), icase_re) << '\n';
 ```
@@ -291,7 +291,7 @@ Let's make this visible with a classic counterexample: the pattern `(a+)+b`, fed
 // Standard: C++17
 std::regex bad_re(R"((a+)+b)");
 for (int n : {16, 20, 24, 28}) {
-    std::string s(static_cast<std::size_t>(n), 'a');   // n a's, no trailing b
+    std::string s(static_cast<std::size_t>(n), 'a');   // n 个 a,结尾没有 b
     auto t0 = std::chrono::steady_clock::now();
     bool m = std::regex_match(s, bad_re);
     auto t1 = std::chrono::steady_clock::now();

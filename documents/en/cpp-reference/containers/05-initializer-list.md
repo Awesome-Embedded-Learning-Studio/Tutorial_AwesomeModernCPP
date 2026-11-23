@@ -18,9 +18,9 @@ title: std::initializer_list
 translation:
   source: documents/cpp-reference/containers/05-initializer-list.md
   source_hash: a3a6f1b6714ab57986aa909b0ca030e142f8f852c35db28a7e3149bbe1246e6c
-  translated_at: '2026-09-26T17:12:49+00:00'
-  engine: anthropic
-  token_count: 850
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2063
 ---
 <!--
 Reference Card Template
@@ -72,7 +72,7 @@ struct Container {
 };
 
 int main() {
-    Container c = {1, 2, 3}; // implicitly constructs the initializer_list
+    Container c = {1, 2, 3}; // 隐式构造 initializer_list
     c.append({4, 5});
     for (int x : c.v) std::cout << x << ' ';
 }

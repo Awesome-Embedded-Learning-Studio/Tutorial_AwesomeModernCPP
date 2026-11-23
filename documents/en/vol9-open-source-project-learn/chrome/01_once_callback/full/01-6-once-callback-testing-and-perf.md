@@ -24,9 +24,9 @@ title: 'OnceCallback hands-on (VI): tests and performance comparison'
 translation:
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-6-once-callback-testing-and-perf.md
   source_hash: e00cd9b22a6ded35cf41b1f001be03d31d638cce098a63521c5c1f91c97cfbac
-  translated_at: '2026-09-26T00:39:05+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8134
 ---
 # OnceCallback hands-on (VI): tests and performance comparison
 
@@ -208,8 +208,8 @@ std::cout << "sizeof(std::move_only_function<void()>): "
 
 std::cout << "sizeof(OnceCallback<void()>): "
           << sizeof(OnceCallback<void()>) << " bytes\n";
-// ours: move_only_function (32) + status (1) + token ptr (16) + padding
-// estimated 56-64 bytes
+// 我们的：move_only_function (32) + status (1) + token ptr (16) + padding
+// 预估 56-64 bytes
 ```
 
 On GCC the typical numbers look like this: `std::function` is about 32 bytes, `std::move_only_function` is also around 32 bytes, and our `OnceCallback`, with the status and the token pointer stacked on top, stretches to 56 to 64 bytes. And Chromium's? 8 bytes. The price of a single pointer.

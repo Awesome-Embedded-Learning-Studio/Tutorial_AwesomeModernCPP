@@ -30,9 +30,9 @@ title: 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
 translation:
   source: documents/vol4-advanced/vol1-basics-cpp11-14/07-friends-and-barton-nackman.md
   source_hash: 4c6bc69015cd1f732b4d8726851d38d20909c7b78efb157e116111b17bef8b9e
-  translated_at: '2026-09-26T04:15:26+00:00'
-  engine: anthropic
-  token_count: 1600
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5496
 ---
 # Template Friends and Barton-Nackman: The Hidden Friends Trick
 
@@ -45,13 +45,13 @@ A friend is C++'s way of granting some external function or class permission to 
 ```cpp
 class Account {
     int balance_;
-    friend void audit(const Account&);   // audit is not a member, but it can access balance_
+    friend void audit(const Account&);   // audit 不是成员,但能访问 balance_
 public:
     explicit Account(int b) : balance_(b) {}
 };
 
 void audit(const Account& a) {
-    std::cout << "balance = " << a.balance_ << "\n";   // private access, because it is a friend
+    std::cout << "balance = " << a.balance_ << "\n";   // 能访问私有,因为是友元
 }
 ```
 
@@ -68,7 +68,7 @@ class Box {
 public:
     constexpr Box(T v) : v_(v) {}
 
-    // in-class friend definition: not a function template, but a non-template function generated per Box<T> instantiation
+    // 类内友元定义:不是函数模板,是「随 Box<T> 实例化而生成的非模板函数」
     friend constexpr bool operator==(const Box& a, const Box& b) {
         return a.v_ == b.v_;
     }
@@ -106,8 +106,8 @@ int main() {
     std::cout << std::boolalpha;
     std::cout << "x == y: " << (x == y) << "\n";   // true
     std::cout << "x == z: " << (x == z) << "\n";   // false
-    std::cout << "p == q: " << (p == q) << "\n";   // true (Box<double>'s own operator==)
-    std::cout << x << "\n";                        // Box{1}; ADL finds operator<<
+    std::cout << "p == q: " << (p == q) << "\n";   // true(Box<double> 自己的 operator==)
+    std::cout << x << "\n";                        // Box{1},ADL 找到 operator<<
     return 0;
 }
 ```
@@ -127,9 +127,9 @@ Box{1}
 The real value of hidden friends only becomes clear in contrast with "a namespace-scope function-template `operator==`". The old-school spelling looks like this:
 
 ```cpp
-// Old style: define an operator== template at namespace scope
-// (this assumes Box exposes a public value(); this piece's Box keeps v_ private
-//  and friend-only, so the old style needs a public accessor or a friend declaration too)
+// 老式写法:在命名空间作用域定义一个 operator== 模板
+// (这里假设 Box 提供公开 value();本篇的 Box 把 v_ 设成私有,只能靠友元访问,
+//  所以老式写法要么 Box 开个公开接口,要么把这个 operator== 也声明成友元)
 template <typename T>
 bool operator==(const Box<T>& a, const Box<T>& b) {
     return a.value() == b.value();
@@ -147,7 +147,7 @@ Hidden friends are found only when the argument types match exactly. `Box<int>`'
 ```cpp
 Box<int> x{1};
 Box<double> p{1.5};
-bool same = (x == p);   // error: Box<int> and Box<double> share no common operator==
+bool same = (x == p);   // 错:Box<int> 和 Box<double> 没有共同的 operator==
 ```
 
 ```text
@@ -176,17 +176,17 @@ public:
     constexpr explicit Temperature(double k) : kelvin_(k) {}
     constexpr double k() const { return kelvin_; }
 
-    // hidden friends: every operator is written as an in-class friend
+    // 隐藏友元:所有运算符都写成类内友元
     friend constexpr bool operator==(Temperature a, Temperature b) {
         return a.kelvin_ == b.kelvin_;
     }
     friend constexpr bool operator!=(Temperature a, Temperature b) {
-        return !(a == b);   // reuse ==
+        return !(a == b);   // 复用 ==
     }
     friend constexpr bool operator<(Temperature a, Temperature b) {
         return a.kelvin_ < b.kelvin_;
     }
-    // ... other comparison operators
+    // ... 其它比较运算符
 };
 ```
 

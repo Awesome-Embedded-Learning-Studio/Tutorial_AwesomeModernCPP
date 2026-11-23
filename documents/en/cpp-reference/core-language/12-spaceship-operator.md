@@ -16,9 +16,9 @@ title: Three-Way Comparison Operator (<=>)
 translation:
   source: documents/cpp-reference/core-language/12-spaceship-operator.md
   source_hash: 8c37ae14058b22b1bd43e8f33a489597996c81c26ca0abf88a5dc7a623ad473d
-  translated_at: '2026-09-27T01:46:13+00:00'
-  engine: anthropic
-  token_count: 600
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2106
 ---
 <!--
 Reference Card Template
@@ -67,9 +67,9 @@ struct Point {
 
 int main() {
     Point a{1, 2}, b{1, 3};
-    std::cout << (a < b)  << "\n"; // true  (auto-generated)
-    std::cout << (a == b) << "\n"; // false (auto-generated)
-    std::cout << (a != b) << "\n"; // true  (auto-generated)
+    std::cout << (a < b)  << "\n"; // true  (自动生成)
+    std::cout << (a == b) << "\n"; // false (自动生成)
+    std::cout << (a != b) << "\n"; // true  (自动生成)
 
     auto cmp = a <=> b;
     std::cout << (cmp < 0) << "\n"; // true (strong_ordering::less)

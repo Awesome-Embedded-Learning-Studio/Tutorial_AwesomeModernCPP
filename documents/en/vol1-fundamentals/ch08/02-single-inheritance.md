@@ -21,9 +21,9 @@ title: Single Inheritance
 translation:
   source: documents/vol1-fundamentals/ch08/02-single-inheritance.md
   source_hash: d8e4b22bbeec9cdf72d737e2c76a590bcd0c06db569a722c07f5e331a63b5dda
-  translated_at: '2026-09-25T11:27:45+00:00'
-  engine: anthropic
-  token_count: 2200
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8877
 ---
 # Single Inheritance: Writing is-a Relationships into the Type System
 
@@ -115,7 +115,7 @@ public:
 
     void introduce() const
     {
-        Person::introduce();  // Reuse the base class's introduce()
+        Person::introduce();  // 复用基类的 introduce()
         std::cout << "I study at " << school_ << ".\n";
     }
 };
@@ -130,13 +130,13 @@ Same-name function hiding is one of the sneakier traps in C++ inheritance. Once 
 With the basics covered, let's face a problem that genuinely gives beginners headaches: **object slicing**.
 
 ```cpp
-void print_person(Person p)   // Pass by value!
+void print_person(Person p)   // 按值传递！
 {
     p.introduce();
 }
 
 Student s("Alice", 20, "MIT");
-print_person(s);  // Looks fine, but it has already been sliced
+print_person(s);  // 看起来没问题，实际上已经切片了
 ```
 
 Look at this code: it compiles, it runs without crashing, and yet everything specific to `Student` (the "I study at MIT" part) has vanished. The cause is that `print_person`'s parameter `p` is a `Person` passed by value. To pass the argument, the compiler must copy the `Student` object into a variable of type `Person`, and `Person`'s storage only has room for `name_` and `age_`: `school_`, along with anything else specific to `Student`, has been "sliced off" (quite literally).
@@ -144,7 +144,7 @@ Look at this code: it compiles, it runs without crashing, and yet everything spe
 Folks, let's keep our heads clear here. The compiler has no bug; this is the direct consequence of C++'s value semantics. The fix is simple: **use references or pointers, not value types**.
 
 ```cpp
-void print_person(const Person& p)   // Reference: no slicing
+void print_person(const Person& p)   // 引用，不切片
 {
     p.introduce();
 }
@@ -161,10 +161,10 @@ Think of `protected` as an access level between `public` and `private`: code out
 ```cpp
 class Vehicle {
 private:
-    double speed_;       // Only Vehicle itself can access this directly
+    double speed_;       // 只有 Vehicle 自己能直接访问
 
 protected:
-    std::string brand_;  // Vehicle and its derived classes can access it
+    std::string brand_;  // Vehicle 和它的派生类能访问
 
 public:
     Vehicle(const std::string& brand, double speed)
@@ -180,9 +180,9 @@ public:
 
     void print_info() const
     {
-        std::cout << brand_ << "\n";    // Legal: protected member
-        // std::cout << speed_ << "\n"; // Illegal: private member
-        std::cout << speed() << "\n";   // Legal: through the public interface
+        std::cout << brand_ << "\n";    // 合法：protected 成员
+        // std::cout << speed_ << "\n"; // 非法：private 成员
+        std::cout << speed() << "\n";   // 合法：通过公有接口
     }
 };
 ```
@@ -266,13 +266,13 @@ public:
     }
 };
 
-void show_vehicle(const Vehicle& v)   // Reference: no slicing
+void show_vehicle(const Vehicle& v)   // 引用，不切片
 {
     std::cout << "[ref] ";
     v.describe();
 }
 
-void show_vehicle_sliced(Vehicle v)   // Pass by value: slicing!
+void show_vehicle_sliced(Vehicle v)   // 值传递，切片！
 {
     std::cout << "[val] ";
     v.describe();
@@ -347,7 +347,7 @@ Create an `Animal` base class with two members, `name_` (private) and `sound_` (
 The code below has an object slicing problem. Find it and fix it:
 
 ```cpp
-void process(Student s)   // Buggy
+void process(Student s)   // 有 bug
 {
     std::cout << s.school() << "\n";
 }

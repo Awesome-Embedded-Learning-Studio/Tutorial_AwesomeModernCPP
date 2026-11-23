@@ -29,9 +29,9 @@ title: 'Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching —
 translation:
   source: documents/vol3-standard-library/iterators-algorithms/42-algorithm-overview-part1.md
   source_hash: 26c99c21c5a2ece2c036f069a855f0576584f23f3f20a657da45b2ecb2c9dee2
-  translated_at: '2026-09-26T01:33:55+00:00'
-  engine: anthropic
-  token_count: 11500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17854
 ---
 # Algorithm Overview (Part 1): Non-Modifying, Modifying, and Searching — How to Pick the Right Algorithm for a Problem
 
@@ -57,16 +57,16 @@ int main()
 {
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
 
-    // for_each: read-only traversal, leaves the range untouched
+    // for_each: 只读遍历，不改区间
     int sum = 0;
     std::for_each(v.begin(), v.end(), [&](int x) { sum += x; });
     std::cout << "for_each 求和: " << sum << '\n';
 
-    // find: linear search, returns an iterator to the first element equal to the target
+    // find: 线性查找，返回第一个等于目标的迭代器
     auto it = std::find(v.begin(), v.end(), 5);
     std::cout << "find 5 -> 偏移 " << (it - v.begin()) << '\n';
 
-    // find_if: the first one satisfying the predicate
+    // find_if: 第一个满足谓词的
     auto big = std::find_if(v.begin(), v.end(), [](int x) { return x > 7; });
     std::cout << "find_if(>7) -> " << (big != v.end() ? *big : -1) << '\n';
 
@@ -75,7 +75,7 @@ int main()
     std::cout << "count_if(偶数): "
               << std::count_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; }) << '\n';
 
-    // none_of / any_of / all_of: return bool
+    // none_of / any_of / all_of：返回 bool
     std::cout << "any_of(>8): " << std::any_of(v.begin(), v.end(), [](int x) { return x > 8; }) << '\n';
     std::cout << "all_of(<10): " << std::all_of(v.begin(), v.end(), [](int x) { return x < 10; }) << '\n';
     std::cout << "none_of(<0): " << std::none_of(v.begin(), v.end(), [](int x) { return x < 0; }) << '\n';
@@ -113,7 +113,7 @@ int main()
     std::string needle = "hello";
     auto it = std::search(text.begin(), text.end(), needle.begin(), needle.end());
     std::cout << "search(\"hello\") 第一次偏移: " << (it - text.begin()) << '\n';
-    // continue from one past the previous match point to find the second occurrence
+    // 从上一次匹配点的下一位继续找第二次出现
     auto it2 = std::search(it + 1, text.end(), needle.begin(), needle.end());
     std::cout << "search 第二次偏移:          " << (it2 - text.begin()) << '\n';
     return 0;
@@ -153,24 +153,24 @@ int main()
 {
     std::vector<int> src{1, 2, 3, 4, 5};
 
-    // copy: replicate as-is into the destination range
+    // copy: 原样复制到目标区间
     std::vector<int> copied;
     std::copy(src.begin(), src.end(), std::back_inserter(copied));
     print(copied, "copy:           ");
 
-    // copy_if: copy with a condition
+    // copy_if: 带条件的复制
     std::vector<int> evens;
     std::copy_if(src.begin(), src.end(), std::back_inserter(evens),
                  [](int x) { return x % 2 == 0; });
     print(evens, "copy_if(偶数):  ");
 
-    // transform: one-to-one mapping, writes each transformed element to the destination
+    // transform: 一对一映射，把每个元素变身后写到目标
     std::vector<int> squared;
     std::transform(src.begin(), src.end(), std::back_inserter(squared),
                    [](int x) { return x * x; });
     print(squared, "transform(x*x): ");
 
-    // replace / replace_if: in-place overwrite of elements satisfying the condition with a new value
+    // replace / replace_if: 就地把满足条件的元素换成新值
     std::vector<int> r{1, 2, 3, 2, 4, 2};
     std::replace(r.begin(), r.end(), 2, 99);
     print(r, "replace(2->99): ");
@@ -179,13 +179,13 @@ int main()
     std::replace_if(r2.begin(), r2.end(), [](int x) { return x % 2 == 0; }, 0);
     print(r2, "replace_if(偶->0): ");
 
-    // unique: drop adjacent duplicates in place (see the erase-remove section later for the key part)
+    // unique: 就地去重相邻重复（关键看后面 erase-remove 段）
     std::vector<int> u{1, 1, 2, 3, 3, 3, 4, 1, 1};
     auto new_end = std::unique(u.begin(), u.end());
     std::cout << "unique 后逻辑终点偏移: " << (new_end - u.begin())
               << " 实际 size 仍为 " << u.size() << '\n';
 
-    // move: carry the elements away (as rvalues), destination takes ownership
+    // move: 把元素搬走（右值），目标拿到所有权
     std::vector<std::string> words{"aa", "bb", "cc"};
     std::vector<std::string> moved;
     std::move(words.begin(), words.end(), std::back_inserter(moved));
@@ -356,27 +356,27 @@ Read as prose, `lower_bound` and `upper_bound` are easy to confuse. Let's just r
 
 int main()
 {
-    std::vector<int> v{1, 3, 3, 5, 7, 7, 7, 9};   // already sorted ascending
+    std::vector<int> v{1, 3, 3, 5, 7, 7, 7, 9};   // 已升序
 
-    // binary_search: present or not (bool)
+    // binary_search: 在不在（bool）
     std::cout << "binary_search(7): " << std::binary_search(v.begin(), v.end(), 7) << '\n';
     std::cout << "binary_search(4): " << std::binary_search(v.begin(), v.end(), 4) << '\n';
 
-    // lower_bound: position of the first element "not less than" value (>= value)
+    // lower_bound: 第一个「不小于」value 的位置（>= value）
     auto lo = std::lower_bound(v.begin(), v.end(), 7);
     std::cout << "lower_bound(7) -> 偏移 " << (lo - v.begin()) << " 值 " << *lo << '\n';
 
-    // upper_bound: position of the first element "greater than" value (> value)
+    // upper_bound: 第一个「大于」value 的位置（> value）
     auto up = std::upper_bound(v.begin(), v.end(), 7);
     std::cout << "upper_bound(7) -> 偏移 " << (up - v.begin()) << " 值 " << *up << '\n';
 
-    // equal_range: [lower, upper) is 7's complete extent
+    // equal_range: [lower, upper) 就是 7 的完整范围
     auto [eq_lo, eq_up] = std::equal_range(v.begin(), v.end(), 7);
     std::cout << "equal_range(7): [" << (eq_lo - v.begin()) << ", " << (eq_up - v.begin()) << ") -> ";
     for (auto it = eq_lo; it != eq_up; ++it) std::cout << *it << ' ';
     std::cout << "共 " << (eq_up - eq_lo) << " 个\n";
 
-    // searching for a value that isn't there: lower_bound tells you where it would go
+    // 查一个不存在的值：lower_bound 给的是「该插哪」
     auto lo4 = std::lower_bound(v.begin(), v.end(), 4);
     std::cout << "lower_bound(4) -> 偏移 " << (lo4 - v.begin()) << " 值 " << *lo4
               << "（4 不在，指向插入点）\n";
@@ -437,9 +437,9 @@ int main()
 {
     constexpr int kN = 10'000'000;
     std::vector<int> v(kN);
-    for (int i = 0; i < kN; ++i) v[i] = i;   // already sorted ascending
+    for (int i = 0; i < kN; ++i) v[i] = i;   // 已升序
 
-    int target = kN - 1;   // worst case: at the end
+    int target = kN - 1;   // 最坏情况：在末尾
 
     auto t1 = std::chrono::high_resolution_clock::now();
     bool found_lin = std::find(v.begin(), v.end(), target) != v.end();
@@ -488,8 +488,8 @@ For the binary family, "already sorted" is a **hard precondition**, not a "nicer
 
 int main()
 {
-    // an unsorted sequence that makes binary_search miss
-    std::vector<int> u{10, 1, 30, 2, 20, 3};   // contains 2, but unordered
+    // 一个会让 binary_search 漏判的未排序序列
+    std::vector<int> u{10, 1, 30, 2, 20, 3};   // 含 2，但无序
     std::cout << "实际含 2?        " << (std::find(u.begin(), u.end(), 2) != u.end()) << '\n';
     std::cout << "binary_search(2):" << std::binary_search(u.begin(), u.end(), 2) << '\n';
     return 0;

@@ -17,10 +17,10 @@ tags:
 title: if constexpr
 translation:
   source: documents/cpp-reference/core-language/13-if-constexpr.md
-  source_hash: 4cdd84329ae7e6fba7dab0ea967917b81762ed907660997df3e07f8513376605
-  translated_at: '2026-09-27T01:43:26+00:00'
-  engine: anthropic
-  token_count: 900
+  source_hash: e7eccdedcedb6c247feff7ddbaf17daa2f07798d754086a1db3cde3b2f990429
+  translated_at: '2026-11-22T16:41:57.307408+00:00'
+  engine: glm-5.3-refresh
+  token_count: 1972
 ---
 <!--
 Reference Card Template

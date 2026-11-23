@@ -26,10 +26,10 @@ tags:
 title: 'TLB, huge pages, and a microarchitecture cheat sheet across CPU families'
 translation:
   source: documents/vol6-performance/ch02-cpu-microarchitecture/02-04-tlb-hugepage-and-cpu-families.md
-  source_hash: ae854453ebcd64b29fda774e5b9324ee03cb69aad919460a80fccbc1a6840e54
-  translated_at: '2026-09-26T05:54:31+00:00'
-  engine: anthropic
-  token_count: 4500
+  source_hash: b1823377a05f909c3179a3ea86ef945ada77c05432c537e3e906d07391408620
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 5554
 ---
 # TLB, huge pages, and a microarchitecture cheat sheet across CPU families
 
@@ -70,8 +70,8 @@ I wanted to demonstrate the huge-page payoff on my own machine: take the same 25
 ```cpp
 void* a4 = mmap(nullptr, SZ, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 void* a2 = mmap(nullptr, SZ, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-madvise(a2, SZ, MADV_HUGEPAGE);   // request transparent huge pages
-// run the same pointer chase over both copies and compare latency
+madvise(a2, SZ, MADV_HUGEPAGE);   // 请求透明大页
+// 对两份做同样的指针追逐,比延迟
 ```
 
 The results of two runs:
@@ -116,7 +116,7 @@ These are the hardware foundation behind every recommendation in ch04, "optimize
 ## References
 
 - Bryant & O'Hallaron, *CSAPP*, chapter 9 *Virtual Memory*: the concepts and costs of page tables, the TLB, and page-table walks
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen* and the various Intel chapters: architecture-level detail on the TLB, pipeline, and execution ports. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §22 *AMD Ryzen* and the various Intel chapters: architecture-level detail on the TLB, pipeline, and execution ports: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Wikichip *Microarchitectures*: exact parameters for every CPU family (Intel / AMD / Apple / ARM); the desk-side entry point for cross-platform tuning
 - Drepper, U., *What Every Programmer Should Know About Memory*: an engineering perspective on the TLB, huge pages, and page tables
 - The code measured for this article: `code/volumn_codes/vol6-performance/ch02/tlb_hugepage.cpp`

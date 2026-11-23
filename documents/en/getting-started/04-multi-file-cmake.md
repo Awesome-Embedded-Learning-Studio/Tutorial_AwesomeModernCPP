@@ -15,10 +15,10 @@ tags:
 reading_time_minutes: 15
 translation:
   source: documents/getting-started/04-multi-file-cmake.md
-  source_hash: 9563c563ffa0d337548471f37cb24d260c8dc9cc0e16401067031e22604be1da
-  translated_at: '2026-09-26T14:33:34+00:00'
-  engine: anthropic
-  token_count: 2400
+  source_hash: d1dd1444d84495b60eff691adb946e2b92a9139beb619007965ce4bc6244fb83
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7298
 ---
 
 # The Project Grows — Multiple Files, and Why CMake Shows Up

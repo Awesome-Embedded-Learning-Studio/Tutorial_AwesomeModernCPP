@@ -19,9 +19,9 @@ title: 'if/switch Initializers: Narrowing Variable Scope'
 translation:
   source: documents/vol2-modern-features/ch05-structured-bindings/02-init-statements.md
   source_hash: eab862f2d0ee9377ca473857a3f020e3ea3bd43906e2a865e4527d2f75617164
-  translated_at: '2026-09-27T05:13:34+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8436
 ---
 # if/switch Initializers: Narrowing Variable Scope
 
@@ -41,7 +41,7 @@ Start with a familiar scene: look up a key in a map, then branch on the result o
     } else {
         cache[key] = compute_value(key);
     }
-    // it is still visible here, but it is already useless
+    // it 在这里仍然可见，但它已经没用了
 }
 ```
 
@@ -54,7 +54,7 @@ std::unique_lock<std::mutex> lock(mtx);
 if (condition) {
     do_something();
 }
-// lock is destroyed only here, yet you only needed it during the if
+// lock 在这里才析构，可您只需要它在 if 期间有效
 ```
 
 The C++17 if initializer cleans up all of these scenarios.
@@ -85,7 +85,7 @@ if (auto it = cache.find(key); it != cache.end()) {
 } else {
     cache[key] = compute_value(key);
 }
-// it is not visible here; its scope is confined to the if/else
+// it 在这里不可见，作用域被限制在 if/else 内部
 ```
 
 Set it against the version without the initializer and the difference is obvious: the old `it` leaked past the `if`, while now its lifetime is pinned precisely inside the `if/else` block.
@@ -138,7 +138,7 @@ switch (auto cmd = read_command(); cmd.type) {
         handle_unknown(cmd);
         break;
 }
-// cmd is not visible here
+// cmd 在这里不可见
 ```
 
 There is also a crafty variant: compute a hash of the string and switch on the hash value (C++'s `switch` cannot match strings directly). The complete runnable version looks like this:
@@ -147,7 +147,7 @@ There is also a crafty variant: compute a hash of the string and switch on the h
 #include <string_view>
 #include <cstddef>
 
-// Compile-time hash (user-defined literal), letting case labels be written as "start"_hash
+// 编译期哈希（用户定义字面量），让 case 标签能用 "start"_hash 这种写法
 constexpr std::size_t operator""_hash(const char* s, std::size_t n) {
     std::size_t h = 0;
     for (std::size_t i = 0; i < n; ++i) h = h * 31 + std::size_t(s[i]);
@@ -191,13 +191,13 @@ The if initializer is a born companion to RAII-style resource management, and lo
 std::mutex mtx;
 bool ready = false;
 
-// Check the condition while the lock is held
+// 在持锁期间检查条件
 if (std::lock_guard lock(mtx); ready) {
-    // Execute under the lock
+    // 持锁状态下执行
     process();
     ready = false;
 }
-// lock is destroyed when the if/else ends, releasing the lock automatically
+// lock 在 if/else 结束时析构，自动释放锁
 ```
 
 Here `std::lock_guard lock(mtx)` relies on C++17 CTAD (class template argument deduction), so there is no need to write `std::lock_guard<std::mutex> lock(mtx)`. The `lock` object is destroyed when the entire `if/else` block ends, invoking `mtx.unlock()` automatically.
@@ -212,7 +212,7 @@ struct LockTracker {
 
 std::puts("进入 if/else 块");
 if (LockTracker lock; false) {
-    // if branch, not executed
+    // if 分支，不执行
 } else {
     std::puts("else 分支执行中（此时锁仍被持有）");
 }
@@ -236,7 +236,7 @@ The `<< 锁释放` line ("lock released") comes after `else 分支执行中` ("e
 The same pattern suits files, network connections, and their kin:
 
 ```cpp
-// Check whether the file opens; if it does, read it
+// 检查文件能否打开，能就读
 if (auto f = std::ifstream("config.txt"); f.is_open()) {
     std::string line;
     while (std::getline(f, line)) {
@@ -245,7 +245,7 @@ if (auto f = std::ifstream("config.txt"); f.is_open()) {
 } else {
     use_default_config();
 }
-// f is destroyed here, closing the file automatically
+// f 在这里析构，文件自动关闭
 ```
 
 ### Can the Lock and the Lookup Share One if
@@ -253,7 +253,7 @@ if (auto f = std::ifstream("config.txt"); f.is_open()) {
 In multithreaded code, "take the lock first, then check the condition" is everywhere. Some people want to stuff the lock, the lookup, and the test into one if:
 
 ```cpp
-// The wishful version; does not compile
+// 想当然的写法，编不过
 if (std::lock_guard lock(mtx); auto it = data_store.find(id); it != data_store.end()) {
     process(it->second);
 }
@@ -262,19 +262,19 @@ if (std::lock_guard lock(mtx); auto it = data_store.find(id); it != data_store.e
 It does not compile. The parentheses of an if accommodate exactly one init-statement — one semicolon splits init from condition, and two will not fit. There are several legitimate routes:
 
 ```cpp
-// Approach 1: the lock is the init, the lookup result serves as the condition directly
+// 方法1：锁做 init，查找结果直接当条件
 if (std::lock_guard lock(mtx); data_store.count(id) > 0) {
     process(data_store.at(id));
 }
 
-// Approach 2: the lock is the init, with a nested if that carries its own init
+// 方法2：锁做 init，内层再套一个带 init 的 if
 if (std::lock_guard lock(mtx); true) {
     if (auto it = data_store.find(id); it != data_store.end()) {
         process(it->second);
     }
 }
 
-// Approach 3: fall back to a plain block; the most straightforward
+// 方法3：回到朴素代码块，最直白
 {
     std::lock_guard lock(mtx);
     if (auto it = data_store.find(id); it != data_store.end()) {
@@ -296,11 +296,11 @@ The real benefit of the if initializer is that a variable's scope hugs its actua
 Without the if initializer, multiple lookups in one function force you to keep inventing new variable names, or to bound scopes with braces:
 
 ```cpp
-// Without the initializer: variable name clashes
+// 不用初始化器：变量名冲突
 auto it1 = m1.find(key1);
 if (it1 != m1.end()) { use1(it1->second); }
 
-auto it2 = m2.find(key2);  // cannot be named it as well
+auto it2 = m2.find(key2);  // 不能也叫 it
 if (it2 != m2.end()) { use2(it2->second); }
 ```
 
@@ -316,14 +316,14 @@ if (auto it = m2.find(key2); it != m2.end()) { use2(it->second); }
 When declaration and use sit next to each other, the reader grasps the variable's purpose at a glance. Declare it at the top of the function and use it dozens of lines later, and the reader has to scroll back and forth hunting. The if initializer nails declaration and use together.
 
 ```cpp
-// Declaration and use separated; the reader must hunt for the connection across a long stretch of code
+// 变量声明和使用分离，读者得在大段代码里找关联
 auto status = check_system();
-// ... 30 lines of other code ...
+// ... 30 行其他代码 ...
 if (status == Status::Ok) {
     // ...
 }
 
-// With the initializer, declaration and use sit right next to each other
+// 用初始化器，声明和使用紧挨着
 if (auto status = check_system(); status == Status::Ok) {
     // ...
 }
@@ -339,13 +339,13 @@ A variable declared by an if initializer is usable in both branches — `if` and
 
 ```cpp
 std::map<int, std::string> m{{1, "one"}, {2, "two"}};
-// First: inserting a new key
+// 第一次插新 key
 if (auto [it, ok] = m.insert({3, "three"}); ok) {
     std::cout << "if   分支: Inserted " << it->second << '\n';
 } else {
     std::cout << "else 分支: Existing " << it->second << '\n';
 }
-// Second: inserting a key that already exists
+// 第二次插已存在的 key
 if (auto [it, ok] = m.insert({1, "ONE"}); ok) {
     std::cout << "if   分支: Inserted " << it->second << '\n';
 } else {

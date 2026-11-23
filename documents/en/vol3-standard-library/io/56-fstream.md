@@ -29,9 +29,9 @@ title: 'fstream: File Stream I/O, RAII, and Its Portability Pitfalls'
 translation:
   source: documents/vol3-standard-library/io/56-fstream.md
   source_hash: 49d39c679c7891d7efcfa9acf1310ad116ec33a64d33e308323b33a859c6c827
-  translated_at: '2026-09-26T00:41:03+00:00'
-  engine: anthropic
-  token_count: 13000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 17240
 ---
 
 # fstream: File Stream I/O, RAII, and Its Portability Pitfalls
@@ -79,7 +79,7 @@ std::string read_all(const char* path) {
 
 int main() {
     { std::ofstream out("/tmp/m.txt"); out << "OLD"; }
-    { std::ofstream out("/tmp/m.txt"); out << "new"; }  // trunc by default
+    { std::ofstream out("/tmp/m.txt"); out << "new"; }  // 默认 trunc
     std::cout << "trunc (默认 ofstream): " << read_all("/tmp/m.txt") << "\n";
     return 0;
 }
@@ -106,8 +106,8 @@ after app: newAPPENDED|
 A particularly common misconception: that `std::ios::ate` (position at the end after opening) preserves the old content. **It does not.** `ate` merely "moves the pointer to the end after opening"; it does **not cancel** the `trunc` that `ofstream` implies by default. We verified this on the local machine:
 
 ```cpp
-{ std::ofstream out("/tmp/a.txt"); out << "0123456789"; }   // write 10 bytes first
-{ std::ofstream out("/tmp/a.txt", std::ios::ate);           // hoping to preserve? no luck
+{ std::ofstream out("/tmp/a.txt"); out << "0123456789"; }   // 先写 10 字节
+{ std::ofstream out("/tmp/a.txt", std::ios::ate);           // 想保留? 不行
   std::cout << "ate tellp=" << out.tellp() << "\n";
   out << "XY"; }
 ```
@@ -123,7 +123,7 @@ To get "preserve the old content, position at the end on open, and still be free
 ```cpp
 // Standard: C++17
 { std::fstream f("/tmp/a.txt", std::ios::in | std::ios::out | std::ios::ate);
-  std::cout << "in|out|ate tellp=" << f.tellp() << "\n";   // 10 — the content survived
+  std::cout << "in|out|ate tellp=" << f.tellp() << "\n";   // 10，内容保住了
   f << "XY"; }
 ```
 
@@ -144,10 +144,10 @@ As for the C++23 newcomer `noreplace`, the name says it all—if the file alread
 
 int main() {
     { std::ofstream out("/tmp/np.txt"); out << "original"; }
-    // file already exists -> noreplace refuses to open
+    // 文件已存在 -> noreplace 拒绝打开
     std::ofstream a("/tmp/np.txt", std::ios::out | std::ios::noreplace);
     std::cout << "已存在: is_open=" << a.is_open() << " fail=" << a.fail() << "\n";
-    // file doesn't exist -> created normally
+    // 文件不存在 -> 正常创建
     std::ofstream b("/tmp/np_new.txt", std::ios::out | std::ios::noreplace);
     std::cout << "新文件: is_open=" << b.is_open() << " fail=" << b.fail() << "\n";
     return 0;
@@ -167,9 +167,9 @@ Before this, implementing that semantics meant checking first with `std::filesys
 
 ```cpp
 // Standard: C++11
-std::ofstream out("config.txt");   // opens at construction
+std::ofstream out("config.txt");   // 构造时打开
 out << "key=value\n";
-// scope ends -> automatic close, even if an exception was thrown along the way
+// 作用域结束自动 close，哪怕中间抛异常也关
 ```
 
 The constructor takes the filename and opens it directly, sparing you the whole C-era incantation of "`fopen` first, check for NULL, operate, `fclose` at the end". And it is exception-safe: once the object has been constructed, whatever happens inside the scope, the destructor is the safety net that closes the file.
@@ -182,7 +182,7 @@ RAII's automatic close is a good thing, but if **you yourself** call `close()` a
 std::ofstream out("/tmp/close_use.txt");
 out << "first";
 out.close();
-out << "second";   // writing to an already-closed stream
+out << "second";   // 写给一个已关闭的流
 std::cout << "fail=" << out.fail() << " bad=" << out.bad() << "\n";
 ```
 
@@ -210,7 +210,7 @@ The habit most worth building: **check immediately after opening a file**. A fai
 // Standard: C++11
 std::ifstream bad("/tmp/does_not_exist_xyz.txt");
 int x = 42;
-bad >> x;   // open failed, so the read fails too; x stays untouched
+bad >> x;   // 打开失败，读也失败，x 原封不动
 std::cout << "没检查打开: x=" << x << " fail=" << bad.fail() << "\n";
 ```
 
@@ -223,9 +223,9 @@ std::cout << "没检查打开: x=" << x << " fail=" << bad.fail() << "\n";
 ```cpp
 // Standard: C++11
 std::ifstream in("data.bin", std::ios::binary);
-if (!in.is_open()) {                       // or: if (!in)
+if (!in.is_open()) {                       // 或 if (!in)
     std::cerr << "无法打开 data.bin\n";
-    return 1;                              // bail out early, don't soldier on
+    return 1;                              // 早退，别硬撑
 }
 ```
 
@@ -235,7 +235,7 @@ if (!in.is_open()) {                       // or: if (!in)
 
 ```cpp
 // Standard: C++11
-while (in >> x) {        // loop body runs only on a successful read; EOF/failure exits automatically
+while (in >> x) {        // 读成功才进循环体，读到 EOF/失败自动退出
     use(x);
 }
 ```
@@ -253,8 +253,8 @@ We tested on the local machine (Linux): the same newline-bearing string, written
 ```cpp
 // Standard: C++17
 const std::string data = "line1\nline2\nline3\n";
-{ std::ofstream out("/tmp/text.txt");            out << data; }   // text mode
-{ std::ofstream out("/tmp/bin.txt", std::ios::binary); out << data; }   // binary
+{ std::ofstream out("/tmp/text.txt");            out << data; }   // 文本模式
+{ std::ofstream out("/tmp/bin.txt", std::ios::binary); out << data; }   // 二进制
 std::ifstream t("/tmp/text.txt", std::ios::binary | std::ios::ate);
 std::ifstream b("/tmp/bin.txt",  std::ios::binary | std::ios::ate);
 std::cout << "text:   " << t.tellg() << " bytes\n";
@@ -301,7 +301,7 @@ Type safety is on you: what went in as an `int32_t` must come back out as an `in
 Writing an `int` / `double` is one thing; the temptation is this: can a struct also be `reinterpret_cast` to `char*` and blasted out in one go? After all, it is just a stretch of contiguous memory.
 
 ```cpp
-// Standard: C++17  — dangerous; do not use in production
+// Standard: C++17  —— 危险写法，别在生产里用
 struct Record {
     char name[8];
     std::int32_t id;
@@ -319,9 +319,9 @@ The second is **padding**. For memory alignment, C++ inserts padding bytes betwe
 ```cpp
 // Standard: C++17
 struct Record {
-    char name[8];       // 8 bytes, offset 0
-    std::int32_t id;    // 4 bytes
-    double score;       // 8 bytes, needs 8-byte alignment
+    char name[8];       // 8 字节，偏移 0
+    std::int32_t id;    // 4 字节
+    double score;       // 8 字节，要 8 字节对齐
 };
 std::cout << "sizeof(Record) = " << sizeof(Record) << "\n";
 std::cout << "offsetof id    = " << offsetof(Record, id) << "\n";
@@ -370,7 +370,7 @@ f.seekg(2);
 f.get(c);
 std::cout << "seekg(2) 后: " << c << "\n";               // C
 f.seekp(0);
-f.put('X');                                             // overwrite offset 0
+f.put('X');                                             // 覆盖偏移 0
 f.seekg(0);
 std::string s; std::getline(f, s);
 std::cout << "put X 后: " << s << "\n";                  // XBCDE
@@ -388,8 +388,8 @@ put X 后: XBCDE
 ```cpp
 // Standard: C++17
 std::ifstream in("file.bin", std::ios::binary | std::ios::ate);
-auto size = in.tellg();     // already at the end thanks to ate, read directly
-in.seekg(0);                // don't forget to rewind before reading
+auto size = in.tellg();     // 已经 ate 了，直接读
+in.seekg(0);                // 别忘了读之前挪回开头
 ```
 
 Passing `ate` at construction is the tidier spelling—open and land at the end in one motion, and the `tellg()` right after is the file size. Note that the `ate` warning above targets **writing** (`ofstream` implies `trunc`); an `ifstream` opened with `ate` has no such pitfall—`in` never empties the file.
@@ -403,15 +403,15 @@ One more genuine pitfall: **not every stream can be seeked—the "non-random-acc
 First, **large-block buffered reads and writes**—one big `read` / `write` of a fat chunk of bytes. We write a 64 MB buffer, then, respectively: write with fstream, read with stdio `fread`, read with fstream, read with `mmap`:
 
 ```cpp
-// Standard: C++17  (benchmark excerpt; see the notes at the end of the article for the full code)
+// Standard: C++17  （benchmark 摘要，完整代码见文末说明）
 static constexpr std::size_t kBytes = 64 * 1024 * 1024;  // 64 MB
-// fstream write
+// fstream 写
 { std::ofstream out(path, std::ios::binary); out.write(buf.data(), kBytes); }
-// stdio read
+// stdio 读
 { std::FILE* f = std::fopen(path, "rb"); std::fread(r, 1, kBytes, f); std::fclose(f); }
-// fstream read
+// fstream 读
 { std::ifstream in(path, std::ios::binary); in.read(r, kBytes); }
-// mmap read
+// mmap 读
 { int fd = ::open(path, O_RDONLY);
   char* m = static_cast<char*>(::mmap(nullptr, kBytes, PROT_READ, MAP_PRIVATE, fd, 0));
   std::memcpy(r, m, kBytes); ::munmap(m, kBytes); ::close(fd); }
@@ -458,7 +458,7 @@ C++17 added a `std::filesystem::path` overload to the file stream constructors. 
 std::filesystem::path p =
     std::filesystem::temp_directory_path() / "fstream_path_demo.txt";
 {
-    std::ofstream out(p);   // takes a path directly
+    std::ofstream out(p);   // 直接接 path
     out << "hello from filesystem::path overload\n";
 }
 std::ifstream in(p);

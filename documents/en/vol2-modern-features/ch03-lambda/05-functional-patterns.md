@@ -26,9 +26,9 @@ title: Functional Programming Patterns
 translation:
   source: documents/vol2-modern-features/ch03-lambda/05-functional-patterns.md
   source_hash: d94231283a183686f9b47999ea5091b40e9b34cf43c1ccadd7262ae2e95694f3
-  translated_at: '2026-09-27T10:30:33+00:00'
-  engine: anthropic
-  token_count: 4500
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15888
 ---
 # Functional Programming Patterns
 
@@ -47,7 +47,7 @@ A higher-order function, as we mean it, is a function that takes or returns func
 #include <functional>
 #include <random>
 
-// Higher-order function: takes an "operation" and a "decision function" as arguments
+// 高阶函数：接受"操作"和"判断函数"作为参数
 template<typename Operation, typename ShouldRetry>
 auto with_retry(Operation&& op, ShouldRetry&& should_retry, int max_attempts)
     -> std::invoke_result_t<Operation>
@@ -67,7 +67,7 @@ auto with_retry(Operation&& op, ShouldRetry&& should_retry, int max_attempts)
     throw std::runtime_error("unreachable");
 }
 
-// Usage example
+// 使用示例
 void demo_higher_order() {
     int call_count = 0;
 
@@ -80,7 +80,7 @@ void demo_higher_order() {
             return 42;
         },
         [](int attempt, const std::exception& e) {
-            return attempt < 5;   // retry at most 5 times
+            return attempt < 5;   // 最多重试 5 次
         },
         5
     );
@@ -112,12 +112,12 @@ auto filter_above_80 = make_threshold_filter(80);
 One spot to keep an eye on, though: if different branches return lambdas of different types—and every lambda's closure type is one of a kind—the types being returned directly no longer line up. Here is an example that fails to compile:
 
 ```cpp
-// ❌ Compile error: the lambdas in the different branches have different types
+// ❌ 编译错误：不同分支的 lambda 类型不同
 auto make_counter(bool start_high) {
     if (start_high) {
-        return []() { return 100; };  // closure type A
+        return []() { return 100; };  // 闭包类型 A
     } else {
-        return []() { return 0; };    // closure type B
+        return []() { return 0; };    // 闭包类型 B
     }
 }
 ```
@@ -125,7 +125,7 @@ auto make_counter(bool start_high) {
 The error the compiler spits out can scroll a whole screen, and the first time you meet it you will probably freeze for a second. To unify the return type, we bring in the type erasure from article 04, and the tool for that is `std::function`:
 
 ```cpp
-// ✅ Correct: use std::function to unify the type
+// ✅ 正确：用 std::function 统一类型
 std::function<int()> make_counter(bool start_high) {
     if (start_high) {
         return []() { return 100; };
@@ -149,14 +149,14 @@ Function composition, as we usually mean it, is the style of chaining several fu
 #include <vector>
 #include <algorithm>
 
-// compose: f(g(x))
+// compose：f(g(x))
 auto compose = [](auto f, auto g) {
     return [f = std::move(f), g = std::move(g)](auto&&... args) {
         return f(g(std::forward<decltype(args)>(args)...));
     };
 };
 
-// pipe: g first, then f (reads more intuitively)
+// pipe：先 g 后 f（语义更直觉）
 auto pipe = [](auto g, auto f) {
     return [g = std::move(g), f = std::move(f)](auto&&... args) {
         return f(g(std::forward<decltype(args)>(args)...));
@@ -172,7 +172,7 @@ void demo_composition() {
     auto composed = compose(add_one, double_it);
     std::cout << composed(5) << "\n";    // 11
 
-    // multi-level composition
+    // 多层组合
     auto pipeline = compose(to_string, compose(add_one, double_it));
     std::cout << pipeline(5) << "\n";    // "11"
 }
@@ -181,7 +181,7 @@ void demo_composition() {
 Composing two functions still reads fine; once there are more of them, the nested `compose` calls stop being readable. So let's upgrade to a variadic `compose_all` and tidy up multi-level composition in one shot:
 
 ```cpp
-// Compose multiple functions: applied right to left
+// 多函数组合：从右到左依次应用
 template<typename F>
 auto compose_all(F f) {
     return f;
@@ -194,7 +194,7 @@ auto compose_all(F f, Fs... rest) {
     };
 }
 
-// pipe_all: applied left to right (more intuitive)
+// pipe_all：从左到右依次应用（更直觉）
 template<typename F>
 auto pipe_all(F f) {
     return f;
@@ -231,12 +231,12 @@ Partial application is the style of fixing part of a function's arguments ahead 
 #include <iostream>
 #include <functional>
 
-// Partial application via a lambda
+// 用 lambda 实现偏应用
 auto make_adder(int base) {
     return [base](int x) { return base + x; };
 }
 
-// A more general partial application: fix the first N arguments
+// 更通用的偏应用：固定前 N 个参数
 auto partial = [](auto f, auto... fixed_args) {
     return [f = std::move(f), ...fixed_args = std::move(fixed_args)](auto&&... rest_args) {
         return f(fixed_args..., std::forward<decltype(rest_args)>(rest_args)...);
@@ -246,15 +246,15 @@ auto partial = [](auto f, auto... fixed_args) {
 void demo_partial_application() {
     auto add = [](int a, int b, int c) { return a + b + c; };
 
-    // Fix the first argument to 1
+    // 固定第一个参数为 1
     auto add1 = partial(add, 1);
     std::cout << add1(2, 3) << "\n";   // 6
 
-    // Fix the first two arguments
+    // 固定前两个参数
     auto add1_2 = partial(add, 1, 2);
     std::cout << add1_2(3) << "\n";    // 6
 
-    // A more practical example: create a filter with a preset threshold
+    // 更实用的例子：创建预设阈值的过滤器
     auto make_threshold_filter = [](int threshold) {
         return [threshold](const std::vector<int>& data) {
             std::vector<int> result;
@@ -317,19 +317,19 @@ void demo_map_filter_reduce() {
         {"temp_03", 18.2, 1000},
     };
 
-    // === Filter: keep only temp_01 readings ===
+    // === Filter：只保留 temp_01 的读数 ===
     std::vector<SensorReading> filtered;
     std::copy_if(readings.begin(), readings.end(),
                 std::back_inserter(filtered),
                 [](const SensorReading& r) { return r.sensor_id == "temp_01"; });
 
-    // === Map: extract the temperature values ===
+    // === Map：提取温度值 ===
     std::vector<double> values(filtered.size());
     std::transform(filtered.begin(), filtered.end(),
                   values.begin(),
                   [](const SensorReading& r) { return r.value; });
 
-    // === Reduce: compute the average ===
+    // === Reduce：计算平均值 ===
     double sum = std::accumulate(values.begin(), values.end(), 0.0);
     double avg = sum / static_cast<double>(values.size());
 
@@ -364,7 +364,7 @@ auto functional_filter = [](const auto& container, auto pred) {
     return result;
 };
 
-// Chaining example: filter even numbers -> double
+// 链式调用示例：过滤偶数 -> 翻倍
 std::vector<int> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 auto evens = functional_filter(data, [](int x) { return x % 2 == 0; });
 auto doubled = functional_map(evens, [](int x) { return x * 2; });
@@ -382,11 +382,11 @@ Functional programming holds one more basic position: try not to modify data—i
 #include <vector>
 #include <algorithm>
 
-// Immutable style: return a new container, leave the original data untouched
+// 不可变风格：返回新容器，不修改原始数据
 std::vector<int> sorted_copy(const std::vector<int>& input) {
-    std::vector<int> result = input;        // copy
-    std::sort(result.begin(), result.end()); // sort the copy
-    return result;                           // NRVO elides the copy of the return value
+    std::vector<int> result = input;        // 复制
+    std::sort(result.begin(), result.end()); // 排序副本
+    return result;                           // NRVO 优化掉返回值的复制
 }
 ```
 
@@ -415,17 +415,17 @@ void demo_pipeline() {
         {"ERROR", "Network timeout", 250}, {"ERROR", "Database error", 350},
     };
 
-    // Filter: keep only ERROR
+    // Filter：只保留 ERROR
     std::vector<LogEntry> errors;
     std::copy_if(logs.begin(), logs.end(), std::back_inserter(errors),
                 [](const LogEntry& e) { return e.level == "ERROR"; });
 
-    // Map: extract the messages
+    // Map：提取消息
     std::vector<std::string> messages(errors.size());
     std::transform(errors.begin(), errors.end(), messages.begin(),
                   [](const LogEntry& e) { return e.message; });
 
-    // Reduce: concatenate
+    // Reduce：拼接
     std::string report = std::accumulate(
         messages.begin(), messages.end(), std::string{"Errors:\n"},
         [](const std::string& acc, const std::string& msg) {
@@ -484,11 +484,11 @@ Earlier, while we were processing data with map/filter/reduce, every operation c
 void demo_ranges_preview() {
     std::vector<int> data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-    // Ranges: lazy pipeline, no intermediate containers
+    // Ranges：惰性管道，无中间容器
     auto result = data
-        | std::views::filter([](int x) { return x % 2 == 0; })   // even numbers
-        | std::views::transform([](int x) { return x * 2; })      // double
-        | std::views::take(3);                                     // take the first 3
+        | std::views::filter([](int x) { return x % 2 == 0; })   // 偶数
+        | std::views::transform([](int x) { return x * 2; })      // 翻倍
+        | std::views::take(3);                                     // 取前3个
 
     std::cout << "Ranges result: ";
     for (int x : result) {

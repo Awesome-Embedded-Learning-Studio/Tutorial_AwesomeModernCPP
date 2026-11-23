@@ -19,9 +19,9 @@ title: std::thread
 translation:
   source: documents/cpp-reference/concurrency/02-thread.md
   source_hash: 596c4d1b8b7efabc62972cee475f92ead74fcf9b57734494369ae9f392c8f3b9
-  translated_at: '2026-09-26T17:09:14+00:00'
-  engine: anthropic
-  token_count: 1050
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1772
 ---
 # std::thread (C++11)
 
@@ -60,7 +60,7 @@ void task(int n) {
 
 int main() {
     std::thread t(task, 3);
-    t.join(); // Block until thread t finishes executing
+    t.join(); // 阻塞等待线程 t 执行完毕
     std::cout << "done\n";
 }
 // Standard: C++11

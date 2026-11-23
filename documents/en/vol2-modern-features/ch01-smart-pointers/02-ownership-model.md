@@ -25,39 +25,41 @@ tags:
 title: 'Resource Ownership: Exclusive, Shared, and Borrowed'
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/02-ownership-model.md
-  source_hash: 4e5270c76513e0f1c497e44bddf1b5897e3f4e4e3a813c15de8611388b048efe
-  translated_at: '2026-09-27T04:46:06+00:00'
-  engine: anthropic
-  token_count: 5500
+  source_hash: 7efa7565748c6246ae66d35e03da49de82176ed16acb294a53f94a7da5adb8e0
+  translated_at: '2026-11-22T16:36:41+00:00'
+  engine: glm-5.3-refresh
+  token_count: 14493
 ---
 # Resource Ownership: Exclusive, Shared, and Borrowed
 
-Let's look at a perfectly ordinary piece of code: one object gets passed around between functions, every one of them receives its pointer, and every one of them uses it:
+Rather than sitting here blathering about "resource ownership"—a phrase that might reek of Rust—let's look at a small example instead. Starting from an example, it may well hit home more deeply.
+
+Now, take this code: one object gets passed around between functions, every one of them receives its pointer, and every one of them uses it:
 
 ```cpp
-Session* load_session(const char* user);   // returns a raw pointer
+Session* load_session(const char* user);   // 返回一个裸指针
 
 void handle_request(Session* s) {
     audit(s);
     cache_touch(s);
-    // Done using it. Delete it here? Does audit delete it? cache_touch? Or this spot?
+    // 用完了。删吗？audit 删？cache_touch 删？还是这里删？
 }
 
-void audit(Session* s)       { /* read-only, no delete */ }
-void cache_touch(Session* s) { /* read-only, no delete */ }
+void audit(Session* s)       { /* 只读，不删 */ }
+void cache_touch(Session* s) { /* 只读，不删 */ }
 ```
 
-You can't write the `delete` anywhere with confidence: put it inside `handle_request`, and what if some other caller still wants to use the object? Leave it out, and `Session` objects pile up on the heap. Comments can't rescue the scene either. You write "the caller is responsible for releasing", but there is more than one caller; you write "the callee is responsible for releasing", but the callee only glanced at the object in passing. When this code finishes running, who owns the release? You can't answer—and that's not your fault, because the answer appears nowhere in the code.
+"Hiss... this is bad," I believe you're already frowning. "This `delete`—it seems there's nowhere good to put it." You name it: write it into `handle_request`, and what if some other caller still wants to use the object? Leave it unwritten, and `Session` objects pile up on the heap. Miss the release at the end, and all we're left facing is the "memory leak" our colleagues will call us out on.
+
+> Hey hey? Don't go thinking comments will save you! Comments can't rescue the scene either. You write "the caller is responsible for releasing", but there is more than one caller; you write "the callee is responsible for releasing", but the callee only glanced at the object in passing. When this code finishes running, who owns the release? You can't answer—and that's not your fault, because the answer appears nowhere in the code.
 
 Ownership is the patch for exactly this hole. The language has no reserved word for it, and you won't find a class named after it in the standard library—it is a design convention: for every step of a resource's life, from birth to death, we have to state plainly who is in charge. The C++ compiler does not enforce this convention, but the type system can encode the answer into types. For an interface that "returns an object", writing `Session*` is one blunt answer and writing `std::unique_ptr<Session>` is another; the information a reader walks away with is completely different.
 
-When we took RAII apart in the previous article, what we solved was "how to release": the destructor binds the release action, and it fires the moment scope is left. What the code above lacks isn't that—it lacks "who releases". There is also a sneakier failure mode to guard against: several modules all keep the pointer, each believing it has a stake; when everybody holds it, nobody is responsible. We'll meet that sentence again in the shared_ptr article, where an even sharper way of putting it is waiting.
-
 ## What Ownership Really Is: A Convention Never Written into the Language
 
-Let's pin the word "ownership" down so it stops floating: **when a piece of code holds a resource, it is responsible for releasing it. We can let it take over that responsibility or hand it off, but at any moment, the responsibility must land on one party's head**.
+Now let's pin the word "ownership" down so it stops floating: **if a piece of code holds a resource, then that piece of code is responsible for releasing it. We can let it take over that responsibility or hand it off, but at any moment, the responsibility must land on one party's head**.
 
-The C++ language itself doesn't know about this convention. `int* p = new int(42);` carries no ambiguity in the compiler's eyes and holds no information about "who deletes"; the constraint lives only in your head, in comments, and in team conventions. The C++ Core Guidelines (the coding-rules collection stewarded by Bjarne Stroustrup and Herb Sutter—the resource-management entries all carry an R in their numbers, R for Resource) state the recommended practice as R.1:
+Pay attention! The C++ language itself doesn't know about this convention. `int* p = new int(42);` carries no ambiguity in the compiler's eyes and holds no information about "who deletes"; the constraint lives only in your head, in comments, and in team conventions. The C++ Core Guidelines (the coding-rules collection stewarded by Bjarne Stroustrup and Herb Sutter—the resource-management entries all carry an R in their numbers, R for Resource) state the recommended practice as R.1:
 
 ```text
 R.1: Manage resources automatically using resource handles and RAII
@@ -85,8 +87,8 @@ Exclusive is the simplest of the three roles: the resource has exactly one owner
 
 ```cpp
 auto a = std::make_unique<Widget>(7);
-// auto b = a;          // won't compile: unique_ptr forbids copying
-auto b = std::move(a);  // ownership changes hands: b takes over, a is left empty-handed
+// auto b = a;          // 编译不过：unique_ptr 禁止拷贝
+auto b = std::move(a);  // 所有权换手：b 接管，a 从此两手空空
 ```
 
 `std::make_unique<Widget>(7)` may be your first encounter with it; what it does is not complicated: it builds a `Widget(7)` on the heap for you and hands the result to the returned `unique_ptr` to manage. It takes over the `new` so completely that you never touch a raw pointer — for this article we'll simply use it as the "created already managed" spelling, and leave the details for the next article.
@@ -106,8 +108,8 @@ Shared is not free. Every `shared_ptr` you copy and every one you destroy pays o
 The third role gets the most screen time: we merely use the resource for a moment, and whose business the release is stops being our concern. The role's name is borrowed (a term the Rust community popularized; C++ folks use it too). You write its carriers every day:
 
 ```cpp
-void print(const Book& b);          // reference: never null, caller guarantees the object exists
-Book* find(const std::string& k);   // pointer: nullable, returns nullptr when not found
+void print(const Book& b);          // 引用：不可空，调用方保证对象在
+Book* find(const std::string& k);   // 指针：可空，没找到就给 nullptr
 ```
 
 Let's put the Core Guidelines' own words for the two carriers side by side:
@@ -121,6 +123,10 @@ Translated: a raw pointer and a raw reference both own nothing.
 
 Note the wording of both rules: they don't say raw pointers are bad; they say a raw pointer **expresses no ownership**. When you write `T*` in a signature, the reader should understand "I'm merely borrowing this". Writing `T&` carries the same story, plus one extra clause: "guaranteed non-null". How to choose between them? There is really a single criterion: nullability. When we want to express "might not exist" (a failed lookup, an optional config), use `T*` and remember to null-check it inside the function. For every other occasion, use `T&` and write the non-null guarantee into the type.
 
+> Of course, in my earlier projects I simply stopped considering the `T*` wording altogether—I once wrote a `BorrowPtr<T>` to hammer home the point that we are merely borrowing the resource, not owning it. Take a glance!
+>
+> That said, if that's not to your taste, then by all means settle the convention firmly: `T*` is for expressing the borrowing of a resource, never its ownership.
+
 The borrow family has two more specialized members: `string_view` and `span`, which turn "borrowing" into proper view types. What `string_view` looks like on the inside waits until the views chapter; the dedicated `span` article comes even later, in the containers part of the standard-library volume. For now, getting the names on the peg is enough.
 
 > We should also meet `owner<T>` from the GSL (Guidelines Support Library, the support library that goes with the Core Guidelines, maintained by Microsoft on GitHub). Its definition is a single line:
@@ -129,19 +135,25 @@ The borrow family has two more specialized members: `string_view` and `span`, wh
 > template <typename T> using owner = T;
 > ```
 >
-> What we're looking at is a pure type alias: zero extra runtime overhead, not one byte of burden. It is written for tools to read: tag a line with `owner<int*> p = new int(42);` and the `cppcoreguidelines-owning-memory` check in clang-tidy (a static-analysis tool) has something to work with. What it catches are type-level violations: a `new` result landing in a non-owner raw pointer, a `delete` of a non-owner, the result of an owner-returning function handed to a non-owning variable—whichever we commit, it is willing to call us out by name. The boundary must also be stated clearly: it only trusts declared types; it does not track data flow. Leaks, use-after-release, and other ills that only show up along the execution path are beyond its reach. In the world of raw pointers, this is the minimal clue we can leave for static analysis.
+> What we're looking at is a pure type alias: zero extra runtime overhead, not one byte of burden. It is written for tools to read: tag a line with `owner<int*> p = new int(42);` and the `cppcoreguidelines-owning-memory` check in clang-tidy (a static-analysis tool) has something to work with. What it catches are type-level violations: a `new` result landing in a non-owner raw pointer, a `delete` of a non-owner, the result of an owner-returning function handed to a non-owning variable—whichever we commit, it is willing to call us out by name.
+>
+> Of course, the boundary needs stating clearly too: it trusts declared types only; **it does not track data flow**. Leaks, use-after-release, and other ills that only show up along the execution path are beyond its reach. In the world of raw pointers, this is the minimal clue we can leave for static analysis.
 
 ## Transfer: A Move Is Ownership Changing Hands
 
 With all three holding relationships covered, the remaining action is called transfer. You already know it—it is the move we're all familiar with. Last chapter we wrote a move constructor line by line; the two steps—carry the pointer off, empty the source—should still be fresh. Now we give that maneuver its formal name, and the name is **ownership changing hands**: the source object flips from "owning" to "not owning", the target flips the other way, and at no instant does a second owner squeeze in.
 
-The moved-from object's state is "valid but unspecified"—the exact phrasing the last chapter gave. Restated in ownership terms: it no longer owns any resource, but you can safely destruct it, and you can assign it a new value, at which point ownership is back in its hands. The one thing not to do is read its value.
+The last chapter already stressed that "a moved-from object is valid but unspecified". Now let's restate it in the language of ownership:
+
+> It no longer owns any resource, but you can safely destruct it, and you can assign it a new value, at which point ownership is back in its hands. The one thing not to do is read its value.
 
 Where transfers lurk in code—you can hunt for them from now on—all three spots sit on owning handles: an explicit `std::move` is one; passing an owning handle by value is another, where a `unique_ptr` handed to a by-value parameter moves ownership into the function's hands; and a `unique_ptr` returned from a function is the third (RVO, the return value optimization, got a dedicated article last chapter). Whenever your eyes scan across such a line, let "ownership just changed hands" pass through your mind, and the new owner of the release duty reads itself out.
 
 ## Signatures Are Ownership Documentation
 
-Write the convention in a comment and the comment rots. Write the convention into a function signature and the signature can't lie—change it, and every call site has to move with it; the compiler will name them one by one for you. So whatever ownership information a signature can carry deserves our serious attention. Among the Core Guidelines' R series there is a batch of entries devoted to how parameters should be passed; let's walk through the most used ones.
+If we write the convention into comments, that's big trouble! Because comments rot! But write the convention into a function signature, and the signature won't lie. Change the signature, and every call site has to move with it; the compiler will read out your death sentence one site at a time—go ahead, youngster, change it! Savor it!
+
+So we take seriously whatever ownership information a signature can carry. Among the Core Guidelines' R series there is a batch of entries devoted to how parameters should be passed; let's walk through the most used ones.
 
 Let's start with the takes-over category. The Core Guidelines call it a **sink**—literally "the receiving end": stuff pours in, and it stays on the function's side. A whole class of functions are born for this: pushing a task into a queue, handing a connection to a manager—that is this work. Here is R.32's original text:
 
@@ -152,11 +164,11 @@ R.32: Take a `unique_ptr<widget>` parameter to express that a function assumes o
 Translated: taking a `unique_ptr<widget>` parameter by value says "this function assumes ownership of the widget". When it comes to actual code, we take the parameter by value:
 
 ```cpp
-void enqueue(std::unique_ptr<Task> t) {   // sink: the queue takes over; the task's fate is the queue's from here on
-    queue_.push_back(std::move(t));       // then handed on to the container
+void enqueue(std::unique_ptr<Task> t) {   // sink：队列接手，任务的死活从此归队列
+    queue_.push_back(std::move(t));       // 再转交给容器
 }
 
-enqueue(std::make_unique<Task>(42));      // built and handed straight over, never touching the ground
+enqueue(std::make_unique<Task>(42));      // 造出来直接交出去，中间不落地
 ```
 
 As the caller, when you see a by-value `unique_ptr` parameter, your duty is crystal clear: move it in, then forget about it.
@@ -170,24 +182,30 @@ R.33: Take a `unique_ptr<widget>&` parameter to express that a function reseats 
 Translated: taking a `unique_ptr<widget>&` parameter declares "this function will swap out the widget the pointer aims at".
 
 ```cpp
-void reload(std::unique_ptr<Config>& cfg);   // reseat: cfg still belongs to the caller, it just gets a different object
-// The function body is roughly: cfg = std::make_unique<Config>(...);
+void reload(std::unique_ptr<Config>& cfg);   // reseat：cfg 还归调用方，只是会被换个对象
+// 函数体内大致是：cfg = std::make_unique<Config>(...);
 ```
 
 Look closely at the difference here: `unique_ptr<Widget>&` is a reference to the smart pointer itself. Ownership stays clutched in the caller's hand, the object still sits safely with the caller, and the function merely swaps out what it points to. sink and reseat look like near-twins as names, yet a whole ownership model lies between their semantics—and all the signature differs by is a single `&`.
 
 The just-letting-us-use-it class is called **borrow**, and the overwhelming majority of functions belong to it. Parameters are `const T&` or `T*`, with the same nullability criterion we laid down in the borrowing section. The duty read out of the signature is equally clear: the function touches no ownership and carries nothing away when it leaves.
 
-When a function hands something back, it is likewise taking a stance, and return values come in two stories. A factory returning `unique_ptr<T>` is **handing the object over with ownership attached**—returning a newly created object defaults to this route. Returning `T*` or `T&` is a **loan**: the caller receives only a license to use, and you must never delete it. Think back to `find`'s return value and it's obvious: the object remains under the container's jurisdiction; if the caller's hand slips and deletes it, a dangling pointer is left lying in the container.
+When a function hands something back, it is likewise taking a stance, and return values come in two stories.
+
+Take the factory pattern as a design-pattern example: a factory function typically returns a `unique_ptr<T>`—**handing the object over with ownership attached**—and returning a newly created object defaults to this route.
+
+Returning `T*` or `T&` is a **loan**: the caller receives only a license to use, and you must never delete it. Think back to `find`'s return value and it's obvious: the object remains under the container's jurisdiction; if the caller's hand slips and deletes it, a dangling pointer is left lying in the container.
+
+> If the factory pattern is unfamiliar to you and you're curious, come take a seat over at the [Factory Pattern](/vol4-advanced/vol4-generics-patterns/03-factory-method-abstract-factory) article!
 
 Smart pointers also carry a pair of operations that are easy to misread, so let's learn them side by side: `p.get()` is a loan—it passes the internal raw pointer around for others to look at, and ownership doesn't budge. `p.release()` is abdication: the smart pointer lets go, hands you back the raw pointer, and the whole weight of releasing lands on you:
 
 ```cpp
 auto p = std::make_unique<Widget>(7);
 
-Widget* peek = p.get();      // loan: p still owns; nobody should delete peek
-Widget* raw  = p.release();  // abdication: p goes empty; releasing raw is the caller's job
-delete raw;                  // after abdicating, the release is on you
+Widget* peek = p.get();      // 借出：p 仍然拥有，没人该删 peek
+Widget* raw  = p.release();  // 弃管：p 变空，raw 的释放归调用方
+delete raw;                  // 弃管之后，释放只能自己来
 ```
 
 Two names sitting that close together, doing completely different work—give them an extra look before you use them, and don't cross-wire them. The full boundaries of `reset()` are likewise left for the unique_ptr article.
@@ -212,17 +230,17 @@ private:
     int id_;
 };
 
-// borrow: read-only, touches no ownership
+// borrow：只读一下，不碰所有权
 void report(const Task& t) {
     std::cout << "report 看到了 Task " << t.id() << "\n";
 }
 
-// sink: takes by value, the function takes over
+// sink：按值收，函数接手
 void finish(std::unique_ptr<Task> t) {
     std::cout << "finish 接手了 Task " << t->id() << "\n";
-}   // t destructs here -- the object dies inside the function
+}   // t 在这里析构——对象死在函数里
 
-// factory: once built, handed out with ownership attached (move-out)
+// 工厂：造好之后，连所有权一起交出（move-out）
 std::unique_ptr<Task> make_task(int id) {
     return std::make_unique<Task>(id);
 }
@@ -231,14 +249,14 @@ int main() {
     std::cout << "--- 场景一：borrow ---\n";
     {
         auto t = make_task(1);
-        report(*t);              // borrow: return it once done
-    }                            // t leaves scope, unique_ptr destructs the Task
+        report(*t);              // 借用：用完就还
+    }                            // t 离开作用域，unique_ptr 析构 Task
 
     std::cout << "--- 场景二：sink ---\n";
     {
         auto t = make_task(2);
-        finish(std::move(t));    // passed by value, ownership changes hands into the function
-    }                            // t is already empty-handed; nothing happens here
+        finish(std::move(t));    // 按值传参，所有权换手进函数
+    }                            // t 已经两手空空，这里无事发生
 
     std::cout << "--- main 收尾 ---\n";
     return 0;
@@ -270,13 +288,13 @@ Borrowing presupposes a live object—we all accept that. But once that premise 
 #include <iostream>
 
 const int* find_answer() {
-    int local = 42;    // a local, living in this call's stack frame (the chunk of stack memory the call occupies)
-    return &local;     // once the function returns, the frame -- and local with it -- is invalidated
+    int local = 42;    // 局部变量，住在这次调用的栈帧（函数调用占用的那块栈内存）里
+    return &local;     // 函数一返回，栈帧连同 local 一起作废
 }
 
 int main() {
     const int* p = find_answer();
-    std::cout << *p << "\n";   // undefined behavior: reading invalidated stack memory
+    std::cout << *p << "\n";   // 未定义行为：读一块作废的栈内存
     return 0;
 }
 ```
@@ -300,9 +318,9 @@ The protagonist of our second accident is the one among us most eager to save tr
 ```cpp
 Widget* raw = new Widget(7);
 
-std::unique_ptr<Widget> a(raw);   // a believes it is responsible for releasing
-std::unique_ptr<Widget> b(raw);   // b believes it too
-// Leaving scope: a's destructor deletes once, b's destructor deletes again -- the same memory, deleted twice
+std::unique_ptr<Widget> a(raw);   // a 认为自己负责释放
+std::unique_ptr<Widget> b(raw);   // b 也认为自己负责释放
+// 离开作用域：a 析构删一遍，b 析构再删一遍——同一块内存 delete 两次
 ```
 
 Look at the scene clearly: the two `unique_ptr`s don't know of each other's existence, each faithfully carries out its release duty, and together they add up to a double free—that is undefined behavior in person. On mainstream allocators like glibc, the common ending is the allocator detecting the duplicate reclaim and terminating the program outright. On a worse day, the second `delete` corrupts memory someone else is actively using, and the accident scene can drift very far away.
@@ -330,21 +348,21 @@ private:
     std::string tag_;
 };
 
-// Party A: creates the object, hands it out as a raw pointer, believing it's merely relaying it
+// 甲方：造出对象，裸指针交出去，觉得自己只是转交
 Session* build_session() {
     return new Session("无主");
 }
 
-// Party B: takes the pointer, uses it briefly, figures "I didn't new it, it's not mine to delete"
+// 乙方：拿到指针用一下，觉得不是我 new 的、不归我删
 void use_session(Session* s) {
     std::cout << "用了一下 Session " << s->tag() << "\n";
 }
 
 int main() {
-    Session* s = build_session();   // the handover happens, but neither side declares responsibility
+    Session* s = build_session();   // 交接发生，但没有任何一方声明负责
     use_session(s);
     std::cout << "main 结束\n";
-    return 0;                       // still no delete by this point
+    return 0;                       // 到这里也没有 delete
 }
 ```
 
@@ -382,18 +400,18 @@ Is this workflow actually any good? We have to practice on real code. With the b
 
 ```cpp
 class Shelf {
-    std::vector<std::unique_ptr<Book>> books_;   // member: the collection; Shelf owns it exclusively
+    std::vector<std::unique_ptr<Book>> books_;   // 成员：馆藏，Shelf 独占
 public:
-    void add(std::unique_ptr<Book> b) {          // parameter by value: a sink, taking over
-        books_.push_back(std::move(b));          // into the collection: ownership enters the container
+    void add(std::unique_ptr<Book> b) {          // 参数按值：sink，接手
+        books_.push_back(std::move(b));          // 入库：所有权进容器
     }
     const Book* find(const std::string& title) const {
         for (const auto& b : books_) {
             if (b->title() == title) {
-                return b.get();                  // loan: the container still owns exclusively
+                return b.get();                  // 借出：容器仍然独占
             }
         }
-        return nullptr;                          // not found: nullable, hence the pointer return
+        return nullptr;                          // 找不到：可空，所以返回指针
     }
 };
 ```

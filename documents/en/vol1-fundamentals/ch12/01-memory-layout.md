@@ -17,9 +17,9 @@ cpp_standard: [11, 14, 17, 20]
 translation:
   source: documents/vol1-fundamentals/ch12/01-memory-layout.md
   source_hash: 5c5870ff61203d6fd76901fc0f1f4e892a8338151a9b99d48b23fb49c0378972
-  translated_at: '2026-09-27T04:12:43+00:00'
-  engine: anthropic
-  token_count: 9000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 8498
 ---
 
 # Memory Layout: Where the 42 in `int x = 42` Actually Lives
@@ -53,17 +53,17 @@ Every time a function is called, the compiler creates a stack frame for it on th
 
 void foo()
 {
-    int a = 1;    // Allocated on the stack
-    double b = 2.0; // Right after a
+    int a = 1;    // 栈上分配
+    double b = 2.0; // 紧随 a 之后
     std::cout << "a 的地址: " << &a << "\n";
     std::cout << "b 的地址: " << &b << "\n";
-    // When the function returns, a's and b's storage is reclaimed automatically
+    // 函数返回，a 和 b 的空间自动回收
 }
 
 int main()
 {
     foo();
-    // Here, a and b no longer exist
+    // 这里 a 和 b 已经不存在了
     return 0;
 }
 ```
@@ -97,14 +97,14 @@ The heap's flexibility, you see, comes at a price. The allocator has to maintain
 
 int main()
 {
-    // Heap allocation
+    // 堆分配
     int* p1 = new int(42);
-    int* p2 = new int[1000]; // Arrays live on the heap too
+    int* p2 = new int[1000]; // 数组也在堆上
 
     std::cout << "p1 指向的地址: " << p1 << "\n";
     std::cout << "p2 指向的地址: " << p2 << "\n";
 
-    // Must be released manually
+    // 必须手动释放
     delete p1;
     delete[] p2;
 
@@ -125,14 +125,14 @@ Variables in static storage come with two flavors of initialization. For constan
 ```cpp
 #include <iostream>
 
-int global_var = 10;          // Data segment: initialized global variable
-int global_uninit;             // BSS segment: uninitialized global variable (automatically 0)
-const char* kMessage = "hello"; // Data segment: the pointer itself sits in the data segment
-                               // the "hello" literal sits in the code segment (read-only)
+int global_var = 10;          // 数据段：已初始化全局变量
+int global_uninit;             // BSS 段：未初始化全局变量（自动为 0）
+const char* kMessage = "hello"; // 数据段：指针本身在数据段
+                               // "hello" 字面量在代码段（只读）
 
 void demo()
 {
-    static int call_count = 0; // Data segment: initialized on first call
+    static int call_count = 0; // 数据段：首次调用时初始化
     ++call_count;
     std::cout << "第 " << call_count << " 次调用\n";
 }
@@ -142,9 +142,9 @@ int main()
     std::cout << "global_var = " << global_var << "\n";
     std::cout << "global_uninit = " << global_uninit << "\n";
 
-    demo(); // 1st call
-    demo(); // 2nd call
-    demo(); // 3rd call
+    demo(); // 第 1 次
+    demo(); // 第 2 次
+    demo(); // 第 3 次
 
     return 0;
 }
@@ -160,30 +160,30 @@ That was a lot of theory, so let's write a program and verify it for real. In th
 
 ```cpp
 // layout.cpp
-// Compile: g++ -std=c++17 -O0 layout.cpp -o layout
-// Note: -O0 turns optimization off, preventing the compiler from applying aggressive optimizations to these variables
+// 编译: g++ -std=c++17 -O0 layout.cpp -o layout
+// 注意: 使用 -O0 关闭优化，防止编译器对变量做激进优化
 
 #include <cstdint>
 #include <iostream>
 
-// Global variable — data segment (initialized)
+// 全局变量 —— 数据段（已初始化）
 int g_initialized = 42;
 
-// Global variable — BSS segment (uninitialized, automatically 0)
+// 全局变量 —— BSS 段（未初始化，自动为 0）
 int g_uninitialized;
 
-// const global — usually in a read-only segment, or inlined by the compiler
+// const 全局 —— 通常在只读段或被编译器内联
 constexpr int kGlobalConst = 100;
 
 int main()
 {
-    // Stack variable
+    // 栈变量
     int stack_var = 1;
 
-    // Heap variable
+    // 堆变量
     int* heap_var = new int(2);
 
-    // static local variable — data segment
+    // static 局部变量 —— 数据段
     static int s_static_local = 3;
 
     std::cout << "=== 各区域变量地址 ===\n";
@@ -226,9 +226,9 @@ Run this program on your own machine and the concrete address values will certai
 For each variable below, determine which memory region it lives in (stack, heap, data segment, BSS segment, code segment):
 
 ```cpp
-const char* msg = "error";    // Where do msg and "error" each live?
+const char* msg = "error";    // msg 和 "error" 各在哪里？
 static int count;              // ?
-int* p = new int[10];         // Where do p and the array it points to each live?
+int* p = new int[10];         // p 和 p 指向的数组各在哪里？
 void func() {
     int local = 0;            // ?
     static int visits = 0;    // ?
@@ -242,14 +242,14 @@ What is wrong with the following code? Think about how it should be fixed:
 ```cpp
 void process_image()
 {
-    // Image buffer: 1920 x 1080 x 4 (RGBA) = about 8 MB
+    // 图像缓冲区：1920 x 1080 x 4 (RGBA) = 约 8 MB
     unsigned char buffer[1920 * 1080 * 4];
-    // ... process the image ...
+    // ... 处理图像 ...
 }
 
 int fibonacci(int n)
 {
-    return fibonacci(n - 1) + fibonacci(n - 2); // Missing termination condition
+    return fibonacci(n - 1) + fibonacci(n - 2); // 缺少终止条件
 }
 ```
 

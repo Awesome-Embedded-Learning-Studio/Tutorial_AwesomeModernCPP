@@ -17,10 +17,10 @@ tags:
 title: 'Three-Way Comparison: The C++20 Spaceship Operator'
 translation:
   source: documents/vol4-advanced/05-spaceship-operator.md
-  source_hash: d6702e83beab1812ff3000a15e492a8e5648295685ace59c65e6f9e5136d6f43
-  translated_at: '2026-09-26T02:52:19+00:00'
-  engine: anthropic
-  token_count: 8000
+  source_hash: f4544e78f166e54153f62bd70f8fdeacda50218595b1dbb442858b71b16fd0f8
+  translated_at: '2026-11-22T16:44:22+00:00'
+  engine: glm-5.3-refresh
+  token_count: 29440
 ---
 # Embedded Modern C++ Development — The Three-Way Comparison Operator
 
@@ -33,7 +33,7 @@ public:
     int32_t value;
     uint32_t timestamp;
 
-    // You need to implement 6 comparison operators!
+    // 需要实现6个比较运算符！
     bool operator==(const SensorReading& other) const {
         return sensor_id == other.sensor_id &&
                value == other.value &&
@@ -96,7 +96,7 @@ The three-way comparison operator uses the `<=>` symbol, and it got its nickname
 struct Point {
     int x, y;
 
-    // Three-way comparison operator
+    // 三路比较运算符
     std::strong_ordering operator<=>(const Point& other) const {
         if (auto cmp = x <=> other.x; cmp != 0)
             return cmp;
@@ -110,12 +110,12 @@ struct Point {
 The three-way comparison operator doesn't return `bool`; it returns a "comparison category" that represents the outcome:
 
 ```cpp
-// The <=> return value can be understood as:
-// a <=> b < 0  means a < b
-// a <=> b == 0 means a == b
-// a <=> b > 0  means a > b
+// <=> 返回值可以理解为：
+// a <=> b < 0  表示 a < b
+// a <=> b == 0 表示 a == b
+// a <=> b > 0  表示 a > b
 
-// In reality, it returns a type
+// 实际上，它返回的是一个类型
 auto result = (a <=> b);
 
 if (result < 0) { /* a < b */ }
@@ -133,12 +133,12 @@ The returned comparison category can be compared against 0, or you can use its n
 int main() {
     auto cmp = 5 <=> 3;
 
-    // Approach 1: compare against 0
+    // 方式1：与0比较
     if (cmp < 0)    std::cout << "less\n";
     if (cmp == 0)   std::cout << "equal\n";
     if (cmp > 0)    std::cout << "greater\n";
 
-    // Approach 2: use the named values (recommended, clearer)
+    // 方式2：使用命名方法（推荐，更清晰）
     if (cmp == std::strong_ordering::less)    std::cout << "less\n";
     if (cmp == std::strong_ordering::equal)   std::cout << "equal\n";
     if (cmp == std::strong_ordering::greater) std::cout << "greater\n";
@@ -166,11 +166,11 @@ struct SensorReading {
     int32_t value;
     uint32_t timestamp;
 
-    // One line of code covers all 6 comparison operators!
+    // 一行代码搞定所有6个比较运算符！
     auto operator<=>(const SensorReading&) const = default;
 
-    // C++20 also auto-generates !=
-    // but == still needs an explicit default (if you need it)
+    // C++20还会自动生成!=
+    // 但==仍需显式default（如果需要）
     bool operator==(const SensorReading&) const = default;
 };
 ```
@@ -182,19 +182,19 @@ SensorReading s1{1, 100, 1000};
 SensorReading s2{1, 100, 1000};
 SensorReading s3{2, 100, 1000};
 
-// All of these work!
+// 所有这些都可以工作！
 bool b1 = (s1 == s2);  // true
 bool b2 = (s1 != s2);  // false
-bool b3 = (s1 < s3);   // true (lexicographic)
+bool b3 = (s1 < s3);   // true (按字典序)
 bool b4 = (s1 <= s3);  // true
 bool b5 = (s1 > s3);   // false
 bool b6 = (s1 >= s3);  // false
 
-// It also works in standard containers
+// 还可以用在标准容器中
 std::set<SensorReading> sensor_set;
 std::map<SensorReading, std::string> sensor_map;
 
-// And in algorithms
+// 还可以用在算法中
 std::vector<SensorReading> sensors;
 std::sort(sensors.begin(), sensors.end());
 ```
@@ -217,7 +217,7 @@ Version v1{1, 2, 3};
 Version v2{1, 2, 4};
 Version v3{1, 3, 0};
 
-// Comparison order: major -> minor -> patch
+// 比较顺序：major -> minor -> patch
 // v1 < v2 (patch: 3 < 4)
 // v1 < v3 (minor: 2 < 3)
 // v2 < v3 (minor: 2 < 3)
@@ -255,7 +255,7 @@ struct Integer {
     bool operator==(const Integer& other) const = default;
 };
 
-// Usage
+// 使用
 Integer a{5}, b{5}, c{10};
 static_assert((a <=> b) == std::strong_ordering::equal);
 static_assert((a <=> c) == std::strong_ordering::less);
@@ -298,7 +298,7 @@ struct FloatValue {
     }
 };
 
-// Usage
+// 使用
 FloatValue a{1.0f}, b{2.0f}, c{NAN};
 
 static_assert((a <=> b) == std::partial_ordering::less);
@@ -331,7 +331,7 @@ Good fits: case-insensitive strings, comparisons that ignore certain fields
 struct CaseInsensitiveString {
     std::string value;
 
-    // Helper: case-insensitive comparison
+    // 辅助函数：大小写不敏感比较
     static int compare_ic(const std::string& a, const std::string& b) {
         size_t i = 0;
         while (i < a.size() && i < b.size()) {
@@ -358,13 +358,13 @@ struct CaseInsensitiveString {
     }
 };
 
-// Usage
+// 使用
 CaseInsensitiveString s1{"Hello"}, s2{"HELLO"}, s3{"hello"}, s4{"World"};
 
-// s1, s2, s3 are equivalent (weak_ordering::equivalent)
-// but they are not equal (value differs)
+// s1, s2, s3 是等价的（weak_ordering::equivalent）
+// 但它们不相等（value不同）
 static_assert((s1 <=> s2) == std::weak_ordering::equivalent);
-static_assert(!(s1 == s2));  // not equal!
+static_assert(!(s1 == s2));  // 不相等！
 ```
 
 `std::weak_ordering` has three possible values:
@@ -380,21 +380,21 @@ static_assert(!(s1 == s2));  // not equal!
 ```cpp
 #include <compare>
 
-// Selection guide
+// 选择指南
 
-// 1. strong_ordering: every field compared exactly
+// 1. strong_ordering：所有字段都精确比较
 struct SensorData {
     uint8_t id;
     int16_t value;
 
     auto operator<=>(const SensorData&) const = default;
     bool operator==(const SensorData&) const = default;
-    // Returns strong_ordering
+    // 返回 strong_ordering
 };
 
-// 2. partial_ordering: NaN or incomparable values exist
+// 2. partial_ordering：存在NaN或不可比较的值
 struct Measurement {
-    float value;  // May be NaN
+    float value;  // 可能是NaN
 
     std::partial_ordering operator<=>(const Measurement& other) const {
         if (std::isnan(value) || std::isnan(other.value))
@@ -403,14 +403,14 @@ struct Measurement {
     }
 };
 
-// 3. weak_ordering: equivalent but not equal
+// 3. weak_ordering：等价但不相等
 struct ConfigKey {
     std::string key;
     bool case_sensitive;
 
     std::weak_ordering operator<=>(const ConfigKey& other) const {
         if (!case_sensitive) {
-            // Case-insensitive comparison
+            // 大小写不敏感比较
             return case_insensitive_compare(key, other.key);
         }
         return key <=> other.key;
@@ -422,18 +422,18 @@ struct ConfigKey {
 
 ```mermaid
 graph TD
-    subgraph strong["strong_ordering (strongest)"]
-        strong_props["Substitutability: a == b means a can fully stand in for b<br/>equivalence implies equality<br/>Examples: integers, enums"]
+    subgraph strong["strong_ordering（最强）"]
+        strong_props["替换性：a == b 意味着 a 可以完全替代 b<br/>等价即相等<br/>例子：整数、枚举"]
     end
     subgraph weak["weak_ordering"]
-        weak_props["Substitutability: a == b does not necessarily mean a can fully stand in for b<br/>equivalent but not equal<br/>Examples: case-insensitive strings"]
+        weak_props["替换性：a == b 不一定能完全替代 b<br/>等价但不相等<br/>例子：大小写不敏感字符串"]
     end
-    subgraph partial["partial_ordering (weakest)"]
-        partial_props["Some values are incomparable<br/>Examples: floating-point (NaN)"]
+    subgraph partial["partial_ordering（最弱）"]
+        partial_props["某些值不可比较<br/>例子：浮点数（NaN）"]
     end
 
-    strong -.->|weakens| weak
-    weak -.->|weakens| partial
+    strong -.->|弱化| weak
+    weak -.->|弱化| partial
 ```
 
 ------
@@ -464,14 +464,14 @@ public:
     uint16_t sensor_id;
     Priority priority;
     int32_t value;
-    uint32_t sequence;  // Sequence number, used to order within the same priority
+    uint32_t sequence;  // 序列号，用于同优先级排序
 
-    // Ascending by priority (Critical at the front of the queue), then by sequence number
+    // 按优先级升序（Critical在队列前面），然后按序列号
     auto operator<=>(const SensorMessage& other) const {
-        // Smaller priority value means more important
+        // 优先级越小越重要
         if (auto cmp = priority <=> other.priority; cmp != 0)
             return cmp;
-        // Same priority: by sequence number (FIFO)
+        // 同优先级按序列号（FIFO）
         return sequence <=> other.sequence;
     }
 
@@ -482,15 +482,15 @@ public:
                sequence == other.sequence;
     }
 
-    // For the priority queue (needs the > operator)
+    // 用于优先级队列（需要>运算符）
     bool operator>(const SensorMessage& other) const {
         return (*this <=> other) > 0;
     }
 };
 
-// Usage example
+// 使用示例
 void message_queue_example() {
-    // Min-heap (smaller Priority value = higher priority)
+    // 小顶堆（Priority值越小优先级越高）
     std::priority_queue<
         SensorMessage,
         std::vector<SensorMessage>,
@@ -501,7 +501,7 @@ void message_queue_example() {
     message_queue.push(SensorMessage{2, SensorMessage::Priority::Critical, 200, 2});
     message_queue.push(SensorMessage{3, SensorMessage::Priority::High, 150, 3});
 
-    // Process in priority order: Critical -> High -> Low
+    // 按优先级顺序处理：Critical -> High -> Low
     while (!message_queue.empty()) {
         auto msg = message_queue.top();
         process_message(msg);
@@ -525,7 +525,7 @@ public:
     uint8_t minor;
     uint8_t patch;
 
-    // Pre-release identifier: alpha < beta < rc < official release
+    // 预发布标识：alpha < beta < rc < 正式版
     enum class PreRelease : uint8_t {
         None = 0,
         Alpha = 1,
@@ -534,27 +534,27 @@ public:
     };
 
     PreRelease pre_release = PreRelease::None;
-    uint8_t pre_release_version = 0;  // alpha1, alpha2, etc.
+    uint8_t pre_release_version = 0;  // alpha1, alpha2等
 
-    // Compare version numbers
+    // 比较版本号
     std::strong_ordering operator<=>(const FirmwareVersion& other) const {
-        // Major version
+        // 主版本号
         if (auto cmp = major <=> other.major; cmp != 0)
             return cmp;
 
-        // Minor version
+        // 次版本号
         if (auto cmp = minor <=> other.minor; cmp != 0)
             return cmp;
 
-        // Patch version
+        // 补丁版本号
         if (auto cmp = patch <=> other.patch; cmp != 0)
             return cmp;
 
-        // Pre-release identifier
+        // 预发布标识
         if (auto cmp = pre_release <=> other.pre_release; cmp != 0)
             return cmp;
 
-        // Pre-release version (only compared when both are pre-releases)
+        // 预发布版本号（只在都是预发布时比较）
         if (pre_release != PreRelease::None) {
             return pre_release_version <=> other.pre_release_version;
         }
@@ -564,13 +564,13 @@ public:
 
     bool operator==(const FirmwareVersion& other) const = default;
 
-    // Parse a version string "1.2.3-beta2"
+    // 解析版本字符串 "1.2.3-beta2"
     static FirmwareVersion parse(const std::string& version_str);
 
     std::string to_string() const;
 };
 
-// Usage example
+// 使用示例
 void version_comparison() {
     FirmwareVersion current{1, 2, 3};
     FirmwareVersion available{1, 2, 4};
@@ -580,13 +580,13 @@ void version_comparison() {
                available.to_string().c_str());
     }
 
-    // Pre-release version comparison
+    // 预发布版本比较
     FirmwareVersion v1{2, 0, 0, FirmwareVersion::PreRelease::Alpha, 1};
     FirmwareVersion v2{2, 0, 0, FirmwareVersion::PreRelease::Beta, 1};
     FirmwareVersion v3{2, 0, 0, FirmwareVersion::PreRelease::None, 0};
 
     static_assert(v1 < v2);  // alpha < beta
-    static_assert(v2 < v3);  // beta < official release
+    static_assert(v2 < v3);  // beta < 正式版
 }
 ```
 
@@ -601,11 +601,11 @@ In a configuration system, we may only want to compare certain key fields:
 
 struct NetworkConfig {
     std::string ssid;
-    std::optional<std::string> password;  // Password does not participate in comparison
+    std::optional<std::string> password;  // 密码不参与比较
     uint8_t channel;
     bool hidden;
 
-    // Ignore the password field when comparing
+    // 比较时忽略密码字段
     auto operator<=>(const NetworkConfig& other) const {
         if (auto cmp = ssid <=> other.ssid; cmp != 0)
             return cmp;
@@ -618,10 +618,10 @@ struct NetworkConfig {
         return ssid == other.ssid &&
                channel == other.channel &&
                hidden == other.hidden;
-        // Note: password does not participate in comparison
+        // 注意：password不参与比较
     }
 
-    // Full comparison (including the password)
+    // 完全比较（包括密码）
     bool fully_equal(const NetworkConfig& other) const {
         if (*this != other) return false;
         if (password.has_value() != other.password.has_value())
@@ -632,15 +632,15 @@ struct NetworkConfig {
     }
 };
 
-// Usage example
+// 使用示例
 void config_example() {
     NetworkConfig config1{"MyWiFi", "password123", 6, false};
     NetworkConfig config2{"MyWiFi", "different", 6, false};
 
-    // The two configs are "equal" (password ignored)
+    // 两个配置"相等"（忽略密码）
     static_assert(config1 == config2);
 
-    // Detect whether the configuration changed
+    // 可以检测配置是否改变
     NetworkConfig saved_config = load_from_flash();
     NetworkConfig current_config = get_current_config();
 
@@ -649,7 +649,7 @@ void config_example() {
         save_to_flash(current_config);
     }
 
-    // But checking whether the password changed takes an explicit call
+    // 但检查密码是否改变需要显式调用
     if (!config1.fully_equal(config2)) {
         printf("Password changed\n");
     }
@@ -668,7 +668,7 @@ Some sensors may return invalid data (a concept similar to NaN):
 struct SensorValue {
     std::optional<float> value;
 
-    // An invalid value (no value) is treated as less than any valid value
+    // 无效值（无值）被视为小于任何有效值
     std::partial_ordering operator<=>(const SensorValue& other) const {
         if (!value.has_value() && !other.value.has_value())
             return std::partial_ordering::equivalent;
@@ -677,7 +677,7 @@ struct SensorValue {
         if (!other.value.has_value())
             return std::partial_ordering::greater;
 
-        // Both have values
+        // 两个都有值
         float v1 = *value;
         float v2 = *other.value;
 
@@ -698,17 +698,17 @@ struct SensorValue {
     }
 };
 
-// Usage example
+// 使用示例
 void sensor_with_invalid_values() {
     std::vector<SensorValue> readings = {
         {10.5f},
-        {std::nullopt},  // Invalid reading
+        {std::nullopt},  // 无效读数
         {15.2f},
-        {NAN},           // NaN reading
+        {NAN},           // NaN读数
         {12.0f}
     };
 
-    // Sorting: invalid values first, then NaN, then valid values
+    // 排序：无效值在前，然后NaN，然后有效值
     std::sort(readings.begin(), readings.end());
 
     for (const auto& reading : readings) {
@@ -718,7 +718,7 @@ void sensor_with_invalid_values() {
             printf("(invalid) ");
         }
     }
-    // Output: (invalid) nan 10.5 12.0 15.2
+    // 输出：(invalid) nan 10.5 12.0 15.2
 }
 ```
 
@@ -752,21 +752,21 @@ public:
     std::chrono::system_clock::time_point timestamp;
     std::string message;
 
-    // Comparison logic:
-    // 1. Active alarms come first
-    // 2. Within the same status, Critical comes first
-    // 3. Within the same severity, the newest comes first
+    // 比较逻辑：
+    // 1. Active告警优先
+    // 2. 同状态下，Critical优先
+    // 3. 同严重程度，最新的优先
     std::strong_ordering operator<=>(const Alarm& other) const {
-        // Status: Active < Acknowledged < Resolved
+        // 状态：Active < Acknowledged < Resolved
         if (auto cmp = status <=> other.status; cmp != 0)
             return cmp;
 
-        // Severity: Critical > Error > Warning > Info
-        // but we want Critical first (i.e. "smaller")
+        // 严重程度：Critical > Error > Warning > Info
+        // 但我们希望Critical在前面（更"小"）
         if (auto cmp = other.severity <=> severity; cmp != 0)
             return cmp;
 
-        // Timestamp: newest first (i.e. "smaller")
+        // 时间戳：最新的在前（更"小"）
         return other.timestamp <=> timestamp;
     }
 
@@ -775,7 +775,7 @@ public:
     }
 };
 
-// Usage example
+// 使用示例
 void alarm_system() {
     std::vector<Alarm> alarms = {
         {1, Alarm::Severity::Warning, Alarm::Status::Active,
@@ -786,8 +786,8 @@ void alarm_system() {
          std::chrono::system_clock::now(), "Connection lost"}
     };
 
-    // After sorting:
-    // 1. Active Error (the newest active alarm)
+    // 排序后：
+    // 1. Active Error (最新的Active告警)
     // 2. Active Warning
     // 3. Acknowledged Critical
     std::sort(alarms.begin(), alarms.end());
@@ -813,30 +813,30 @@ When the default lexicographic order doesn't meet your needs, you implement it m
 #include <compare>
 
 struct Task {
-    uint8_t priority;      // 0-255; smaller = more important
-    uint32_t deadline;     // Deadline timestamp
-    uint32_t created_at;   // Creation timestamp
+    uint8_t priority;      // 0-255，越小越重要
+    uint32_t deadline;     // 截止时间戳
+    uint32_t created_at;   // 创建时间戳
     uint16_t task_id;
 
-    // Comparison logic:
-    // 1. The highest priority executes first
-    // 2. Same priority: the nearest deadline executes first
-    // 3. Same deadline: the earliest created executes first
-    // 4. All equal: the smaller task_id executes first
+    // 比较逻辑：
+    // 1. 优先级最高的先执行
+    // 2. 同优先级，deadline最近的先执行
+    // 3. 同deadline，创建最早的先执行
+    // 4. 都相同，task_id小的先执行
     std::strong_ordering operator<=>(const Task& other) const {
-        // Ascending priority
+        // 优先级升序
         if (auto cmp = priority <=> other.priority; cmp != 0)
             return cmp;
 
-        // Ascending deadline
+        // deadline升序
         if (auto cmp = deadline <=> other.deadline; cmp != 0)
             return cmp;
 
-        // Ascending creation time (earlier first)
+        // 创建时间升序（早创建的优先）
         if (auto cmp = created_at <=> other.created_at; cmp != 0)
             return cmp;
 
-        // Ascending task_id
+        // task_id升序
         return task_id <=> other.task_id;
     }
 
@@ -851,7 +851,7 @@ Since C++20, tools like `std::compare_three_way` simplify comparing two values (
 ```cpp
 #include <compare>
 
-// C++23-style comparison synthesis
+// C++23风格的比较合成
 struct Task {
     uint8_t priority;
     uint32_t deadline;
@@ -859,7 +859,7 @@ struct Task {
     uint16_t task_id;
 
     std::strong_ordering operator<=>(const Task& other) const {
-        // Use the C++23 synthesis function (if available)
+        // 多字段比较:逐字段链式,先到先得
         if (auto c = priority <=> other.priority; c != 0) return c;
         if (auto c = deadline <=> other.deadline; c != 0) return c;
         if (auto c = created_at <=> other.created_at; c != 0) return c;
@@ -874,7 +874,7 @@ struct Task {
 For C++20, you can implement a simple helper yourself:
 
 ```cpp
-// C++20 comparison synthesis helper
+// C++20比较合成助手
 namespace detail {
     template<typename... Ts>
     constexpr auto synthesized_three_way(const Ts&... args) {
@@ -883,7 +883,7 @@ namespace detail {
         return R{};
     }
 
-    // Simple implementation
+    // 简单实现
     template<typename T>
     constexpr auto compare_fields(const T& a, const T& b) {
         return a <=> b;
@@ -938,13 +938,13 @@ The trap people actually step into is the latter: you figure "I only care about 
 #include <compare>
 #include <iostream>
 
-// ✅ Only default <=>: both == and < are available automatically (the old claim of a "compile error" was simply wrong)
+// ✅ 只 default <=>：== 和 < 都自动有了（旧说法里那个「编译错误」其实是错的）
 struct HasSpaceship {
     int value;
     auto operator<=>(const HasSpaceship&) const = default;
 };
 
-// ⚠️ Only default ==: equality is fine, but there is no < / <=>
+// ⚠️ 只 default ==：判等没问题，但拿不到 < / <=>
 struct HasEquality {
     int value;
     bool operator==(const HasEquality&) const = default;
@@ -952,11 +952,11 @@ struct HasEquality {
 
 int main() {
     HasSpaceship a{1}, b{2};
-    std::cout << (a == b) << (a < b) << '\n';   // OK: <=> generated both == and <
+    std::cout << (a == b) << (a < b) << '\n';   // OK：<=> 把 == 和 < 都生成出来了
 
     HasEquality c{1}, d{2};
-    std::cout << (c == d) << '\n';              // OK: == is explicitly defaulted
-    // std::cout << (c < d) << '\n';            // Compile error: a defaulted == does not reverse-generate <=>
+    std::cout << (c == d) << '\n';              // OK：显式 default 了 ==
+    // std::cout << (c < d) << '\n';            // 编译错误：default == 不反向生成 <=>
 }
 ```
 
@@ -980,22 +980,22 @@ A one-line mnemonic: `<=>` is "upstream" and `==` is "downstream"—the upstream
 When implementing by hand, keep the returned comparison category consistent:
 
 ```cpp
-// ❌ Wrong: mixing different comparison categories
+// ❌ 错误：混合不同的比较类别
 struct BadCompare {
     float f;
     int i;
 
     std::partial_ordering operator<=>(const BadCompare& other) const {
-        // float <=> float returns partial_ordering
-        // int <=> int returns strong_ordering
-        // They cannot be combined directly!
+        // float <=> float 返回 partial_ordering
+        // int <=> int 返回 strong_ordering
+        // 不能直接组合！
         if (f <=> other.f != std::partial_ordering::equivalent)
             return f <=> other.f;
-        return i <=> other.i;  // Type mismatch
+        return i <=> other.i;  // 类型不匹配
     }
 };
 
-// ✅ Correct: unify the return type
+// ✅ 正确：统一返回类型
 struct GoodCompare {
     float f;
     int i;
@@ -1004,18 +1004,18 @@ struct GoodCompare {
         if (auto cmp = f <=> other.f;
             cmp != std::partial_ordering::equivalent)
             return cmp;
-        // strong_ordering implicitly converts to partial_ordering
+        // strong_ordering可以隐式转换为partial_ordering
         return i <=> other.i;
     }
 };
 
-// ✅ Or use a generic comparison category
+// ✅ 或者使用通用比较类别
 struct BetterCompare {
     float f;
     int i;
 
     auto operator<=>(const BetterCompare& other) const {
-        // Use auto to deduce a suitable comparison category
+        // 使用auto推导合适的比较类别
         if (auto cmp = f <=> other.f; cmp != 0)
             return cmp;
         return i <=> other.i;
@@ -1034,23 +1034,23 @@ struct Base {
     bool operator==(const Base&) const = default;
 };
 
-// ✅ If the derived class adds no data members
+// ✅ 如果派生类没有新增数据成员
 struct Derived : Base {
-    // The inherited comparison operators still work
+    // 继承的比较运算符仍然有效
 };
 
-// ❌ If the derived class adds data members
+// ❌ 如果派生类新增了数据成员
 struct DerivedWithNew : Base {
     int y;
-    // The comparison operators must be redefined
+    // 需要重新定义比较运算符
     auto operator<=>(const DerivedWithNew&) const = default;
     bool operator==(const DerivedWithNew&) const = default;
 };
 
-// ⚠️ Comparing different types
+// ⚠️ 比较不同类型
 Derived d1{1};
 DerivedWithNew d2{1, 2};
-// bool cmp = (d1 == d2);  // Compile error! Different types
+// bool cmp = (d1 == d2);  // 编译错误！类型不同
 ```
 
 ### Pitfall 4: The Floating-Point NaN Problem
@@ -1062,13 +1062,13 @@ A floating-point `NaN` (Not a Number) makes comparisons come out `unordered`:
 
 float nan_value = std::nan("1");
 
-// ❌ The problem with traditional comparison operators
-if (nan_value > 0.0f) { /* Not executed */ }
-if (nan_value < 0.0f) { /* Not executed */ }
-if (nan_value == 0.0f) { /* Not executed */ }
-// Comparing NaN with any floating-point number is false!
+// ❌ 传统比较运算符的问题
+if (nan_value > 0.0f) { /* 不会执行 */ }
+if (nan_value < 0.0f) { /* 不会执行 */ }
+if (nan_value == 0.0f) { /* 不会执行 */ }
+// NaN与任何浮点数比较都是false！
 
-// ✅ Handle NaN with partial_ordering
+// ✅ 使用partial_ordering处理NaN
 struct SafeFloat {
     float value;
 
@@ -1091,7 +1091,7 @@ struct SafeFloat {
 The three-way comparison operator needs a fairly recent compiler:
 
 ```cpp
-// Check compiler support
+// 检查编译器支持
 #if __cplusplus < 202002L
     #error "Three-way comparison requires C++20"
 #endif
@@ -1112,11 +1112,11 @@ The three-way comparison operator needs a fairly recent compiler:
 For projects that must support older compilers, you can use a macro for conditional compilation:
 
 ```cpp
-#if __cpp_spaceship  // or __cplusplus >= 202002L
-    // Use the three-way comparison operator
+#if __cpp_spaceship  // 或者 __cplusplus >= 202002L
+    // 使用三路比较运算符
     #define ENABLE_SPACESHIP 1
 #else
-    // Fall back to the traditional approach
+    // 回退到传统方法
     #define ENABLE_SPACESHIP 0
 #endif
 
@@ -1161,14 +1161,14 @@ C++20 allows the compiler to automatically rewrite certain comparison operators 
 
 ```cpp
 struct X {
-    // Just define <=> and ==
+    // 只要定义了<=>和==
     auto operator<=>(const X&) const = default;
     bool operator==(const X&) const = default;
 };
 
 X x1, x2;
 
-// The following expressions are automatically rewritten as:
+// 以下表达式自动重写为：
 x1 != x2;  // !(x1 == x2)
 x1 < x2;   // (x1 <=> x2) < 0
 x1 <= x2;  // (x1 <=> x2) <= 0
@@ -1197,20 +1197,20 @@ void algorithm_example() {
         {3, "three"}, {1, "one"}, {2, "two"}
     };
 
-    // Sort
+    // 排序
     std::sort(data.begin(), data.end());
 
-    // Binary search
+    // 二分查找
     auto it = std::lower_bound(data.begin(), data.end(), Data{2, ""});
     if (it != data.end() && it->key == 2) {
         printf("Found: %s\n", it->value.c_str());
     }
 
-    // Deduplicate
+    // 去重
     std::sort(data.begin(), data.end());
     auto last = std::unique(data.begin(), data.end());
 
-    // Min/max
+    // 最小/最大
     auto [min_it, max_it] = std::minmax_element(data.begin(), data.end());
 }
 ```
@@ -1231,14 +1231,14 @@ struct ConfigKey {
     bool operator==(const ConfigKey&) const = default;
 };
 
-// Usable directly as a map key
+// 可以直接用作map的键
 std::map<ConfigKey, std::string> config = {
     {{"Network", "IP"}, "192.168.1.1"},
     {{"Network", "Port"}, "8080"},
     {{"Sensor", "Rate"}, "1000"}
 };
 
-// Usable directly as a set element
+// 可以直接用作set的元素
 std::set<ConfigKey> keys;
 keys.insert({"Network", "IP"});
 ```

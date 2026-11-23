@@ -28,10 +28,10 @@ tags:
 title: 'Capstone Project: A Type-Safe any'
 translation:
   source: documents/vol4-advanced/vol2-modern-cpp17/05-type-safe-any.md
-  source_hash: 0d439d5819be17c4e28554b4d6a5ccb4d1e3486a11f44dd80f1ef9fdeaa04840
-  translated_at: '2026-09-26T03:28:17+00:00'
-  engine: anthropic
-  token_count: 4500
+  source_hash: d327c9b2b3be9577408dbd5c15fd3d668525a0d6f17d354be2afbf8b5ec9f9d4
+  translated_at: '2026-11-22T16:45:02+00:00'
+  engine: glm-5.3-refresh
+  token_count: 13632
 ---
 # Capstone Project: A Type-Safe any
 
@@ -63,10 +63,10 @@ class UnsafeAny {
 public:
     template <typename T>
     explicit UnsafeAny(T value) : data_(new T(value)) {}
-    ~UnsafeAny() {}                      // can't even get destruction right; this simply leaks
+    ~UnsafeAny() {}                      // 连析构都没法做对,这里干脆泄漏
 
     template <typename T>
-    T get_as() const { return *static_cast<T*>(data_); }   // cast to whatever you like
+    T get_as() const { return *static_cast<T*>(data_); }   // 想转什么就转什么
 };
 ```
 
@@ -109,20 +109,20 @@ This route is the most intuitive. The outer any holds a pointer to a "concept ba
 ```cpp
 class Any {
 private:
-    struct concept_any_base {                              // the concept base class
+    struct concept_any_base {                              // 概念基类
         virtual ~concept_any_base() = default;
         virtual const std::type_info& type() const noexcept = 0;
         virtual std::unique_ptr<concept_any_base> clone() const = 0;
-        virtual const void* untyped() const noexcept = 0;  // hands out the internal pointer
+        virtual const void* untyped() const noexcept = 0;  // 交出内部指针
     };
 
     template <typename T>
-    struct data_holder final : concept_any_base {          // the derived class that actually stores T
+    struct data_holder final : concept_any_base {          // 真正存 T 的派生类
         T data;
-        // ... implement those virtual functions
+        // ... 落实上面那几个虚函数
     };
 
-    std::unique_ptr<concept_any_base> holder_;             // the outer layer sees only a base-class pointer
+    std::unique_ptr<concept_any_base> holder_;             // 外层只看到基类指针
 };
 ```
 
@@ -207,7 +207,7 @@ Getting a stored value back out safely is the most critical link in any's design
 That internal `untyped()` hands out the held object's address as a `const void*`. Once `any_cast<T>` has this pointer, it first confirms the stored type really is `T`, then `static_cast`s it back. This `static_cast` is safe, because what `untyped()` returns is, by construction, the address of `data_holder<T>::data`. We provide two overloads: the pointer version returns `nullptr` on mismatch; the value version throws on mismatch.
 
 ```cpp
-// Pointer overload: returns nullptr on mismatch, doesn't throw
+// 指针重载:不匹配返回 nullptr,不抛异常
 template <typename T>
 const T* any_cast(const Any* a) noexcept {
     if (!a || !a->has_value() || a->type() != typeid(T)) {
@@ -216,7 +216,7 @@ const T* any_cast(const Any* a) noexcept {
     return static_cast<const T*>(a->holder_->untyped());
 }
 
-// Value overload: throws bad_cast on mismatch (the standard library uses bad_any_cast)
+// 值重载:不匹配抛 bad_cast(标准库用 bad_any_cast)
 template <typename T>
 T any_cast(const Any& a) {
     const T* p = any_cast<T>(&a);
@@ -299,10 +299,10 @@ template <typename T, typename D = std::decay_t<T>,
           typename = std::enable_if_t<!std::is_same_v<D, SboAny>>>
 SboAny(T&& v) {
     if constexpr (sizeof(model<D>) <= BUF) {
-        ptr_ = new (buffer_) model<D>(std::forward<T>(v));   // in place, no heap allocation
+        ptr_ = new (buffer_) model<D>(std::forward<T>(v));   // 就地,无堆分配
         owns_heap_ = false;
     } else {
-        ptr_ = new model<D>(std::forward<T>(v));             // too big, heap
+        ptr_ = new model<D>(std::forward<T>(v));             // 太大,堆上
         owns_heap_ = true;
     }
 }
@@ -315,9 +315,9 @@ Picking a path at construction isn't enough; copying has to dispatch too. We add
 ```cpp
 concept_base* clone_into(char* buf) const override {
     if constexpr (sizeof(model<T>) <= BUF) {
-        return new (buf) model<T>(data);   // fits, in place
+        return new (buf) model<T>(data);   // 塞得下,就地
     }
-    return nullptr;                         // doesn't fit, tell the outer layer to use the heap
+    return nullptr;                         // 塞不下,告诉外层走堆
 }
 ```
 
@@ -326,7 +326,7 @@ The outer copy constructor tries `clone_into` first and falls back to `clone_hea
 ```cpp
 SboAny(const SboAny& o) {
     if (!o.ptr_) return;
-    ptr_ = o.ptr_->clone_into(buffer_);   // first try to fit into our own buffer
+    ptr_ = o.ptr_->clone_into(buffer_);   // 先试塞自己的 buffer
     if (!ptr_) { ptr_ = o.ptr_->clone_heap(); owns_heap_ = true; }
 }
 ```

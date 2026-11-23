@@ -21,10 +21,10 @@ related:
   - "A zero-overhead logger: the complete pitfall log, from hitting the source_location wall to acceptance by disassembly"
 translation:
   source: documents/vol8-domains/embedded/f103/06-patterns/05-map-is-the-verdict.md
-  source_hash: e59b9b4d0acc769169e7e4f69a672235ef93bf9cd94215bdfa111a5bf5279278
-  translated_at: '2026-09-27T06:01:22+00:00'
-  engine: anthropic
-  token_count: 1600
+  source_hash: 88711b4006acc300b119f38f16d7828700049243e240a350b201610248b5ff01
+  translated_at: '2026-11-22T16:43:55+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3466
 ---
 
 # The final verdict sits in the map file: the complete evidence chain that, at this trim level, not even the strings make it into the firmware

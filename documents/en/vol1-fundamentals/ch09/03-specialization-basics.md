@@ -21,10 +21,10 @@ tags:
 title: Template Specialization Basics
 translation:
   source: documents/vol1-fundamentals/ch09/03-specialization-basics.md
-  source_hash: 0dbea2c4d810a13f4b5a2e082d5f202fd158a0a864799c3d8a8fd6bec5da5c9e
-  translated_at: '2026-09-27T03:58:41+00:00'
-  engine: anthropic
-  token_count: 3600
+  source_hash: 18ac709fe560ec6a9637ed7559e109662bab9293d29480e6c0108014c4c648eb
+  translated_at: '2026-11-22T16:41:28+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9630
 ---
 # Template Specialization: Special Arrangements for Types the Generic Version Can't Handle
 
@@ -66,7 +66,7 @@ public:
     bool top() const { return bits_[bits_.size() - 1]; }
     bool empty() const { return bits_.empty(); }
 private:
-    std::vector<bool> bits_;   // space-optimized bit container
+    std::vector<bool> bits_;   // 空间优化的 bit 容器
 };
 ```
 
@@ -111,9 +111,9 @@ struct Printer<const char*> {
 Using it is no different from using an ordinary template: the compiler automatically picks the matching version based on the argument type.
 
 ```cpp
-Printer<int>::print(42);            // generic version
-Printer<bool>::print(true);         // bool specialization, prints "true"
-Printer<const char*>::print("hi");  // const char* specialization, prints "hi"
+Printer<int>::print(42);            // 通用版本
+Printer<bool>::print(true);         // bool 特化版本，输出 "true"
+Printer<const char*>::print("hi");  // const char* 特化版本，输出 "hi"
 ```
 
 ## Function Template Specialization — a Trap That's Easy to Fall Into
@@ -121,11 +121,11 @@ Printer<const char*>::print("hi");  // const char* specialization, prints "hi"
 Full specialization of class templates has crisp semantics; full specialization of function templates gets a bit subtle. Syntactically, the two look nearly the same:
 
 ```cpp
-// Generic version
+// 通用版本
 template <typename T>
 T my_max(T a, T b) { return (a > b) ? a : b; }
 
-// Full specialization: the const char* version, compares by string content
+// 全特化：const char* 版本，按字符串内容比较
 template <>
 const char* my_max<const char*>(const char* a, const char* b)
 {
@@ -138,18 +138,18 @@ The syntax is fine and it compiles. But something is hiding here that's very eas
 What does that mean? Consider this scenario:
 
 ```cpp
-// Generic version
+// 通用版本
 template <typename T>
 T my_max(T a, T b) { return (a > b) ? a : b; }
 
-// Full specialization
+// 全特化
 template <>
 const char* my_max<const char*>(const char* a, const char* b)
 {
     return (std::strcmp(a, b) > 0) ? a : b;
 }
 
-// A plain overload
+// 一个普通重载
 const char* my_max(const char* a, const char* b)
 {
     std::cout << "[overload] ";
@@ -166,11 +166,11 @@ This mechanism leads to a very practical problem: later on, someone adds a bette
 For the code above, the way we recommend writing it is to simply provide a plain overloaded function:
 
 ```cpp
-// Generic template
+// 通用模板
 template <typename T>
 T my_max(T a, T b) { return (a > b) ? a : b; }
 
-// Plain overload — safer and more intuitive than a specialization
+// 普通重载——比特化更安全、更直观
 const char* my_max(const char* a, const char* b)
 {
     return (std::strcmp(a, b) > 0) ? a : b;
@@ -186,7 +186,7 @@ Full specialization pins down every template parameter, but sometimes we only wa
 Partial specialization only applies to class templates and variable templates; function templates don't support it. Looking at the syntax, the angle brackets of the partial specialization's `template <...>` still hold the parameters that remain unfixed:
 
 ```cpp
-// Generic version
+// 通用版本
 template <typename T>
 struct Printer {
     static void print(const T& value)
@@ -195,14 +195,14 @@ struct Printer {
     }
 };
 
-// Partial specialization: matches every pointer type T*
+// 偏特化：匹配所有指针类型 T*
 template <typename T>
 struct Printer<T*> {
     static void print(T* ptr)
     {
         if (ptr) {
             std::cout << "*";
-            Printer<T>::print(*ptr);   // recursively call the Printer for the pointed-to type
+            Printer<T>::print(*ptr);   // 递归调用指向类型的 Printer
         } else {
             std::cout << "(null)";
         }
@@ -215,7 +215,7 @@ When the compiler sees `Printer<int*>`, it notices that `int*` matches the parti
 Here's another classic use of partial specialization: customizing on a compile-time constant. Suppose we have a `Buffer` template that takes a type parameter and a size parameter:
 
 ```cpp
-// Generic version
+// 通用版本
 template <typename T, std::size_t N>
 class Buffer {
     T data_[N];
@@ -229,7 +229,7 @@ public:
 Now if `N = 0`, this template would generate a zero-length array `T data_[0]`, which C++ does not allow. We can provide a partial specialization for the `N = 0` case:
 
 ```cpp
-// Partial specialization: zero-size buffer
+// 偏特化：零大小缓冲区
 template <typename T>
 class Buffer<T, 0> {
 public:
@@ -263,7 +263,7 @@ Now let's assemble the earlier fragments into a complete, compilable, runnable p
 #include <iostream>
 #include <string>
 
-/// @brief Generic printer — streams the value directly
+/// @brief 通用打印器——直接输出值
 template <typename T>
 struct Printer {
     static void print(const T& value, const char* name = "")
@@ -275,7 +275,7 @@ struct Printer {
     }
 };
 
-/// @brief bool full specialization — prints "true" / "false"
+/// @brief bool 全特化——输出 "true" / "false"
 template <>
 struct Printer<bool> {
     static void print(bool value, const char* name = "")
@@ -287,7 +287,7 @@ struct Printer<bool> {
     }
 };
 
-/// @brief const char* full specialization — prints the string safely
+/// @brief const char* 全特化——安全打印字符串
 template <>
 struct Printer<const char*> {
     static void print(const char* value, const char* name = "")
@@ -299,7 +299,7 @@ struct Printer<const char*> {
     }
 };
 
-/// @brief Pointer partial specialization — prints the dereferenced value
+/// @brief 指针偏特化——打印解引用后的值
 template <typename T>
 struct Printer<T*> {
     static void print(T* ptr, const char* name = "")
@@ -318,26 +318,26 @@ struct Printer<T*> {
 
 int main()
 {
-    // Generic version
+    // 通用版本
     Printer<int>::print(42, "int_val");
     Printer<double>::print(3.14, "double_val");
     Printer<std::string>::print(std::string("hello"), "str_val");
 
     std::cout << "\n";
 
-    // bool full specialization
+    // bool 全特化
     Printer<bool>::print(true, "flag");
     Printer<bool>::print(false, "is_empty");
 
     std::cout << "\n";
 
-    // const char* full specialization
+    // const char* 全特化
     Printer<const char*>::print("world", "cstr");
     Printer<const char*>::print(nullptr, "null_str");
 
     std::cout << "\n";
 
-    // Pointer partial specialization
+    // 指针偏特化
     int x = 100;
     int* ptr = &x;
     int* null_ptr = nullptr;
@@ -366,7 +366,7 @@ Let's verify section by section. The three generic-version calls (`int`, `double
 Implement a `Serializer<T>` template that provides a `static std::string serialize(const T&)` method. The generic version turns the value into a string using `std::to_string()` or `std::ostringstream`. Then provide full specializations for `int` and `std::string` respectively: the `int` version calls `std::to_string` directly, and the `std::string` version wraps the string in quotes on both ends.
 
 ```cpp
-// Generic version
+// 通用版本
 template <typename T>
 struct Serializer {
     static std::string serialize(const T& value)
@@ -375,7 +375,7 @@ struct Serializer {
     }
 };
 
-// You need to fill in the int full specialization and the std::string full specialization
+// 你需要补充 int 全特化和 std::string 全特化
 ```
 
 How to verify: `Serializer<int>::serialize(42)` should return `"42"`, and `Serializer<std::string>::serialize(std::string("hi"))` should return `"\"hi\""`.

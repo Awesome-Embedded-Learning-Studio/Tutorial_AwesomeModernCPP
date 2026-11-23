@@ -24,10 +24,10 @@ tags:
 title: 'Memory hierarchy and the latency ladder: why sequential access is 100x faster'
 translation:
   source: documents/vol6-performance/ch02-cpu-microarchitecture/02-01-memory-hierarchy.md
-  source_hash: 1b8ce9865f2aa15f890735fe681aa5ffb0b04d3c69991dcbec62721b3508e158
-  translated_at: '2026-09-26T05:54:40+00:00'
-  engine: anthropic
-  token_count: 7200
+  source_hash: 5ad9a8264a290b6f9a57e08d122d42b032c91b94a6e92be5d44aae1dd989fd16
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 7837
 ---
 # Memory hierarchy and the latency ladder: why sequential access is 100x faster
 
@@ -64,15 +64,15 @@ The cleanest way to measure latency is **pointer chasing**: lay out a circular c
 The core loop is just these few lines (full program in this chapter's code, `memory_mountain.cpp`):
 
 ```cpp
-// Build a shuffled single ring through all nodes: nxt[perm[i]] = perm[(i+1) % n]
+// 构造一条贯穿全部节点的置乱单环:nxt[perm[i]] = perm[(i+1) % n]
 std::vector<long> nxt(elems);
 for (long i = 0; i < elems; ++i) nxt[perm[i]] = perm[(i + 1) % elems];
 
 long idx = 0;
 auto t0 = std::chrono::steady_clock::now();
 for (long s = 0; s < total_steps; ++s) {
-    idx = nxt[idx];            // the next address depends on this load → a true dependency, the prefetcher is helpless
-    sink = sink + g_data[idx]; // read data[idx], creating a dependency along the chain
+    idx = nxt[idx];            // 下一个地址依赖本次 load → 真依赖,预取器束手无策
+    sink = sink + g_data[idx]; // 读 data[idx],制造链上的依赖
 }
 auto t1 = std::chrono::steady_clock::now();
 ```
@@ -85,16 +85,16 @@ Sweeping the working set (the array size) from 4 KB up to 128 MB, crossing the L
        4K        512       1.19          L1d
        8K       1024       1.18          L1d
       16K       2048       1.24          L1d
-      32K       4096       2.50          L1d     ← working set = L1d capacity (32K), starts to overflow
+      32K       4096       2.50          L1d     ← 工作集 = L1d 容量(32K),开始溢出
       64K       8192       3.33          L2
      128K      16384       4.04          L2
      256K      32768       6.02          L2
-     512K      65536       8.88          L2      ← working set ≈ L2 capacity (512K), starts to overflow
+     512K      65536       8.88          L2      ← 工作集 ≈ L2 容量(512K),开始溢出
     1024K     131072      11.42          L3
     2048K     262144      12.40          L3
     4096K     524288      22.59          L3
     8192K    1048576      59.99          L3
-   16384K    2097152      96.27          L3      ← working set = L3 capacity (16M), thrashing hard
+   16384K    2097152      96.27          L3      ← 工作集 = L3 容量(16M),剧烈颠簸
    32768K    4194304     135.92         DRAM
    65536K    8388608     118.59         DRAM
   131072K   16777216     122.06         DRAM
@@ -123,14 +123,14 @@ The procedure: fix a working-set size, walk the array sequentially in a ring at 
 size\stride(B)    8B    16B    32B    64B   128B   256B   512B
       1K        16.9   17.0   17.0   16.7   16.1   16.5   15.3
       8K        16.9   16.6   17.0   17.2   17.1   17.0   17.1
-     32K        16.8   16.9   16.9   16.9   16.8   17.2   16.5   ← L1d boundary
+     32K        16.8   16.9   16.9   16.9   16.8   17.2   16.5   ← L1d 边界
      64K        16.7   16.9   17.2   16.7   16.8   16.6    7.3
-    256K        17.2   17.2   17.2   16.6   16.6   16.7    7.6   ← L2 region
-    512K        16.7   16.8   16.6   14.3   11.3   11.6    5.3   ← L2 boundary
+    256K        17.2   17.2   17.2   16.6   16.6   16.7    7.6   ← L2 区
+    512K        16.7   16.8   16.6   14.3   11.3   11.6    5.3   ← L2 边界
    1024K        16.7   16.6   16.2   12.9    8.7   11.1    4.5
-   4096K        16.5   16.9   16.3   12.9    8.1   10.1    4.4   ← L3 region
-  16384K        13.0   10.5    7.7    3.8    3.1    3.1    2.9   ← L3 boundary, throughput drops
-  32768K        14.5   11.0    6.7    3.8    2.7    2.6    2.1   ← into DRAM
+   4096K        16.5   16.9   16.3   12.9    8.1   10.1    4.4   ← L3 区
+  16384K        13.0   10.5    7.7    3.8    3.1    3.1    2.9   ← L3 边界,跌了
+  32768K        14.5   11.0    6.7    3.8    2.7    2.6    2.1   ← 进 DRAM
 ```
 
 How do you read this mountain? Fix your eyes on two directions:
@@ -165,7 +165,7 @@ And one big thing is left for even later: this chapter covered only "where data 
 
 ## References
 
-- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §23 *AMD Zen 3*: Zen 3's cache latency table (L1=4, L2=14, L3=47 cycles), pipeline width, branch throughput. Local copy: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
+- Agner Fog, *The microarchitecture of Intel, AMD and VIA CPUs*, §23 *AMD Zen 3*: Zen 3's cache latency table (L1=4, L2=14, L3=47 cycles), pipeline width, branch throughput: `.claude/drafts/books/optimazation_in_cpp/microarchitecture.md`
 - Bakhvalov, D., *Performance Analysis and Tuning on Modern CPUs*, Chapter 3 *CPU Microarchitecture*: an engineering perspective on the memory hierarchy and latency figures
 - Bryant & O'Hallaron, *Computer Systems: A Programmer's Perspective* (CSAPP), Chapter 6 *The Memory Hierarchy*: the origin of the memory mountain experiment, plus the formal definitions of "spatial/temporal locality"
 - This article's measurement code: `code/volumn_codes/vol6-performance/ch02/memory_mountain.cpp`

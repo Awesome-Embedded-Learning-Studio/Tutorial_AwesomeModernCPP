@@ -27,10 +27,10 @@ tags:
 title: 'Valgrind vs ASan: JIT interpretation vs compile-time instrumentation'
 translation:
   source: documents/vol6-performance/ch00-performance-mindset/04-memory-safety-asan-valgrind.md
-  source_hash: 4a96815f8c688c7e6e9aa1058760e641068a3bf284de6778723c5c2652cafcfe
-  translated_at: '2026-09-26T05:24:02+00:00'
-  engine: anthropic
-  token_count: 13000
+  source_hash: fc3d738f29a59736e47ecdac835efb30374eb9f2e0873a8688d5392e01961053
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 21036
 ---
 # Valgrind vs ASan: JIT interpretation vs compile-time instrumentation
 
@@ -87,7 +87,7 @@ The essence of Valgrind is "framework + tools". The core handles translation and
 
 **Cachegrind**: a cache profiler. It simulates the CPU's I1/D1/L2 caches, pinpoints exactly where in your program cache misses and hits happen, and can tell you how many misses and how many instructions each line of code, each function, each module produced. Use it when you want to squeeze cache performance.
 
-**Helgrind and DRD**: these two are both **thread error detectors**, catching data races, inconsistent lock ordering, and misuse of the POSIX thread APIs. The original notes described Helgrind as "still experimental" — a claim **long outdated**: in the 2026 official manual, both Helgrind and DRD are formally listed stable tools, each with its own chapter (manual chapters 8 and 9), not experimental features. A side note while we're here: the notes mentioned only Helgrind and **missed DRD** — the two share a goal (catching thread bugs) but use different algorithms, and DRD is usually faster and supports some scenarios better (lots of small objects, Boost.Thread, OpenMP, for instance). I covered hands-on TSan/Helgrind work for thread errors in volume 5's [Debugging Techniques for Concurrent Programs](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md); this article won't repeat it — just remember "for thread-class bugs reach for helgrind/drd, or the more modern TSan".
+**Helgrind and DRD**: these two are both **thread error detectors**, catching data races, inconsistent lock ordering, and misuse of the POSIX thread APIs. The original notes described Helgrind as "still experimental" — a claim **long outdated**: in the 2026 official manual, both Helgrind and DRD are formally listed stable tools, each with its own chapter (manual chapters 8 and 9), not experimental features. A side note while we're here: the notes mentioned only Helgrind and **missed DRD** — the two share a goal (catching thread bugs) but use different algorithms, and DRD is usually faster and supports some scenarios better (lots of small objects, Boost.Thread, OpenMP, for instance). I covered hands-on TSan/Helgrind work for thread errors in volume 5's [Debugging Techniques for Concurrent Programs](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md); this article won't repeat it — just remember "for thread-class bugs reach for helgrind/drd, or the more modern TSan".
 
 **Massif**: a heap profiler. It measures how much memory your program actually eats on the heap, giving you the growth curves of heap blocks, heap management structures, and the stack. Use it to "slim down" a program or find the big RSS consumers.
 
@@ -147,7 +147,7 @@ Let me unpack what makes this encoding clever:
 
 In other words, ASan takes a different path: where memcheck accounts for address legality byte by byte, ASan paves redzones around the legal regions and lets the redzones define the boundaries. This mechanism is extremely effective for out-of-bounds and UAF, but **it has no V-bit**, so ASan cannot catch uninitialized reads. That gap has to be filled by MSan (MemorySanitizer, `-fsanitize=memory`), and MSan exists only in Clang — **GCC as of 16.1.1 still doesn't support `-fsanitize=memory`** (verified on this machine: `unrecognized argument`). That's a genuine shortcoming of the ASan route relative to memcheck.
 
-> **Pitfall warning**: ASan and the other sanitizers are in a "one class at a time" relationship. `-fsanitize=address` and `-fsanitize=thread` (TSan) **cannot be enabled at the same time**: their assumptions about shadow-memory layout differ, and mixing them either errors out outright or behaves erratically. So enable ASan when hunting memory errors, enable TSan separately when hunting concurrency data races — don't try to "all-in-one" it. For how to hunt thread errors, see [the concurrency debugging chapter in volume 5](../../vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md).
+> **Pitfall warning**: ASan and the other sanitizers are in a "one class at a time" relationship. `-fsanitize=address` and `-fsanitize=thread` (TSan) **cannot be enabled at the same time**: their assumptions about shadow-memory layout differ, and mixing them either errors out outright or behaves erratically. So enable ASan when hunting memory errors, enable TSan separately when hunting concurrency data races — don't try to "all-in-one" it. For how to hunt thread errors, see [the concurrency debugging chapter in volume 5](../../vol5-concurrency/chapter06-validating-designs/01-finding-concurrency-bugs.md).
 
 ## 4. Hands-on: six classic errors, real ASan output
 
@@ -156,16 +156,16 @@ Theory alone isn't satisfying. Let's write out, as real code, all six classes of
 First, pack all six error classes into one program:
 
 ```cpp
-// cases.cpp — six classic memory errors, each reproduced with ASan
-// Build: g++ -std=c++20 -O0 -g -fsanitize=address,undefined cases.cpp -o cases
-// Run:   ./cases <1..6>   with no argument, only the leak runs
+// cases.cpp — 六类经典内存错误，逐个用 ASan 复现
+// 编译: g++ -std=c++20 -O0 -g -fsanitize=address,undefined cases.cpp -o cases
+// 运行: ./cases <1..6>   不传参则只跑内存泄漏
 #include <cstdio>
 #include <cstdlib>
 
-// 1. Using uninitialized memory (ASan can't catch this; needs MSan)
+// 1. 使用未初始化内存（ASan 抓不到，要 MSan）
 int case_uninit() {
-    int* p = (int*)malloc(sizeof(int));   // contents are garbage
-    int v = *p;                            // reads a garbage value, but the address is legal
+    int* p = (int*)malloc(sizeof(int));   // 内容是垃圾
+    int v = *p;                            // 读到垃圾值，但地址合法
     free(p);
     return v;
 }
@@ -175,36 +175,36 @@ int case_uaf() {
     int* p = (int*)malloc(sizeof(int));
     *p = 42;
     free(p);
-    return *p;                             // reads freed memory
+    return *p;                             // 读已释放内存
 }
 
-// 3. Heap buffer overflow (tail read/write)
+// 3. 堆缓冲区越界（尾部读写）
 int case_oob() {
-    int* a = (int*)malloc(4 * sizeof(int)); // only a[0..3]
-    a[4] = 99;                              // the 5th element is out of bounds
+    int* a = (int*)malloc(4 * sizeof(int)); // 只有 a[0..3]
+    a[4] = 99;                              // 第 5 个元素越界
     int r = a[4];
     free(a);
     return r;
 }
 
-// 4. Memory leak (forgot to free)
+// 4. 内存泄漏（忘记 free）
 void case_leak() {
     int* p = (int*)malloc(sizeof(int));
-    *p = 7;                                 // deliberately not freed
+    *p = 7;                                 // 故意不 free
 }
 
-// 5. malloc paired with delete (alloc/dealloc mismatch)
+// 5. malloc 配 delete（分配/释放不匹配）
 void case_mismatch() {
     int* p = (int*)malloc(sizeof(int));
     *p = 5;
-    delete p;                               // malloc should pair with free
+    delete p;                               // malloc 该配 free
 }
 
-// 6. Double free
+// 6. 双重释放
 void case_double_free() {
     int* p = (int*)malloc(sizeof(int));
     free(p);
-    free(p);                                // the second free
+    free(p);                                // 第二次 free
 }
 
 int main(int argc, char** argv) {
@@ -362,8 +362,8 @@ ASan can also catch something memcheck historically had great trouble with: **a 
 // suar2.cpp
 #include <cstdio>
 static int* g = nullptr;
-void stash() { int local = 0xc0ffee; g = &local; }  // stash the local's address outward
-int main() { stash(); return *g; }                   // local died when stash returned
+void stash() { int local = 0xc0ffee; g = &local; }  // 把局部变量地址存出去
+int main() { stash(); return *g; }                   // local 已随 stash 返回而消失
 ```
 
 ```text
@@ -395,10 +395,10 @@ First build a clean version with `-g` (valgrind doesn't need ASan's instrumentat
 ```bash
 g++ -std=c++20 -g -O0 cases.cpp -o cases_plain
 
-# Most common: full memcheck leak check
+# 最常用：memcheck 全量查泄漏
 valgrind --tool=memcheck --leak-check=full ./cases_plain 4
 
-# Go harder: also list still-reachable blocks + follow child processes
+# 更狠：连 still reachable 也列出来 + 跟进子进程
 valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --trace-children=yes ./cases_plain
 ```
 

@@ -23,9 +23,9 @@ title: 'The four TMAM buckets and hardware sampling: LBR / PEBS / Intel PT'
 translation:
   source: documents/vol6-performance/ch03-attribution-methodology/03-02-tmam-and-hw-sampling.md
   source_hash: 13e8a6ee3c48422f8159f7ca845611a8be3b9913dcc2eaaf395990df9bf559c8
-  translated_at: '2026-09-26T06:07:42+00:00'
-  engine: anthropic
-  token_count: 1900
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5030
 ---
 # The four TMAM buckets and hardware sampling: LBR / PEBS / Intel PT
 
@@ -57,22 +57,22 @@ Backend Bound splits further into two branches: **Backend Memory Bound** (waitin
 The workflow of `toplev` (the Python tool in `pmu-tools` that wraps Intel's TMAM performance counters) is to drill down level by level — typically three steps:
 
 ```bash
-# 1. Look at the L1 four buckets first to pick the main battlefield
+# 1. 先看 L1 四桶,定主战场
 toplev -l1 -- ./app
-# Sample output (from the easyperf.net examples, not run locally):
-#   Frontend_Bound:      12.5%   ← normal
-#   Backend_Bound:       58.0%   ← main bucket!
+# 输出示例(引自 easyperf.net 示例,非本机):
+#   Frontend_Bound:      12.5%   ← 正常
+#   Backend_Bound:       58.0%   ← 主桶!
 #   Bad_Speculation:      8.3%
 #   Retiring:            21.2%
 
-# 2. Backend is the main bucket, drill to L2 to see Memory vs Core
+# 2. Backend 是主桶,下钻 L2 看是 Memory 还是 Core
 toplev -l2 -- ./app
 #   Backend_Bound.Core_Bound:   15.0%
-#   Backend_Bound.Memory_Bound: 43.0%   ← memory-bound
+#   Backend_Bound.Memory_Bound: 43.0%   ← 内存受限
 
-# 3. Memory Bound drills further to L3, to see which cache level / DRAM is stuck
+# 3. Memory Bound 再下钻 L3,看卡在哪一级 cache / DRAM
 toplev -l3 -- ./app
-#   ... L3_Bound.DRAM_Bound: 38%   ← most likely cache misses hitting DRAM
+#   ... L3_Bound.DRAM_Bound: 38%   ← 大概率 cache miss 打到 DRAM
 ```
 
 Drill down to L3 and you know the bottleneck at "L3 misses hitting DRAM" granularity. But that's still not enough: to actually change anything, you need to know **which instruction is missing**. That takes hardware sampling events with precise addresses.
@@ -86,9 +86,9 @@ Drill down to L3 and you know the bottleneck at "L3 misses hitting DRAM" granula
 **PEBS (Precise Event-Based Sampling)**: this is what `perf` events "with the `:pp` suffix" lean on. Ordinary sampling is based on the **instruction pointer** and suffers skid (after the event fires and before the interrupt is delivered, the CPU still executes a few more instructions, so the sample point "slides" past the real one and localization is imprecise). PEBS has the CPU save the register state at the moment of the event **precisely** — including the exact instruction address — into the PEBS buffer, with almost no skid. For pinpointing "which load instruction cache-missed," this is a hard requirement:
 
 ```bash
-# Use an event with the :ppp (precise IP) suffix to localize the exact instruction that cache-missed
+# 用带 :ppp(精确 IP)后缀的事件定位 cache miss 的具体指令
 perf record -e MEM_LOAD_RETIRED.L3_MISS:ppp -- ./app
-perf report   # or perf annotate for assembly-level hits
+perf report   # 或 perf annotate 看汇编级命中
 ```
 
 > This is the flip side of entry 16, "PEBS skid," in ch01-03's "measurement pitfalls" table: only a `:ppp` precise event localizes cleanly; an ordinary event skids a few instructions and you end up patching the wrong function.

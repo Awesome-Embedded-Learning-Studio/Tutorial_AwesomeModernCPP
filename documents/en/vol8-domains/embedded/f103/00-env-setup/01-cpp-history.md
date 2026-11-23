@@ -15,10 +15,10 @@ related:
   - "Why C++, and by what right?"
 translation:
   source: documents/vol8-domains/embedded/f103/00-env-setup/01-cpp-history.md
-  source_hash: ecddb806928235c30867a1c6a02ff35fa22588675b5cc8dac0d75ed289025231
-  translated_at: '2026-09-27T05:27:26+00:00'
-  engine: anthropic
-  token_count: 7400
+  source_hash: 94b5d3b5f4826015e5626d007bf7296d6a3abf81de2ae83b6e76b05d8bf512de
+  translated_at: '2026-11-22T16:41:42+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9050
 ---
 
 # Ahem — you talked C++ up to the skies earlier, and now I'm curious where those "rumors" came from

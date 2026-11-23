@@ -16,9 +16,9 @@ title: Nested Namespaces
 translation:
   source: documents/cpp-reference/core-language/15-nested-namespace.md
   source_hash: 3a94860212341828616537940d079fd7b81f0fff3acda7dbf780db22f24277cc
-  translated_at: '2026-09-27T01:44:39+00:00'
-  engine: anthropic
-  token_count: 520
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1686
 ---
 <!--
 Reference Card Template
@@ -56,12 +56,12 @@ None (language feature)
 // Standard: C++17
 #include <iostream>
 
-// Nested namespace definition
+// 嵌套命名空间定义
 namespace hardware::spi {
     void init() { std::cout << "SPI init\n"; }
 }
 
-// Equivalent C++11 style (exactly the same effect)
+// 等价的 C++11 写法（效果完全相同）
 namespace hardware {
     namespace i2c {
         void init() { std::cout << "I2C init\n"; }

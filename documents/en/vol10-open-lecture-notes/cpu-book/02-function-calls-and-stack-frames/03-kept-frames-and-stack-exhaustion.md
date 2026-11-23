@@ -15,9 +15,10 @@ description: "Only tree recursion keeps its frame; the frame pointer is omitted 
 reading_time_minutes: 10
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/02-function-calls-and-stack-frames/03-kept-frames-and-stack-exhaustion.md
-  source_hash: e2e6743d1a9d64de2345668ee115622e16a937f2053eee42d9e533aea2ee06f0
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 8f519abefcb258493141b3280881f4e795de4f5d898ac32c0a0c1f010db43976
+  translated_at: '2026-11-22T16:45:00Z'
+  engine: glm-5.3-refresh
+  token_count: 9945
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -155,12 +156,12 @@ The default version's prologue is down to a bare `subq $152, %rsp`: `push rbp` a
 Even more convincing is where rbp ended up. The default version's assembly contains these lines (the inline comments are ours; the original assembly file has none):
 
 ```asm
-	movq	%rbp, 112(%rsp)     # the old rbp is stored in the frame like ordinary callee-saved data
-	movl	%eax, %ebp          # rbp serves as the loop variable
+	movq	%rbp, 112(%rsp)     # rbp 旧值当普通 callee-saved 数据存进帧里
+	movl	%eax, %ebp          # rbp 当循环变量用
 	subl	%edx, %ebp
 	movl	%ebp, 56(%rsp)
 	xorl	%ebp, %ebp
-	addl	%eax, %ebp          # joins the addition
+	addl	%eax, %ebp          # 参与加法
 ```
 
 `movq %rbp, 112(%rsp)` stores the old rbp in the frame like ordinary data, and then `movl %eax, %ebp` and `addl %eax, %ebp` put rbp to work as a loop variable that joins the addition. Here lies the payoff of dropping the frame pointer: what you gain is one more register anyone can use. The manual's exact words are that it "makes an extra register available", and we watched it happen in the instructions.
@@ -269,14 +270,16 @@ AddressSanitizer:DEADLYSIGNAL
     #0 0x58e9a061915c in countdown(int) /tmp/cpu-book-02/b6_countdown.cpp:2
     #1 0x58e9a0619160 in countdown(int) /tmp/cpu-book-02/b6_countdown.cpp:2
     #2 0x58e9a0619160 in countdown(int) /tmp/cpu-book-02/b6_countdown.cpp:2
-    ...(frames #3 through #245 are all the same countdown(int) frame, elided)...
+    ...(中间 #3 ~ #245 均为同一 countdown(int) 帧,已删)...
     #246 0x58e9a0619160 in countdown(int) /tmp/cpu-book-02/b6_countdown.cpp:2
 
 SUMMARY: AddressSanitizer: stack-overflow /tmp/cpu-book-02/b6_countdown.cpp:2 in countdown(int)
 ==97889==ABORTING
 ```
 
-ASan writes the stack-overflow verdict on the first line of the report, far easier to read than the bare crash's single SIGSEGV line, and the process winds up with ABORTING and an exit status of 1. We captured this stack overflow along two roads: the bare version runs 24 bytes per level and stacks to roughly 260,000 levels, while the ASan version hits the ceiling at about 247. Filling the full 8 MiB stack is not something to stage in a browser, so we take just the first few layers to look at the structure. The executor below loads -O0-style fib(5): every level of recursion pushes rbp and the return address and subs out a locals area, the stack window piles layer upon layer toward lower addresses, and every ret peels one layer back. The whole run is 15 calls and a bit over two hundred steps, but you can also single-step just the first two levels and watch the three things each frame adds: the return address, the saved rbp, and the argument slot. Symbol names lose their mangling, fib is not _Z3fibi.
+ASan writes the stack-overflow verdict on the first line of the report, far easier to read than the bare crash's single SIGSEGV line, and the process winds up with ABORTING and an exit status of 1. We captured this stack overflow along two roads: the bare version runs 24 bytes per level and stacks to roughly 260,000 levels, while the ASan version hits the ceiling at about 247.
+
+Filling the full 8 MiB stack is not something to stage in a browser, so we take just the first few layers to look at the structure. The executor below loads -O0-style fib(5): every level of recursion pushes rbp and the return address and subs out a locals area, the stack window piles layer upon layer toward lower addresses, and every ret peels one layer back. The whole run is 15 calls and a bit over two hundred steps, but you can also single-step just the first two levels and watch the three things each frame adds: the return address, the saved rbp, and the argument slot. Symbol names lose their mangling, fib is not _Z3fibi.
 
 <AsmExecutor src="/Tutorial_AwesomeModernCPP/payloads/recursion_frames.json" />
 

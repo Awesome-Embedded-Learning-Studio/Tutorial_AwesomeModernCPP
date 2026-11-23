@@ -23,10 +23,10 @@ tags:
 title: "NoDestructor prerequisite (0): static storage duration, initialization, and destruction"
 translation:
   source: documents/vol9-open-source-project-learn/chrome/04_no_destructor/full/pre-00-static-storage-and-init.md
-  source_hash: d71d1ed1c432fa9afd0c44d974a5b74e7147e91b52d17178ef9443035753331c
-  translated_at: '2026-09-26T03:16:26+00:00'
-  engine: anthropic
-  token_count: 6400
+  source_hash: 513f9dc9a8e76812186bbb087c7d4ed37f1567f6134184e7cb49d065f4d88035
+  translated_at: '2026-11-22T16:41:57.528414+00:00'
+  engine: glm-5.3-refresh
+  token_count: 6261
 ---
 # NoDestructor prerequisite (0): static storage duration, initialization, and destruction
 
@@ -53,14 +53,14 @@ Stage one is zero initialization: the object's memory is simply zeroed out whole
 The real trouble lives in stage three — dynamic initialization. When the initializer has to be computed before the result is known — `static std::string s = "x";` needs the `std::string` constructor called, `static int n = rand();` needs `rand()` called at runtime — the compiler has no choice but to defer the work to runtime. This is the "dynamic" part, and it carries runtime cost. Every trap we walk through below has its roots in this stage.
 
 ```cpp
-// Static initialization (compile time, no cost):
-constexpr int kMax = 100;            // constant initialization
-static int zero;                      // zero initialization
+// 静态初始化(编译期,无开销):
+constexpr int kMax = 100;            // 常量初始化
+static int zero;                      // 零初始化
 
-// Dynamic initialization (runtime, code has to execute):
-std::string g_name = "chromium";      // must call the std::string constructor
-static int g_seed = rand();           // must call rand()
-std::map<int,int> g_table;            // must call the std::map constructor
+// 动态初始化(运行期,要执行代码):
+std::string g_name = "chromium";      // 要调 std::string 构造函数
+static int g_seed = rand();           // 要调 rand()
+std::map<int,int> g_table;            // 要调 std::map 构造函数
 ```
 
 For every global or static variable that goes through dynamic initialization, the compiler must additionally emit a snippet of "call its constructor at program startup" code and tuck it into the `.init_array` section. This snippet has a name — the global constructor — and before `main` the runtime walks the whole list and runs it once.
@@ -76,10 +76,10 @@ And with that we've dug up the mustiest trap in all of C++ — the Static Initia
 ```cpp
 // a.cpp
 extern int b_value;
-int a_value = b_value + 1;     // dynamic initialization, depends on b_value
+int a_value = b_value + 1;     // 动态初始化,依赖 b_value
 
 // b.cpp
-int b_value = std::rand();     // dynamic initialization (rand is not constexpr, evaluated at runtime)
+int b_value = std::rand();     // 动态初始化(rand 非 constexpr,运行期才求值)
 ```
 
 When we first saw this example it looked innocent; running it was what revealed the trick. If `a.cpp`'s `a_value` gets initialized first, it reads `b_value` before `b_value` has had its turn at dynamic initialization — all that's there is the zero-initialized 0 — so `a_value` works out to 1, not the value it should have gotten after `b_value` was truly evaluated. One nuance to lock in: only dynamic initialization can collide with SIOF — constant initialization (something like `int b = 42;`) is finished at compile time and always precedes dynamic initialization, so it never meets SIOF. But the moment two globals across .cpp files depend on each other and both are dynamically initialized, the order is completely out of control, and the result is undefined behavior. What makes this bug so agonizing is how hard it is to reproduce — switch machines, switch compiler flags, and the order changes; runs perfectly locally, flakes out on CI.
@@ -88,11 +88,11 @@ The classic counter to SIOF (from the isocpp FAQ) is called "construct on first 
 
 ```cpp
 int& a_value() {
-    static int v = b_value() + 1;   // function-local static, initialized on first call
+    static int v = b_value() + 1;   // 函数局部静态,首次调用时初始化
     return v;
 }
 int& b_value() {
-    static int v = std::rand();     // b_value becomes a function-local static too
+    static int v = std::rand();     // b_value 也改成函数局部静态
     return v;
 }
 ```
@@ -123,7 +123,7 @@ Translated into code, this is a pattern you can use with confidence:
 
 ```cpp
 const std::string& GetDefault() {
-    static const std::string s = "default";   // thread-safe: on concurrent first calls from multiple threads, only one performs the initialization
+    static const std::string s = "default";   // 线程安全:多线程首次并发调用,只有一个会初始化
     return s;
 }
 ```
@@ -137,8 +137,8 @@ Any number of threads can call `GetDefault()` together; `s` gets constructed exa
 C++20 handed us a new tool: `constinit`. What it does fits in one sentence: it promises you and the compiler that this variable's initialization is guaranteed to be constant initialization, finished at compile time — **it will absolutely never generate dynamic initialization code**.
 
 ```cpp
-constinit int x = 42;             // OK: constant initialization
-constinit int y = compute();      // compile error: compute() is not a constant expression → rejected
+constinit int x = 42;             // OK:常量初始化
+constinit int y = compute();      // 编译错:compute() 不是常量表达式 → 拒绝
 ```
 
 We find this keyword refreshingly decisive in its design — it isn't a suggestion, it's an assertion: if you can write it, you pass; if the initializer isn't a constant, the compiler rejects it on the spot instead of leaving a mine behind to blow up at runtime. Its value is precisely "a hard guarantee that this global variable generates no global constructor." For types that are constinit-constructible (a POD constructed via `constexpr`, say), a plain `constinit T x` gives you the best of both worlds — you dodge the global constructor and keep working with the bare type, with no need to summon NoDestructor at all. That is exactly the "trivial case" in NoDestructor's static_assert recommendation: T trivially constructible plus trivially destructible means constinit walks in and does the job, and wrapping another layer of NoDestructor around it would just be doing work twice.

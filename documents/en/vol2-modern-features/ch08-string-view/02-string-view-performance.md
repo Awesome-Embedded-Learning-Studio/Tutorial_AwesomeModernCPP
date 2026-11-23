@@ -19,9 +19,9 @@ title: string_view Performance Analysis
 translation:
   source: documents/vol2-modern-features/ch08-string-view/02-string-view-performance.md
   source_hash: e9f06f7fda85107abb457fff7e4e04281975064a991a39908e6022ae5cc2b05a
-  translated_at: '2026-09-27T05:12:46+00:00'
-  engine: anthropic
-  token_count: 5000
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 11679
 ---
 # string_view Performance Analysis: Exactly How Much Faster—Let the Data Speak
 
@@ -67,7 +67,7 @@ constexpr int kStringLength = 10000;
 constexpr int kSubstrLen = 50;
 constexpr int kIterations = 100000;
 
-// Generate a random string
+// 生成随机字符串
 std::string make_long_string(int len) {
     std::string s(len, 'a');
     for (int i = 0; i < len; ++i) {
@@ -78,7 +78,7 @@ std::string make_long_string(int len) {
 
 void bench_string_substr(const std::string& s) {
     Timer t;
-    volatile std::size_t sink = 0;  // prevent the optimizer from removing the work
+    volatile std::size_t sink = 0;  // 防止优化掉
     for (int i = 0; i < kIterations; ++i) {
         auto sub = s.substr(i % (s.size() - kSubstrLen), kSubstrLen);
         sink += sub.size();
@@ -133,7 +133,7 @@ Let's write a benchmark to verify. The scenario: a function takes a string param
 ```cpp
 #include <cctype>
 
-// Version 1: const string& parameter
+// 版本一：const string& 参数
 int count_digits_v1(const std::string& s) {
     int count = 0;
     for (char c : s) {
@@ -144,7 +144,7 @@ int count_digits_v1(const std::string& s) {
     return count;
 }
 
-// Version 2: string_view parameter
+// 版本二：string_view 参数
 int count_digits_v2(std::string_view sv) {
     int count = 0;
     for (char c : sv) {
@@ -160,7 +160,7 @@ void bench_param_passing() {
     std::string str_data = "abc123def456ghi789jkl012mno345";
     const char* c_data = "abc123def456ghi789jkl012mno345";
 
-    // Test 1: pass std::string to a const string& parameter
+    // 测试 1：传 std::string 给 const string& 参数
     {
         Timer t;
         volatile int sink = 0;
@@ -171,18 +171,18 @@ void bench_param_passing() {
                   << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 2: pass const char* to a const string& parameter (requires temporary construction)
+    // 测试 2：传 const char* 给 const string& 参数（需要临时构造）
     {
         Timer t;
         volatile int sink = 0;
         for (int i = 0; i < kCalls; ++i) {
-            sink += count_digits_v1(c_data);  // implicitly constructs a temporary string
+            sink += count_digits_v1(c_data);  // 隐式构造临时 string
         }
         std::cout << "const string& + char* arg:  "
                   << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 3: pass std::string to a string_view parameter
+    // 测试 3：传 std::string 给 string_view 参数
     {
         Timer t;
         volatile int sink = 0;
@@ -193,7 +193,7 @@ void bench_param_passing() {
                   << t.elapsed_ms() << " ms\n";
     }
 
-    // Test 4: pass const char* to a string_view parameter
+    // 测试 4：传 const char* 给 string_view 参数
     {
         Timer t;
         volatile int sink = 0;
@@ -229,13 +229,13 @@ The practical takeaway from this test: if your function might be called with a m
 Beyond explicit function calls, `string_view` also helps us reduce implicit temporary `std::string` allocations. A classic scenario is string comparison:
 
 ```cpp
-// Old way: every comparison may construct a temporary string
+// 旧写法：每次比较都可能构造临时 string
 bool is_http_method(const std::string& method) {
     return method == "GET" || method == "POST" || method == "PUT"
         || method == "DELETE" || method == "PATCH";
 }
 
-// New way: zero-allocation comparison
+// 新写法：零分配比较
 bool is_http_method_sv(std::string_view method) {
     return method == "GET" || method == "POST" || method == "PUT"
         || method == "DELETE" || method == "PATCH";
@@ -247,16 +247,16 @@ The comparison operator (`==`) between a `string_view` and a string literal cons
 Another common source of "temporary strings" is function return values. Consider this pattern:
 
 ```cpp
-// A C API returning const char*
+// 返回 const char* 的 C API
 const char* get_env_var(const char* name);
 
-// Wrapper: the old version returns string
+// 包装函数：旧版返回 string
 std::string get_env_string(const char* name) {
     const char* val = get_env_var(name);
     return val ? std::string(val) : std::string("");
 }
 
-// Wrapper: the new version returns string_view
+// 包装函数：新版返回 string_view
 std::string_view get_env_view(const char* name) {
     const char* val = get_env_var(name);
     return val ? std::string_view(val) : std::string_view();
@@ -273,22 +273,22 @@ Sometimes all we want is to read string data, yet we accidentally trigger a `std
 #include <unordered_map>
 #include <string_view>
 
-// Old way: lookup needs to construct a string
+// 旧写法：查找时需要构造 string
 std::unordered_map<std::string, int> old_map;
 old_map["apple"] = 1;
 old_map["banana"] = 2;
 
 int lookup_old(const char* key) {
-    auto it = old_map.find(key);  // implicitly constructs a temporary string
+    auto it = old_map.find(key);  // 隐式构造临时 string
     return (it != old_map.end()) ? it->second : -1;
 }
 
-// New way: use a transparent comparator, zero construction at lookup time
-// C++20 unordered_map supports heterogeneous lookup
-// C++17 map/set support it; unordered_map has to wait for C++20
-// For now we can use string_view as the key to demonstrate the same idea
+// 新写法：使用 transparent comparator，查找时零构造
+// C++20 的 unordered_map 支持 heterogeneous lookup
+// C++17 的 map/set 支持，unordered_map 要等 C++20
+// 不过我们可以用 string_view 做键来演示类似的思路
 std::unordered_map<std::string_view, int> sv_map;
-// Note: the external data that sv_map's keys point to must outlive the map
+// 注意：sv_map 的键指向的外部数据必须活得比 map 长
 
 int lookup_sv(std::string_view key) {
     auto it = sv_map.find(key);
@@ -308,32 +308,32 @@ Let's look at a real UART protocol-parsing scenario. Suppose our embedded device
 #include <string_view>
 #include <cstring>
 
-// Simulated UART receive buffer
+// 模拟串口接收缓冲区
 constexpr int kBufSize = 256;
 static char uart_buf[kBufSize];
 static int uart_len = 0;
 
-/// @brief Find the value of a JSON field in the buffer
-/// @param json the JSON string view
-/// @param key the key to look for
-/// @return a string_view of the value; an empty view if not found
+/// @brief 在缓冲区中查找 JSON 字段的值
+/// @param json JSON 字符串视图
+/// @param key 要查找的键
+/// @return 值的 string_view，找不到返回空 view
 std::string_view find_json_field(std::string_view json,
                                   std::string_view key) {
-    // Build the search pattern: "key":
-    // This uses the simplest possible linear search; production code should use a real JSON parser
+    // 构造搜索模式："key":"
+    // 这里用最简单的线性搜索，生产代码应该用真正的 JSON 解析器
     auto key_pattern = key;
     auto pos = json.find(key_pattern);
     if (pos == std::string_view::npos) {
         return {};
     }
-    // Skip past the key and the ":" part
+    // 跳过 key 和 ":" 部分
     auto rest = json.substr(pos + key_pattern.size());
-    // Skip whitespace and the colon
+    // 跳过空白和冒号
     while (!rest.empty() && (rest.front() == ' ' || rest.front() == ':'
            || rest.front() == '"')) {
         rest.remove_prefix(1);
     }
-    // Find the value's closing quote
+    // 找值的结束引号
     auto end = rest.find('"');
     if (end == std::string_view::npos) {
         return rest;

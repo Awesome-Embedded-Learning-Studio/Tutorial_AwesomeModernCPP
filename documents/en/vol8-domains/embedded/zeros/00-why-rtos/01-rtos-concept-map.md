@@ -21,9 +21,9 @@ related:
 translation:
   source: documents/vol8-domains/embedded/zeros/00-why-rtos/01-rtos-concept-map.md
   source_hash: 95f0563258ab4f77753d9d6fed7e4e166ff1c4c41f8f3041ed794590ecaafc0f
-  translated_at: '2026-09-25T07:55:57+00:00'
-  engine: anthropic
-  token_count: 9850
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6106
 ---
 
 # From Ten Thousand Scattered Chunks of Business Code to a Project an RTOS Ties Together — Why Our Extremely Complex Multi-Service Projects Need an RTOS
@@ -37,14 +37,14 @@ int main() {
     uart1_init();
     uint32_t last_sample = 0;
     while (true) {
-        oled_refresh();                          // Blocking screen refresh, 50ms you can't dodge
-        if (tick - last_sample >= 100) {         // Sensor: read once every 100ms
+        oled_refresh();                          // 阻塞刷屏,50ms 走不掉
+        if (tick - last_sample >= 100) {         // 传感器:每 100ms 读一次
             sensor_sample();
             last_sample = tick;
         }
-        button_poll();                           // Button debounce, tracks its own time internally
-        cli_process(uart_try_read());            // Command parsing, spins idle when there are no bytes
-        // Hundreds more lines below; I forget which non-RTOS project I saw this in — all I can say is I was deeply shaken
+        button_poll();                           // 按键消抖,内部自己记时间
+        cli_process(uart_try_read());            // 命令解析,没字节就空转
+        // 下面可能还有几百行代码，忘记看哪个非RTOS版本的项目了，我只能说我大为震撼
     }
 }
 ```
@@ -93,12 +93,12 @@ But what's the price? That we must now face head-on what got decoupled — sched
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Ready: created (a start point forged on the stack)
-    Ready --> Running: picked by the scheduler
-    Running --> Ready: preempted or yields voluntarily
-    Running --> Blocked: waiting for something
-    Blocked --> Ready: event arrives or timeout
-    Running --> [*]: function returns
+    [*] --> 就绪: 创建(栈里伪造好起点)
+    就绪 --> 运行: 调度器选中
+    运行 --> 就绪: 被抢占或主动让出
+    运行 --> 阻塞: 等一件事
+    阻塞 --> 就绪: 事件到达或超时
+    运行 --> [*]: 函数返回
 ```
 
 That label in the diagram, “created (a start point forged on the stack)”, deserves an early word from us: a new task has never run before, so someone has to forge, in its stack, a scene that looks like “interrupted by an interrupt right now” — only then can the first switch treat it as a “resumption”. Why written that way? Heh, that's a secret — wait patiently for its unveiling~.

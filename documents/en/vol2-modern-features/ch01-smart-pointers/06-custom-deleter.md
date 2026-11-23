@@ -26,9 +26,9 @@ title: Custom Deleters and Intrusive Reference Counting
 translation:
   source: documents/vol2-modern-features/ch01-smart-pointers/06-custom-deleter.md
   source_hash: ec2532385b273f49de8e9b2cfcaea85594946bc8559cc4560114d80e48dc9269
-  translated_at: '2026-09-27T04:51:03+00:00'
-  engine: anthropic
-  token_count: 3200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 15719
 ---
 # Custom Deleters and Intrusive Reference Counting
 
@@ -49,7 +49,7 @@ Function pointers are the easiest form of deleter to understand. You pass in the
 #include <memory>
 #include <iostream>
 
-// Manage a FILE* with a function pointer
+// 用函数指针管理 FILE*
 void close_file(FILE* f) noexcept {
     if (f) {
         std::cout << "fclose called\n";
@@ -58,14 +58,14 @@ void close_file(FILE* f) noexcept {
 }
 
 void file_example() {
-    // unique_ptr<FILE, function-pointer type>
+    // unique_ptr<FILE, 函数指针类型>
     std::unique_ptr<FILE, void(*)(FILE*)> fp(std::fopen("/tmp/test.txt", "w"), close_file);
 
     if (fp) {
         std::fprintf(fp.get(), "hello from unique_ptr with custom deleter\n");
     }
 
-    // close_file(fp.get()) is invoked automatically on scope exit
+    // 离开作用域时自动调用 close_file(fp.get())
 }
 ```
 
@@ -93,21 +93,21 @@ std::cout << sizeof(std::unique_ptr<FILE, decltype(&std::fclose)>) << "\n"; // 1
 Lambdas are the most common deleter form in modern C++. A captureless lambda converts to a function pointer, so its memory cost is the same as one. But a lambda with captures becomes a stateful deleter and enlarges `unique_ptr`.
 
 ```cpp
-// Captureless lambda — equivalent to a function pointer
+// 无捕获 lambda —— 等价于函数指针
 auto file_closer = [](FILE* f) noexcept {
     if (f) std::fclose(f);
 };
 using LambdaFilePtr = std::unique_ptr<FILE, decltype(file_closer)>;
 
-// sizeof(LambdaFilePtr) == sizeof(FILE*) == 8 (EBO at work)
+// sizeof(LambdaFilePtr) == sizeof(FILE*) == 8（EBO 优化）
 
-// Lambda with captures — stateful, enlarges unique_ptr
+// 有捕获 lambda —— 有状态，会增大 unique_ptr
 void captured_lambda_example() {
-    int log_fd = 42;  // pretend this is a log file descriptor
+    int log_fd = 42;  // 假设这是一个日志文件描述符
 
     auto logging_closer = [log_fd](FILE* f) noexcept {
         if (f) {
-            // captured variables are accessible inside the deleter
+            // 可以在删除器中访问捕获的变量
             write_log(log_fd, "closing file");
             std::fclose(f);
         }
@@ -117,7 +117,7 @@ void captured_lambda_example() {
         std::fopen("/tmp/test.txt", "w"),
         logging_closer
     );
-    // sizeof(fp) > sizeof(FILE*), because the lambda captured log_fd
+    // sizeof(fp) > sizeof(FILE*)，因为 lambda 捕获了 log_fd
     }
 ```
 
@@ -139,16 +139,16 @@ struct FcloseDeleter {
 };
 
 void functor_example() {
-    // Manage memory allocated by malloc
+    // 管理 malloc 分配的内存
     auto buf = std::unique_ptr<char, FreeDeleter>(
         static_cast<char*>(std::malloc(256))
     );
     std::strcpy(buf.get(), "hello");
     std::cout << buf.get() << "\n";  // hello
-    // freed automatically on destruction
+    // 析构时自动 free
 
-    // sizeof comparison: EBO kicks in, sizeof(buf) == sizeof(char*)
-    std::cout << sizeof(buf) << "\n";  // 8 (x86_64)
+    // sizeof 对比：EBO 生效，sizeof(buf) == sizeof(char*)
+    std::cout << sizeof(buf) << "\n";  // 8（x86_64 平台）
 }
 ```
 
@@ -236,7 +236,7 @@ void write_config(const std::string& path) {
     auto file = open_for_write(path);
     std::fprintf(file.get(), "key=value\n");
     std::fprintf(file.get(), "port=8080\n");
-    // No manual fclose needed — RAII takes care of it
+    // 不需要手动 fclose——RAII 自动处理
 }
 ```
 
@@ -249,7 +249,7 @@ struct FreeDeleter {
     }
 };
 
-// A type-safe smart pointer for memory returned by malloc
+// 为 malloc 返回的内存创建类型安全的智能指针
 template <typename T>
 using MallocPtr = std::unique_ptr<T, FreeDeleter>;
 
@@ -266,7 +266,7 @@ MallocPtr<T> malloc_array(size_t count) {
 Graphics programming is full of resources that each need their own specific release function. A `unique_ptr` with a custom deleter manages them elegantly:
 
 ```cpp
-// SDL window management
+// SDL 窗口管理
 struct SdlWindowDeleter {
     void operator()(SDL_Window* w) noexcept {
         if (w) SDL_DestroyWindow(w);
@@ -283,7 +283,7 @@ UniqueSdlWindow create_window(const char* title, int w, int h) {
     return UniqueSdlWindow(win);
 }
 
-// OpenGL texture management
+// OpenGL 纹理管理
 struct GlTextureDeleter {
     void operator()(GLuint* tex) noexcept {
         if (tex) {
@@ -298,7 +298,7 @@ using UniqueGlTexture = std::unique_ptr<GLuint, GlTextureDeleter>;
 UniqueGlTexture create_texture(int width, int height) {
     auto tex = std::make_unique<GLuint>();
     glGenTextures(1, tex.get());
-    // ... set texture parameters ...
+    // ... 设置纹理参数 ...
     return UniqueGlTexture(tex.release(), GlTextureDeleter{});
 }
 ```
@@ -336,9 +336,9 @@ void resource_demo() {
     auto f = make_resource("file");
     auto m = make_resource("malloc");
 
-    // f and m have exactly the same type: shared_ptr<void>
-    // but hold different deleters internally (fclose vs free)
-    // on destruction the correct release function gets called
+    // f 和 m 的类型完全相同：shared_ptr<void>
+    // 但内部有不同的删除器（fclose vs free）
+    // 析构时会调用正确的删除函数
 }
 ```
 
@@ -365,7 +365,7 @@ protected:
     virtual ~RefCounted() = default;
 
 private:
-    uint32_t ref_count_{1};  // one reference held by default at creation
+    uint32_t ref_count_{1};  // 创建时默认持有一次
 };
 ```
 
@@ -397,7 +397,7 @@ public:
     IntrusivePtr() noexcept = default;
 
     explicit IntrusivePtr(T* p) noexcept : ptr_(p) {
-        // No add_ref call: RefCounted is born with ref_count_ == 1
+        // 不调用 add_ref，因为 RefCounted 创建时 ref_count_ 已经是 1
     }
 
     IntrusivePtr(const IntrusivePtr& other) noexcept : ptr_(other.ptr_) {
@@ -452,12 +452,12 @@ Usage looks almost identical to `shared_ptr`, but what's underneath is completel
 void intrusive_demo() {
     IntrusivePtr<SharedBuffer> buf(new SharedBuffer(1024));
     {
-        auto buf2 = buf;  // refcount: 1 → 2, no extra heap allocation
+        auto buf2 = buf;  // 引用计数: 1 → 2，无需额外堆分配
         std::cout << "使用缓冲区: " << buf2->data() << "\n";
-    }  // refcount: 2 → 1
+    }  // 引用计数: 2 → 1
 
     std::cout << "缓冲区仍然有效\n";
-}  // refcount: 1 → 0, SharedBuffer destroyed
+}  // 引用计数: 1 → 0，SharedBuffer 被销毁
 ```
 
 The core difference between the intrusive approach and `shared_ptr` is this: `shared_ptr`'s control block is allocated on the heap outside the object (requiring an extra `new`), while the intrusive approach puts the counter directly inside the object. That means a single memory allocation (the object itself), and accessing the reference count never jumps to another memory location (more cache-friendly).
@@ -469,11 +469,11 @@ The intrusive approach also has its limitations: objects must inherit the refere
 In embedded systems, resources usually aren't "objects that came from new" but hardware handles—DMA channels, SPI buses, GPIO pins, and so on. "Releasing" these handles is not `delete`; it is calling a specific HAL function. Custom deleters + `unique_ptr` (or the intrusive approach) are the ideal tools for managing this kind of resource.
 
 ```cpp
-// DMA buffer management — unique_ptr + a custom deleter
+// DMA 缓冲区管理——使用 unique_ptr + 自定义删除器
 struct DmaBufferDeleter {
     void operator()(DmaBuffer* buf) noexcept {
         if (buf) {
-            hal_dma_free(buf->data);  // free the DMA buffer
+            hal_dma_free(buf->data);  // 释放 DMA 缓冲区
             delete buf;
         }
     }
@@ -487,7 +487,7 @@ UniqueDmaBuffer allocate_dma(size_t size) {
     return UniqueDmaBuffer(new DmaBuffer{data, size});
 }
 
-// Sharing a hardware resource — intrusive reference counting
+// 共享硬件资源——使用侵入式引用计数
 class SharedPeripheral : public RefCounted {
 public:
     explicit SharedPeripheral(int peripheral_id)
@@ -508,15 +508,15 @@ private:
     int id_;
 };
 
-// Several modules sharing one peripheral
+// 多个模块共享同一个外设
 void peripheral_sharing() {
     auto spi = IntrusivePtr<SharedPeripheral>(new SharedPeripheral(SPI1));
 
-    auto task1 = spi;  // refcount 2
-    auto task2 = spi;  // refcount 3
+    auto task1 = spi;  // 引用计数 2
+    auto task2 = spi;  // 引用计数 3
 
     task1->write(tx_data, len);
-    // Once all three holders are gone, the peripheral is released automatically
+    // 三个持有者都离开后，外设自动释放
 }
 ```
 

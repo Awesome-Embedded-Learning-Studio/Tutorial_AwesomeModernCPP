@@ -15,12 +15,23 @@ tags:
   - 入门
   - 基础
 cpp_standard: [11, 14, 17, 20]
+contributors:
+  - github: Charliechen114514
+    roles: [author, maintain]
+    note:
+      zh: "文章撰写与长期维护"
+      en: "Article writing and ongoing maintenance"
+  - github: xiaoshuaijie
+    roles: [revision]
+    note:
+      zh: "补充练习参考答案与修订正文 (PR #244)"
+      en: "Contributed exercise solutions and article revisions (PR #244)"
 translation:
   source: documents/vol1-fundamentals/ch06/05-friends.md
-  source_hash: 3bda8a31dd87855b978a402b3cbd1f1c2d65e4d4fa2630a946a7c462751a9716
-  translated_at: '2026-09-25T11:01:52+00:00'
-  engine: anthropic
-  token_count: 3000
+  source_hash: ba9da06375bd00ca30847b1327577b438b8a2f1a54dd25291edaac830a3f39ed
+  translated_at: '2026-11-22T16:41:03+00:00'
+  engine: glm-5.3-refresh
+  token_count: 9799
 ---
 
 # Friends: Granting Access to Private Members, On Purpose
@@ -39,11 +50,11 @@ private:
     float x, y, z;
 public:
     Vector3D(float x, float y, float z) : x(x), y(y), z(z) {}
-    // Declare dot_product as a friend function
+    // 声明 dot_product 为友元函数
     friend float dot_product(const Vector3D& a, const Vector3D& b);
 };
 
-// Friend function definition—not a member function, no Vector3D:: needed
+// 友元函数定义——不是成员函数，不需要 Vector3D::
 float dot_product(const Vector3D& a, const Vector3D& b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -64,7 +75,7 @@ private:
 public:
     Point(int x, int y) : x(x), y(y) {}
 
-    // Friend overload of operator<<
+    // 友元重载 operator<<
     friend std::ostream& operator<<(std::ostream& os, const Point& p);
 };
 
@@ -74,9 +85,9 @@ std::ostream& operator<<(std::ostream& os, const Point& p)
     return os;
 }
 
-// Now this works
+// 现在可以这样用了
 Point p(3, 4);
-std::cout << p << std::endl;  // Output: (3, 4)
+std::cout << p << std::endl;  // 输出: (3, 4)
 ```
 
 We'll expand on the details of `operator<<` overloading in the next chapter; for now, you only need to understand why it must be a friend—its first parameter is a `std::ostream&`, not a `Point`, so this function cannot be written as a member function of `Point`.
@@ -91,7 +102,7 @@ private:
     float data[3][3];
 
 public:
-    Matrix()  // Initialize as the identity matrix
+    Matrix()  // 初始化为单位矩阵
     {
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {
@@ -100,7 +111,7 @@ public:
         }
     }
 
-    // Vector is a friend class of Matrix
+    // Vector 是 Matrix 的友元类
     friend class Vector;
 };
 
@@ -113,7 +124,7 @@ public:
 
     Vector transform(const Matrix& m)
     {
-        // Vector's member functions can access Matrix's private members directly
+        // Vector 的成员函数可以直接访问 Matrix 的 private 成员
         float nx = m.data[0][0] * x + m.data[0][1] * y + m.data[0][2] * z;
         float ny = m.data[1][0] * x + m.data[1][1] * y + m.data[1][2] * z;
         float nz = m.data[2][0] * x + m.data[2][1] * y + m.data[2][2] * z;
@@ -129,7 +140,7 @@ public:
 If you feel that friend-class authorization is too broad, C++ offers finer-grained control: authorize only **one specific** member function of another class:
 
 ```cpp
-class Matrix;  // Forward declaration
+class Matrix;  // 前向声明
 
 class Vector {
 private:
@@ -138,7 +149,7 @@ private:
 public:
     Vector(float x, float y, float z) : x(x), y(y), z(z) {}
 
-    Vector transform(const Matrix& m);
+    Vector transform(const Matrix& m); // 只需要声明, 定义在Matrix之后
 };
 
 class Matrix {
@@ -146,7 +157,8 @@ private:
     float data[3][3];
 public:
     Matrix();
-    // Authorize only this one member function: Vector::transform
+    // 只授权 Vector::transform 这一个成员函数
+    // 这个时候, Vector的定义已经完整, 编译器可以认得出来transform是他的成员.
     friend Vector Vector::transform(const Matrix& m);
 };
 ```
@@ -162,7 +174,7 @@ Friends are easy to abuse, so we owe ourselves a serious discussion of the bound
 **Scenarios where friends should not be used.** If we just want to be lazy and skip designing a proper public interface, casually adding a `friend` so an external function can manipulate private data directly—this kind of friendship is harmful. Most scenarios that "need a friend" can actually be replaced by providing an appropriate access interface:
 
 ```cpp
-// Not recommended: using a friend to bypass interface design
+// 不推荐：用友元绕过接口设计
 class SensorData {
     friend void serialize(const SensorData& data, uint8_t* buffer);
 private:
@@ -170,7 +182,7 @@ private:
     int count;
 };
 
-// Recommended: provide a read-only interface, encapsulation stays intact
+// 推荐：提供只读接口，封装完好
 class SensorData {
 private:
     float values[100];
@@ -208,7 +220,7 @@ public:
             std::printf("| %.2f %.2f %.2f |\n",
                         data[i][0], data[i][1], data[i][2]);
     }
-    // Grant Vector access to private members
+    // 授权 Vector 访问私有成员
     friend class Vector;
 };
 
@@ -217,7 +229,7 @@ private:
     std::array<float, 3> v;
 public:
     Vector(float x, float y, float z) : v{x, y, z} {}
-    // Friend privileges: direct access to Matrix's internal array
+    // 友元权限：直接访问 Matrix 内部数组
     Vector transform(const Matrix& m) const
     {
         float nx = m.data[0][0] * v[0] + m.data[0][1] * v[1] + m.data[0][2] * v[2];
@@ -284,10 +296,10 @@ public:
     Student(int id, float score, const std::string& name)
         : id(id), score(score), name(name) {}
 
-    // Add the friend declaration here
+    // 在这里添加友元声明
 };
 
-// Implement operator<< here
+// 在这里实现 operator<<
 ```
 
 To verify: create a few `Student` objects, output their information with `std::cout`, and confirm the format is correct.
@@ -319,12 +331,12 @@ std::ostream& operator<<(std::ostream& os, const Student& student) {
 }
 
 int main() {
-    // Create several Student objects
+    // 创建多个 Student 对象
     Student student1(1, 95.5f, "小明");
     Student student2(2, 88.0f, "小红");
     Student student3(3, 76.5f, "杰");
 
-    // Output student information to verify operator<<
+    // 输出学生信息，验证 operator<<
     std::cout << student1 << std::endl;
     std::cout << student2 << std::endl;
     std::cout << student3 << std::endl;

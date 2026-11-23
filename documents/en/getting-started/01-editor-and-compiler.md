@@ -16,9 +16,9 @@ reading_time_minutes: 5
 translation:
   source: documents/getting-started/01-editor-and-compiler.md
   source_hash: 0d2054d98bec0ff21731aee4da9ac8b531ecb3bf52ffb2c57bd568231183ac7b
-  translated_at: '2026-09-26T14:31:57+00:00'
-  engine: anthropic
-  token_count: 2200
+  translated_at: '2026-11-23T01:11:40+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 3439
 ---
 
 # What's an Editor, What's a Compiler — Two Things to Nail Down Before You Write Code
@@ -50,8 +50,8 @@ That's why nobody writes code in Notepad. Writing code takes dedicated software 
 
 ```mermaid
 flowchart LR
-    A["Editor: vscode<br/>light, cross-platform"] -->|install C++ extensions| B["can do an IDE's job"]
-    C["IDE<br/>Visual Studio"] --> D["works out of the box<br/>edit + compile + debug in one"]
+    A["编辑器 vscode<br/>轻、跨平台"] -->|装 C++ 扩展| B["能干 IDE 的活"]
+    C["IDE<br/>Visual Studio"] --> D["开箱即用<br/>编辑+编译+调试一体"]
 ```
 
 An editor is dedicated software for writing code, and it beats Notepad in several places. First, syntax highlighting — keywords get colored, `int` blue, strings green, so the structure jumps out at a glance. Second, autocomplete — you type `std::co`, a little box pops up suggesting `cout`, hit Tab and it fills it in. Third, errors flagged red — a slip like `itn` gets a red underline on the spot, no waiting for a compile.
@@ -90,8 +90,8 @@ The tool that does this translating is called a **compiler**, and the act of tra
 
 ```mermaid
 flowchart LR
-    A["main.cpp<br/>source code, plain text"] -->|compile| B["compiler<br/>gcc / clang / cl"]
-    B --> C["hello.exe<br/>executable program"]
+    A["main.cpp<br/>源代码,纯文本"] -->|编译| B["编译器<br/>gcc / clang / cl"]
+    B --> C["hello.exe<br/>可执行程序"]
 ```
 
 The common C++ compilers come down to a few families:

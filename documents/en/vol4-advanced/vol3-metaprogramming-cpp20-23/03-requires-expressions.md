@@ -25,9 +25,9 @@ title: 'Requires Expressions, In Depth: The Four Kinds of Requirements'
 translation:
   source: documents/vol4-advanced/vol3-metaprogramming-cpp20-23/03-requires-expressions.md
   source_hash: 148e4f3fb9ed20c9cff89c289d697a4385c37c6d023dce4e7974478b2fcb5b91
-  translated_at: '2026-09-26T04:31:57+00:00'
-  engine: anthropic
-  token_count: 2000
+  translated_at: '2026-11-23T01:12:36+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 6640
 ---
 # Requires Expressions, In Depth: The Four Kinds of Requirements
 
@@ -56,22 +56,22 @@ Inside the braces of a requires expression `requires(params) { ... }` you can wr
 
 template <typename T>
 concept Container = requires(T t) {
-    // ① simple requirement: the expression must be valid, it just has to compile
+    // ① 简单要求(simple requirement):表达式必须合法,能编译通过即可
     t.begin();
     t.end();
 
-    // ② type requirement: this nested type must exist
+    // ② 类型要求(type requirement):必须有这个内嵌类型
     typename T::value_type;
 
-    // ③ compound requirement: the expression is valid, and the return value satisfies a constraint
+    // ③ 复合要求(compound requirement):表达式合法,且返回值满足某个约束
     { t.size() } -> std::convertible_to<std::size_t>;
 
-    // ④ nested requirement: one more compile-time bool check nested inside
+    // ④ 嵌套要求(nested requirement):再嵌一条编译期 bool 判断
     requires std::integral<typename T::value_type>;
 };
 
-static_assert(Container<std::vector<int>>);   // vector<int> meets all four
-static_assert(!Container<int>);               // int has no begin/end, fails the first one
+static_assert(Container<std::vector<int>>);   // vector<int> 四条全满足
+static_assert(!Container<int>);               // int 没有 begin/end,第一条就挂
 ```
 
 These two `static_assert`s are compile-time assertions: if the code compiles, it shows `vector<int>` satisfies `Container` and `int` does not. Nothing needs to run.
@@ -87,10 +87,10 @@ A requires expression evaluates to a bool, so it does not have to live inside a 
 ```cpp
 #include <string>
 
-// Drop it straight into a static_assert, no concept defined first
-static_assert(requires(std::string s) { s.size(); });   // string has size()
+// 直接塞进 static_assert,不用先定义 concept
+static_assert(requires(std::string s) { s.size(); });   // string 有 size()
 
-// Use it directly in if constexpr for a compile-time branch
+// 直接用在 if constexpr 里做编译期分支
 template <typename T>
 void process(T t) {
     if constexpr (requires(T x) { x.empty(); }) {
@@ -132,13 +132,13 @@ int increment() {
 
 template <typename T>
 concept MentionsIncrement = requires(T t) {
-    increment();   // only checks "is this call legal"; not evaluated, not executed
+    increment();   // 只检查「这个调用合不合法」,不求值、不执行
 };
 
 int main() {
-    static_assert(MentionsIncrement<int>);   // satisfied: the increment() call is legal
+    static_assert(MentionsIncrement<int>);   // 满足:increment() 调用合法
     std::cout << "concept 求值完毕,counter = " << counter << "\n";
-    increment();                              // this is the real call
+    increment();                              // 这里才真正调用
     std::cout << "真正调用后,counter = " << counter << "\n";
 }
 ```
@@ -166,8 +166,8 @@ A requires expression lives in an **unevaluated context**, same as `decltype` an
 The second trap is sneakier, and it grows out of the first. Suppose we want to test "string does not have some method." The intuitive move is to make string the parameter of the requires expression:
 
 ```cpp
-// The intuitive way: test the negative case with the concrete type string
-static_assert(!requires(std::string s) { s.nope(); });   // string has no nope
+// 直觉写法:拿具体类型 string 直接测负例
+static_assert(!requires(std::string s) { s.nope(); });   // string 没有 nope
 ```
 
 ```text
@@ -182,9 +182,9 @@ The fix is to keep the requires expression in a **template context**; the most c
 template <typename T> concept HasSize = requires(T t) { t.size(); };
 template <typename T> concept HasNope = requires(T t) { t.nope(); };
 
-static_assert(HasSize<std::string>);    // string has size -> true
-static_assert(!HasNope<std::string>);   // string has no nope -> false, graceful this time
-static_assert(!HasSize<int>);           // int has no size -> false
+static_assert(HasSize<std::string>);    // string 有 size -> true
+static_assert(!HasNope<std::string>);   // string 没 nope -> false,这次优雅了
+static_assert(!HasSize<int>);           // int 没 size -> false
 ```
 
 ```bash

@@ -21,10 +21,10 @@ tags:
 title: "Data types and arithmetic: int vs float, the division bottleneck, and jump tables"
 translation:
   source: documents/vol6-performance/ch04-tuning-by-bottleneck/04-03-types-and-arithmetic.md
-  source_hash: 3ed09d040cb9a2cc599f0b70367ba7d53d17f05e9e378b32ab42fd38352e0b5a
-  translated_at: '2026-09-26T06:22:38+00:00'
-  engine: anthropic
-  token_count: 4300
+  source_hash: 8a9b36e551fbc6a2cc3a21e28bffc9d31f0e5466cff6f922dd8000243a6d7e6b
+  translated_at: '2026-11-22T16:43:35+00:00'
+  engine: glm-5.3-refresh
+  token_count: 3891
 ---
 # Data types and arithmetic: int vs float, the division bottleneck, and jump tables
 
@@ -91,7 +91,7 @@ Compress this article into a few maxims: division is a bottleneck 5x over multip
 
 ## References
 
-- Agner Fog, *Optimizing software in C++*, §14 *Optimizing arithmetic* (instruction-level costs of integer/floating point, multiply/divide, jump tables). Local copy.
-- Agner Fog, *Instruction tables* — latency/throughput/µop breakdowns per instruction, for desk-side verification. Local copy.
+- Agner Fog, *Optimizing software in C++*, §14 *Optimizing arithmetic* (instruction-level costs of integer/floating point, multiply/divide, jump tables)
+- Agner Fog, *Instruction tables* — latency/throughput/µop breakdowns per instruction, for desk-side verification
 - ch02-03, Pipeline, ILP, and branch prediction (this volume; structural hazards and the branch predictor)
 - Measurement code for this article: `code/volumn_codes/vol6-performance/ch04/arithmetic_cost.cpp`

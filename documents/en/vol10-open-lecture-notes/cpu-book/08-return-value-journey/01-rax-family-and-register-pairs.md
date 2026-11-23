@@ -10,9 +10,10 @@ description: "Measured live: the two register-sized return routes, with int, boo
 reading_time_minutes: 9
 translation:
   source: documents/vol10-open-lecture-notes/cpu-book/08-return-value-journey/01-rax-family-and-register-pairs.md
-  source_hash: 19459d963a5bf975685608664cf08e4187fc7e60e89d37d1c21d9a0f2b2083d3
-  translated_at: '2026-10-14'
-  engine: manual
+  source_hash: 58477994aaa12bd37eb7f90cc8d826c90f32be928d2f1a67e2c0bfb13013a242
+  translated_at: '2026-11-22T16:44:08Z'
+  engine: glm-5.3-refresh
+  token_count: 8483
 current_status:
   title: Being polished
   detail: Freshly written in this batch; still being read through and polished. Wording and measured claims may change.
@@ -60,7 +61,7 @@ A few more environment facts that affect how you read the output. If your reruns
 The first route starts from the smallest return values. int, bool, and bare pointers all weigh eight bytes or fewer, so a single register holds any of them. Let's measure all three, and along the way see which part of rax each one lands in. Here is the source:
 
 ```cpp
-// Small returns come back through rax: int, bool, and raw pointer
+// 小件返回走 rax —— int / bool / 裸指针 三种返回
 int get_int(int x) __attribute__((noinline));
 bool get_bool(int x) __attribute__((noinline));
 int* get_ptr(int* p) __attribute__((noinline));
@@ -74,7 +75,7 @@ int main() {
     volatile bool vb = get_bool(5);
     int arr[4] = {0, 0, 0, 0};
     volatile int* vp = get_ptr(arr);
-    return vi + vb + (vp != nullptr);  // consume the sink so nothing is deleted wholesale
+    return vi + vb + (vp != nullptr);  // 消费 sink,防止整体被删
 }
 ```
 
@@ -143,9 +144,9 @@ Now the numbers: 44 breaks down as 42 plus 1 plus 1. vi holds 42, and vb and the
 At sixteen bytes a single register stops being enough, yet we have not reached the point where memory gets involved; the convention splits the value across two registers. We'll prepare two sixteen-byte structs, one holding pure integers, one with a floating-point member mixed in, and watch how the registers divide them up.
 
 ```cpp
-// A struct within 16 bytes comes back split across registers
-// Pair8: two longs, 16 bytes. Expect INTEGER+INTEGER -> rax+rdx
-// Mixed: int + double, 16 bytes (4 + 4 pad + 8). Classified per the ABI, then measured
+// 16 字节内结构体返回拆寄存器
+// Pair8: 两个 long,16 字节 —— 预期 INTEGER+INTEGER -> rax+rdx
+// Mixed: int + double,16 字节(4+4pad+8) —— 按 ABI 归类实测
 struct Pair8 { long a; long b; };
 struct Mixed { int a; double b; };
 
@@ -161,7 +162,7 @@ Mixed make_mixed(int a, double b) { return {a, b}; }
 int main() {
     Pair8 p = make_pair8(11, 22);
     Mixed  m = make_mixed(33, 4.5);
-    volatile long sink1 = p.a + p.b;          // consume, so nothing gets deleted
+    volatile long sink1 = p.a + p.b;          // 消费,防删
     volatile double sink2 = m.a + m.b;
     return sink1 == 33 && sink2 == 37.5 ? 0 : 1;
 }

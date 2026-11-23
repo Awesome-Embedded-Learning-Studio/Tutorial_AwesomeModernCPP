@@ -17,9 +17,9 @@ title: inline variables
 translation:
   source: documents/cpp-reference/core-language/14-inline-variables.md
   source_hash: 8505b0782a87f65c4971bb685b5330692137d6b2f0fff6a648ce1f2cf183b203
-  translated_at: '2026-09-27T01:45:58+00:00'
-  engine: anthropic
-  token_count: 480
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 1704
 ---
 <!--
 Reference Card Template
@@ -63,8 +63,8 @@ None (language feature)
 inline const std::string kVersion = "1.0.0";
 inline int kMaxRetries = 3;
 
-// Multiple translation units include this header;
-// the linker guarantees a single instance of kVersion and kMaxRetries
+// 多个翻译单元 include 此头文件，
+// 链接时保证只有一个 kVersion 和 kMaxRetries 实例
 ```
 
 ```cpp

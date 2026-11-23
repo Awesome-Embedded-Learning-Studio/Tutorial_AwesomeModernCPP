@@ -24,9 +24,9 @@ title: "WeakPtr prerequisite (III): sequences, SEQUENCE_CHECKER, and DCHECK/CHEC
 translation:
   source: documents/vol9-open-source-project-learn/chrome/02_weak_ptr/full/pre-03-weak-ptr-sequence-checker-dcheck-check.md
   source_hash: e73ea921af2f0332ce653455ebd48606760e16f5d453489ca3fd23333461e1a9
-  translated_at: '2026-09-26T01:24:08+00:00'
-  engine: anthropic
-  token_count: 2500
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 5597
 ---
 # WeakPtr prerequisite (III): sequences, SEQUENCE_CHECKER, and DCHECK/CHECK
 
@@ -62,12 +62,12 @@ Chromium wraps `SequenceChecker` into three macros, with the whole debug-versus-
 class Controller {
 public:
     void do_work() {
-        DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);  // I must run on the bound sequence
-        // ... work ...
+        DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);  // 我必须跑在绑定序列
+        // ... 业务 ...
     }
 
 private:
-    SEQUENCE_CHECKER(sequence_checker_);   // declare a checker member
+    SEQUENCE_CHECKER(sequence_checker_);   // 声明一个 checker 成员
 };
 ```
 
@@ -101,7 +101,7 @@ With that principle in hand, let's look at two key WeakPtr assertions. The two c
 
 ```cpp
 T& operator*() const {
-    CHECK(ref_.IsValid());   // dereferencing after invalidation → aborts in release too
+    CHECK(ref_.IsValid());   // 失效还硬解引用 → release 也 abort
     return *ptr_;
 }
 ```
@@ -112,7 +112,7 @@ Why `CHECK` here? Think it through. Dereferencing an already-invalidated WeakPtr
 
 ```cpp
 bool Flag::IsValid() const {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // sequence violation → caught in debug only
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);   // 序列违规 → 仅 debug 抓
     return !invalidated_.IsSet();
 }
 ```

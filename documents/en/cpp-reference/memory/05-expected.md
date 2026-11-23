@@ -16,9 +16,9 @@ title: std::expected
 translation:
   source: documents/cpp-reference/memory/05-expected.md
   source_hash: 216bd3947b36d90ef096a54181bcad6d17d952bf40ca92fdc8bb27b6f92b1d66
-  translated_at: '2026-09-27T02:16:45+00:00'
-  engine: anthropic
-  token_count: 620
+  translated_at: '2026-11-23T01:12:08+00:00'
+  engine: glm-5.3-fence-fix
+  token_count: 2548
 ---
 <!--
 Reference Card Template
@@ -80,7 +80,7 @@ int main() {
     auto r2 = divide(10, 0);
     if (!r2) std::cout << r2.error() << "\n"; // division by zero
 
-    // Chained calls
+    // 链式调用
     auto r3 = divide(20, 4).transform([](int v) { return v * 2; });
     std::cout << *r3 << "\n"; // 10
 }
