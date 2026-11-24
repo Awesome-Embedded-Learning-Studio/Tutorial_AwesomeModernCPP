@@ -160,7 +160,7 @@ At this point, your `main.cpp` has truly been translated into `hello.exe`. It's 
 The most common error is that the compiler can't be found, or the compiler path is wrong — go back to Step 5 and pick the kit again. Another common one is a typo in the `main.cpp` file name (typing `mian.cpp`, say), so CMake can't find the file. Error messages usually spell out which line is unhappy; just line them up and compare. After fixing it, click Build again.
 :::
 
-## Step 8: Run
+## Step 7: Run
 
 There's a triangular play button on the status bar — that's Run. Careful not to hit the one next to it with the little bug icon: that's Debug, which drops you into debugging mode; we don't need it yet.
 
@@ -172,7 +172,7 @@ Hello, C++!
 
 And there it is — your first C++ program, actually running. That one line went from code to characters on the screen, through the full pipeline of "write code → configure → build → run". Every C++ program you write from now on follows this same routine.
 
-## Step 9: Tweak it and run again
+## Step 8: Tweak it and run again
 
 Getting it to run once doesn't count as being fluent yet. Let's change the code and run it again, until the loop feels smooth.
 
