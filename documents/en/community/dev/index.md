@@ -20,11 +20,10 @@ This section does not replace `todo/`, `changelogs/`, or `CONTRIBUTING.md`:
 - `CONTRIBUTING.md` records submission, review, and quality rules.
 - `community/dev/` records how maintainers drive the site and its content forward.
 
-## Roadmap and Versions
+## Version History
 
-Wondering what the project does next, or what has already been released? Here are the two authoritative sources (hosted at the root of the GitHub repository):
+Wondering what the project has already released? The changelogs are hosted at the root of the GitHub repository:
 
-- 📋 **[Project Master Roadmap](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/todo/000-project-roadmap.md)** — Overall priorities (P0–P3), asset and gap assessments for each volume, and near-term focus; for volume-level details, see `todo/010–020` in the same directory.
 - 📦 **[Version Changelogs](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs)** — New content and significant changes for every released version.
 
 ## Work in Progress

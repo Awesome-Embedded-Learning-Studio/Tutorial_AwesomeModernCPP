@@ -121,7 +121,7 @@ Core volumes are complete, advanced ones are still being filled in — progress 
 
 > Plus Getting Started, the "Compilation & Linking" series, Crash Lab, community articles, and C++ feature reference cards.
 >
-> 📋 For volume content and progress see the [project roadmap](todo/000-project-roadmap.md); for release history see [changelogs/](changelogs/).
+> 📋 For release history see [changelogs/](changelogs/).
 
 ## Local Development and Checks
 
