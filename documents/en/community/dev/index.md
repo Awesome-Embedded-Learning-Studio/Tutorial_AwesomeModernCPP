@@ -3,7 +3,7 @@ title: "Project Development"
 description: "Project maintenance cadence, development logs, release governance, and site evolution records under community collaboration"
 translation:
   source: documents/community/dev/index.md
-  source_hash: 1703d3071fa37f1cf7c8665c33cfd1267b0e12cf695620b3147cd4d67443d617
+  source_hash: f4a2bf9a41d7fd89cb747d06180dc147fcdae569f2ee4cdd8abb97867a3c8f31
   translated_at: '2026-09-26T16:58:36+00:00'
   engine: anthropic
   token_count: 500
@@ -26,6 +26,14 @@ Wondering what the project does next, or what has already been released? Here ar
 
 - 📋 **[Project Master Roadmap](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/todo/000-project-roadmap.md)** — Overall priorities (P0–P3), asset and gap assessments for each volume, and near-term focus; for volume-level details, see `todo/010–020` in the same directory.
 - 📦 **[Version Changelogs](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs)** — New content and significant changes for every released version.
+
+## Work in Progress
+
+The board below reads the repository's open issues directly, most recently updated first. Labels, sub-issue progress, and comment counts come from GitHub; a card title links back to the original issue, where you can pick it up or follow along.
+
+The board pulls fresh data every five minutes and reuses the session cache on repeated visits. The anonymous API is rate-limited; when the quota runs out the board shows the reset time, and the refresh button still works.
+
+<IssueBoard repo="Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP" en />
 
 ## Development Records
 

@@ -12,6 +12,12 @@ importers:
         specifier: ^7.2.0
         version: 7.2.0
     devDependencies:
+      '@aels/loupe-ui':
+        specifier: 0.1.0
+        version: 0.1.0(vue@3.5.34(typescript@5.9.3))
+      '@aels/wasm-runtime-host':
+        specifier: 0.1.0
+        version: 0.1.0
       '@codemirror/autocomplete':
         specifier: ^6.20.3
         version: 6.20.3
@@ -89,6 +95,14 @@ importers:
         version: 3.5.34(typescript@5.9.3)
 
 packages:
+
+  '@aels/loupe-ui@0.1.0':
+    resolution: {integrity: sha512-nei5shPnKdFKJyEGnmMocHU+87l9pn/Sm/tuKTYwdqw6zmUwbsCjTL2AQJHzxfwLFEiBR+URoj+Dd76/wQpQlw==}
+    peerDependencies:
+      vue: ^3.5.0
+
+  '@aels/wasm-runtime-host@0.1.0':
+    resolution: {integrity: sha512-CkOz6OtgV5V10zgWbhezI5sZpEkjA3UGAXLPl70WAcpqO2403ofvf6DPOTwg3LCavKjvKtjXluTZHLtx+Ak/6w==}
 
   '@algolia/abtesting@1.18.1':
     resolution: {integrity: sha512-aehCadlWOGvrT91KUIZpC0MbB8KBW9yUuvTJFd2xesR7le/IsT4nJUnjCCZ4ZqZCeTcPHPV5mo//fZ5oxcSVYw==}
@@ -1935,6 +1949,13 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@aels/loupe-ui@0.1.0(vue@3.5.34(typescript@5.9.3))':
+    dependencies:
+      '@aels/wasm-runtime-host': 0.1.0
+      vue: 3.5.34(typescript@5.9.3)
+
+  '@aels/wasm-runtime-host@0.1.0': {}
 
   '@algolia/abtesting@1.18.1':
     dependencies:

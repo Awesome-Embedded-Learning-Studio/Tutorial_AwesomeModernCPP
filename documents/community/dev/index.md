@@ -21,6 +21,14 @@ description: "社区协作下的项目维护节奏、开发日志、发布治理
 - 📋 **[项目总路线图](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/todo/000-project-roadmap.md)** — 总体优先级（P0–P3）、各卷资产/缺口判断与近期重点；卷级细节见同目录 `todo/010–020`。
 - 📦 **[版本变更记录](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs)** — 每个已发布版本的新增内容与重要改动。
 
+## 正在做的工作
+
+下面这块看板直接读仓库的开放 Issue，最近更新的排在前面。卡片上的标签、子任务进度和评论数都来自 GitHub，点标题能跳到原页面，认领或追进度都在那边。
+
+看板每五分钟取一次数据，同一会话里重复打开走缓存。匿名接口有频率限制，碰上了会显示恢复时间，刷新按钮照常可用。
+
+<IssueBoard repo="Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP" />
+
 ## 开发记录
 
 <ChapterNav variant="main">

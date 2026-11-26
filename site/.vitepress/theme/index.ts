@@ -43,6 +43,7 @@ import VolumeCardGrid from './components/VolumeCardGrid.vue'
 import PathChooser from './components/PathChooser.vue'
 import MaturityBoard from './components/MaturityBoard.vue'
 import ConcurrencyTimeline from './components/ConcurrencyTimeline.vue'
+import { IssueBoard } from '@aels/loupe-ui'
 import { setupDevFakeLag } from './dev-fake-lag'
 import { withBase } from 'vitepress'
 import { AsmExecutorPlugin } from './vendor/asm-playground/index.js'
@@ -102,6 +103,7 @@ export default {
     app.component('PathChooser', PathChooser)
     app.component('MaturityBoard', MaturityBoard)
     app.component('ConcurrencyTimeline', ConcurrencyTimeline)
+    app.component('IssueBoard', IssueBoard)
     app.component('Anim', Anim)
     app.component('BookmarkList', BookmarkList)
     app.use(AsmExecutorPlugin, { workerUrl: withBase('/asm-engine/executor-worker.js') })

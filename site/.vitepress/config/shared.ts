@@ -73,6 +73,11 @@ export const sharedBase = {
     resolve: {
       alias: localSearchBoxAlias,
     },
+    ssr: {
+      // @aels/loupe-ui 的产物按模块分块且自带 CSS import,交给 Vite 打包,
+      // 避免 Node 直接加载 dist 里的 .css。分卷构建走 sharedBase。
+      noExternal: ['@aels/loupe-ui', '@aels/wasm-runtime-host'],
+    },
     build: {
       chunkSizeWarningLimit: 5000,
     },
