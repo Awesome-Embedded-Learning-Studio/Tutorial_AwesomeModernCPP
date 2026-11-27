@@ -41,6 +41,7 @@ import CommunityExplorer from './components/CommunityExplorer.vue'
 import RoadmapJourney from './components/RoadmapJourney.vue'
 import VolumeCardGrid from './components/VolumeCardGrid.vue'
 import PathChooser from './components/PathChooser.vue'
+import HomeIssueBoard from './components/HomeIssueBoard.vue'
 import MaturityBoard from './components/MaturityBoard.vue'
 import ConcurrencyTimeline from './components/ConcurrencyTimeline.vue'
 import { IssueBoard } from '@aels/loupe-ui'
@@ -71,7 +72,7 @@ export default {
       'home-hero-after': () => [h(WeeklyHomeWidget), h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)])],
       'home-features-before': () =>
         h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel)]),
-      'home-features-after': () => h(HomePathExplorer),
+      'home-features-after': () => [h(HomePathExplorer), h(HomeIssueBoard)],
       'nav-bar-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
       'nav-screen-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
     }) })
