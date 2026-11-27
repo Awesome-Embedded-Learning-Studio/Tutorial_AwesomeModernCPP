@@ -69,6 +69,9 @@ export default withDrawio(defineConfig({
       // mermaid / @panzoom/panzoom 都只在客户端 onMounted 后动态 import 求值,
       // SSR 阶段不能也不应打包求值(mermaid 访问 document、panzoom 访问 DOM)。
       external: ['mermaid', '@panzoom/panzoom'],
+      // @aels/loupe-ui 的产物按模块分块且自带 CSS import,交给 Vite 打包,
+      // 避免 Node 直接加载 dist 里的 .css。
+      noExternal: ['@aels/loupe-ui', '@aels/wasm-runtime-host'],
     },
   },
 

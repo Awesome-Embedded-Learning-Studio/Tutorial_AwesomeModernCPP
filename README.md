@@ -127,7 +127,7 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 
 > 另含新手起步、「编译与链接」专题、崩溃实验室、社区文章与 C++ 特性参考卡。
 >
-> 📋 各卷内容与进度见 [项目总路线图](todo/000-project-roadmap.md)，版本变更见 [changelogs/](changelogs/)。
+> 📋 版本变更见 [changelogs/](changelogs/)。
 
 ## 本地开发与质量检查
 

@@ -41,8 +41,10 @@ import CommunityExplorer from './components/CommunityExplorer.vue'
 import RoadmapJourney from './components/RoadmapJourney.vue'
 import VolumeCardGrid from './components/VolumeCardGrid.vue'
 import PathChooser from './components/PathChooser.vue'
+import HomeIssueBoard from './components/HomeIssueBoard.vue'
 import MaturityBoard from './components/MaturityBoard.vue'
 import ConcurrencyTimeline from './components/ConcurrencyTimeline.vue'
+import { IssueBoard } from '@aels/loupe-ui'
 import { setupDevFakeLag } from './dev-fake-lag'
 import { withBase } from 'vitepress'
 import { AsmExecutorPlugin } from './vendor/asm-playground/index.js'
@@ -70,7 +72,7 @@ export default {
       'home-hero-after': () => [h(WeeklyHomeWidget), h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)])],
       'home-features-before': () =>
         h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel)]),
-      'home-features-after': () => h(HomePathExplorer),
+      'home-features-after': () => [h(HomePathExplorer), h(HomeIssueBoard)],
       'nav-bar-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
       'nav-screen-content-after': () => [h(FontSizeSwitcher), h(BookmarkButton)],
     }) })
@@ -102,6 +104,7 @@ export default {
     app.component('PathChooser', PathChooser)
     app.component('MaturityBoard', MaturityBoard)
     app.component('ConcurrencyTimeline', ConcurrencyTimeline)
+    app.component('IssueBoard', IssueBoard)
     app.component('Anim', Anim)
     app.component('BookmarkList', BookmarkList)
     app.use(AsmExecutorPlugin, { workerUrl: withBase('/asm-engine/executor-worker.js') })

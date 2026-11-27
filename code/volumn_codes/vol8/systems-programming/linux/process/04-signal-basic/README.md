@@ -1,6 +1,6 @@
 # 04-signal-basic 配套实验
 
-《信号(上):sigaction 与异步信号安全》(`documents/vol8-domains/systems-programming/linux/process/04-signal-basic.md`,ch03 第 04 篇,规划见 `todo/017-vol8-domains.md`,文章已成文)的实验代码与原始输出存档。七组实验对应文章主线:投递模型、sigaction 全家福、异步信号安全(重头戏)、可重入性、handler 工程模式、SIGCHLD 收尸、常用信号速览。
+《信号(上):sigaction 与异步信号安全》(`documents/vol8-domains/systems-programming/linux/process/04-signal-basic.md`,ch03 第 04 篇,原规划收在 `todo/000-legacy-session.md` 的卷八一节,文章已成文)的实验代码与原始输出存档。七组实验对应文章主线:投递模型、sigaction 全家福、异步信号安全(重头戏)、可重入性、handler 工程模式、SIGCHLD 收尸、常用信号速览。
 
 ## 与前章分工(防重叠)
 

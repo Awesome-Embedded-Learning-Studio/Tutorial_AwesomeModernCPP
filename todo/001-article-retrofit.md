@@ -1,5 +1,5 @@
 ---
-id: "032"
+id: "001"
 title: "富组件与文章改造大纲"
 category: content
 priority: P1

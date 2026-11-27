@@ -22,6 +22,8 @@
     "coverage:update": "node scripts/run_python.mjs scripts/coverage.py --update"
   },
   "devDependencies": {
+    "@aels/loupe-ui": "0.1.0",
+    "@aels/wasm-runtime-host": "0.1.0",
     "@codemirror/autocomplete": "^6.20.3",
     "@codemirror/commands": "^6.11.0",
     "@codemirror/lang-cpp": "^6.0.3",
